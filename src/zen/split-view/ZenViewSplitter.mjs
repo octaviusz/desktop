@@ -78,8 +78,6 @@ class ZenSplitViewLinkDrop {
   }
 
   init() {
-    if (!Services.prefs.getBoolPref('zen.splitView.enable-link-drop')) return;
-
     this.#handleLinkDragEnter = this._handleLinkDragEnter.bind(this);
     this.#handleLinkDragLeave = this._handleLinkDragLeave.bind(this);
     this.#handleLinkDragDrop = this._handleLinkDragDrop.bind(this);
