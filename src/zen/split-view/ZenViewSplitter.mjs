@@ -79,6 +79,10 @@ class ZenViewSplitter extends ZenDOMOperatedFeature {
 
   MAX_TABS = 4;
 
+  // Link drag and drop
+  _linkDropZone = null;
+  _isLinkDragging = false;
+
   init() {
     this.handleTabEvent = this._handleTabEvent.bind(this);
 
@@ -122,6 +126,11 @@ class ZenViewSplitter extends ZenDOMOperatedFeature {
       const tabBox = document.getElementById('tabbrowser-tabbox');
       tabBox.addEventListener('dragover', this.onBrowserDragOverToSplit.bind(this));
       this.onBrowserDragEndToSplit = this.onBrowserDragEndToSplit.bind(this);
+    }
+
+    // If enabled initialize the link drag and drop
+    if (Services.prefs.getBoolPref('zen.splitView.enable-link-drop')) {
+      this.#initLinkDragDropSplit();
     }
   }
 
@@ -1893,6 +1902,279 @@ class ZenViewSplitter extends ZenDOMOperatedFeature {
       return false;
     }
     return true;
+  }
+
+  #initLinkDragDropSplit() {
+    this._handleLinkDragEnter = this._handleLinkDragEnter.bind(this);
+    this._handleLinkDragLeave = this._handleLinkDragLeave.bind(this);
+    this._handleLinkDragDrop = this._handleLinkDragDrop.bind(this);
+    this._handleLinkDragEnd = this._handleLinkDragEnd.bind(this);
+
+    const tabBox = document.getElementById('tabbrowser-tabbox');
+
+    tabBox.addEventListener('dragenter', this._handleLinkDragEnter, true);
+    tabBox.addEventListener('dragleave', this._handleLinkDragLeave, false);
+    tabBox.addEventListener('drop', this._handleLinkDragDrop, false);
+    tabBox.addEventListener('dragend', this._handleLinkDragEnd, false);
+  }
+
+  _createLinkDropZone() {
+    if (this._linkDropZone) return;
+
+    this._linkDropZone = document.createXULElement('box');
+    this._linkDropZone.id = 'zen-drop-link-zone';
+
+    const content = document.createXULElement('vbox');
+    content.setAttribute('align', 'center');
+    content.setAttribute('pack', 'center');
+    content.setAttribute('flex', '1');
+
+    const text = document.createXULElement('description');
+    text.setAttribute('value', 'Drop link to split'); // Localization! data-l10n-id
+
+    content.appendChild(text);
+    this._linkDropZone.appendChild(content);
+
+    this._linkDropZone.addEventListener('dragover', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      event.dataTransfer.dropEffect = 'link';
+      if (!this._linkDropZone.hasAttribute('has-focus')) {
+        this._linkDropZone.setAttribute('has-focus', 'true');
+      }
+    });
+
+    this._linkDropZone.addEventListener('dragleave', (event) => {
+      event.stopPropagation();
+      if (!this._linkDropZone.contains(event.relatedTarget)) {
+        this._linkDropZone.removeAttribute('has-focus');
+      }
+    });
+
+    this._linkDropZone.addEventListener('drop', this._handleDropForSplit.bind(this));
+
+    const tabBox = document.getElementById('tabbrowser-tabbox');
+    tabBox.appendChild(this._linkDropZone);
+  }
+
+  _showLinkDropZone() {
+    if (!this._linkDropZone) this._createLinkDropZone();
+
+    this._linkDropZone.setAttribute('enabled', 'true');
+  }
+
+  _hideLinkDropZone(force = false) {
+    if (!this._linkDropZone || !this._linkDropZone.hasAttribute('enabled')) return;
+
+    if (this._isLinkDragging && !force) return;
+
+    this._linkDropZone.removeAttribute('enabled');
+    this._linkDropZone.removeAttribute('has-focus');
+  }
+
+  _validateURI(dataTransfer) {
+    let dt = dataTransfer;
+
+    const URL_TYPES = ['text/uri-list', 'text/x-moz-url', 'text/plain'];
+
+    const FIXUP_FLAGS = Ci.nsIURIFixup.FIXUP_FLAG_FIX_SCHEME_TYPOS;
+
+    const matchedType = URL_TYPES.find((type) => {
+      const raw = dt.getData(type);
+      return typeof raw === 'string' && raw.trim().length > 0;
+    });
+
+    const uriString = dt.getData(matchedType).trim();
+
+    const info = Services.uriFixup.getFixupURIInfo(uriString, FIXUP_FLAGS);
+
+    if (!info || !info.fixedURI) {
+      return null;
+    }
+
+    return info.fixedURI.spec;
+  }
+
+  _handleLinkDragEnter(event) {
+    // If rearrangeViewEnabled - don't do anything
+    if (this.rearrangeViewEnabled) {
+      return;
+    }
+
+    const shouldBeDisabled = !this.canOpenLinkInSplitView();
+    if (shouldBeDisabled) return;
+
+    // If the target is our drop zone or one of its children, or already active, do nothing here.
+    if (
+      this._linkDropZone &&
+      (this._linkDropZone.contains(event.target) || this._linkDropZone.hasAttribute('enabled'))
+    ) {
+      return;
+    }
+
+    // If the data is not a valid URI, we don't want to do anything
+    if (!this._validateURI(event.dataTransfer)) {
+      return;
+    }
+
+    this._isLinkDragging = true;
+    this._showLinkDropZone();
+
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  _handleLinkDragLeave(event) {
+    if (
+      event.target === document.documentElement ||
+      (event.clientX <= 0 && event.clientY <= 0) ||
+      event.clientX >= window.innerWidth ||
+      event.clientY >= window.innerHeight
+    ) {
+      if (this._linkDropZone && !this._linkDropZone.contains(event.relatedTarget)) {
+        this._isLinkDragging = false;
+        this._hideLinkDropZone();
+      }
+    }
+  }
+
+  _handleLinkDragDrop(event) {
+    if (!this._linkDropZone || !this._linkDropZone.contains(event.target)) {
+      if (this._linkDropZone && this._linkDropZone.hasAttribute('enabled')) {
+        this._isLinkDragging = false;
+        this._hideLinkDropZone(true); // true for forced hiding
+      }
+    }
+  }
+
+  _handleLinkDragEnd(event) {
+    this._isLinkDragging = false;
+    this._hideLinkDropZone(true); // true for forced hiding
+  }
+
+  _handleDropForSplit(event) {
+    let linkDropZone = this._linkDropZone;
+    event.preventDefault();
+    event.stopPropagation();
+
+    const url = this._validateURI(event.dataTransfer);
+
+    if (!url) {
+      this._hideDropZoneAndResetState();
+      return;
+    }
+
+    const currentTab = gZenGlanceManager.getTabOrGlanceParent(gBrowser.selectedTab);
+    const newTab = this.openAndSwitchToTab(url, { inBackground: false });
+
+    if (!newTab) {
+      this._hideDropZoneAndResetState();
+      return;
+    }
+
+    const linkDropSide = this._calculateDropSide(event, linkDropZone);
+
+    this._createOrUpdateSplitViewWithSide(currentTab, newTab, linkDropSide);
+
+    this._hideDropZoneAndResetState();
+  }
+  _calculateDropSide(event, linkDropZone) {
+    const rect = linkDropZone.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    const width = rect.width;
+    const height = rect.height;
+
+    const edgeSizeRatio = 0.3; // 30% of the size, maybe increase to 35%
+    const hEdge = width * edgeSizeRatio;
+    const vEdge = height * edgeSizeRatio;
+
+    const isInLeftEdge = x < hEdge;
+    const isInRightEdge = x > width - hEdge;
+    const isInTopEdge = y < vEdge;
+    const isInBottomEdge = y > height - vEdge;
+
+    if (isInTopEdge) {
+      if (isInLeftEdge && x / width < y / height) return 'left'; // More left in angle
+      if (isInRightEdge && (width - x) / width < y / height) return 'right'; // More right in angle
+      return 'top';
+    }
+    if (isInBottomEdge) {
+      if (isInLeftEdge && x / width < (height - y) / height) return 'left';
+      if (isInRightEdge && (width - x) / width < (height - y) / height) return 'right';
+      return 'bottom';
+    }
+    if (isInLeftEdge) {
+      return 'left';
+    }
+    if (isInRightEdge) {
+      return 'right';
+    }
+    return 'center';
+  }
+
+  _createOrUpdateSplitViewWithSide(currentTab, newTab, linkDropSide) {
+    const SIDES = ['left', 'right', 'top', 'bottom'];
+    const groupIndex = this._data.findIndex((group) => group.tabs.includes(currentTab));
+
+    if (groupIndex > -1) {
+      const group = this._data[groupIndex];
+
+      if (group.tabs.length >= this.MAX_TABS) {
+        console.warn(`Cannot add tab to split, MAX_TABS (${this.MAX_TABS}) reached.`);
+        return;
+      }
+
+      const splitViewGroup = this._getSplitViewGroup(group.tabs);
+      if (splitViewGroup && newTab.group !== splitViewGroup) {
+        this._moveTabsToContainer([newTab], currentTab);
+        gBrowser.moveTabToGroup(newTab, splitViewGroup);
+      }
+
+      if (!group.tabs.includes(newTab)) {
+        group.tabs.push(newTab);
+
+        const targetNode = this.getSplitNodeFromTab(currentTab);
+        const isValidSide = SIDES.includes(linkDropSide);
+
+        if (targetNode && isValidSide) {
+          this.splitIntoNode(targetNode, new SplitLeafNode(newTab, 50), linkDropSide, 0.5);
+        } else {
+          const parentNode = targetNode?.parent || group.layoutTree;
+          this.addTabToSplit(newTab, parentNode, false);
+        }
+
+        this.activateSplitView(group, true);
+      }
+      return;
+    }
+
+    const splitConfig = {
+      left: { tabs: [newTab, currentTab], gridType: 'vsep', initialIndex: 0 },
+      right: { tabs: [currentTab, newTab], gridType: 'vsep', initialIndex: 1 },
+      top: { tabs: [newTab, currentTab], gridType: 'hsep', initialIndex: 0 },
+      bottom: { tabs: [currentTab, newTab], gridType: 'hsep', initialIndex: 1 },
+    };
+
+    const {
+      tabs: tabsToSplit,
+      gridType,
+      initialIndex,
+    } = splitConfig[linkDropSide] || {
+      // If linkDropSide is invalid should use the default "vsep"
+      tabs: [currentTab, newTab],
+      gridType: 'vsep',
+      initialIndex: 1,
+    };
+
+    this.splitTabs(tabsToSplit, gridType, initialIndex);
+  }
+
+  _hideDropZoneAndResetState() {
+    if (this._linkDropZone && this._linkDropZone.hasAttribute('enabled')) {
+      this._isLinkDragging = false;
+      this._hideLinkDropZone(true);
+    }
   }
 }
 

@@ -134,6 +134,7 @@ pref('zen.workspaces.debug', true);
 
 // Zen Split View
 pref('zen.splitView.enable-tab-drop', true);
+pref('zen.splitView.enable-link-drop', true);
 pref('zen.splitView.min-resize-width', 7);
 pref('zen.splitView.rearrange-hover-size', 24);
 
