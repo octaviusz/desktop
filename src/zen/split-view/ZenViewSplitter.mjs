@@ -153,8 +153,7 @@ class ZenSplitViewLinkDrop {
     const URL_TYPES = ['text/uri-list', 'text/x-moz-url', 'text/plain'];
 
     let fixupFlags =
-      Ci.nsIURIFixup.FIXUP_FLAG_FIX_SCHEME_TYPOS |
-      Ci.nsIURIFixup.FIXUP_FLAG_ALLOW_KEYWORD_LOOKUP;
+      Ci.nsIURIFixup.FIXUP_FLAG_FIX_SCHEME_TYPOS | Ci.nsIURIFixup.FIXUP_FLAG_ALLOW_KEYWORD_LOOKUP;
 
     const matchedType = URL_TYPES.find((type) => {
       const raw = dt.getData(type);
@@ -300,7 +299,9 @@ class ZenSplitViewLinkDrop {
       const group = this.#zenViewSplitter._data[groupIndex];
 
       if (group.tabs.length >= this.#zenViewSplitter.MAX_TABS) {
-        console.warn(`Cannot add tab to split, MAX_TABS (${this.#zenViewSplitter.MAX_TABS}) reached.`);
+        console.warn(
+          `Cannot add tab to split, MAX_TABS (${this.#zenViewSplitter.MAX_TABS}) reached.`
+        );
         return;
       }
 
