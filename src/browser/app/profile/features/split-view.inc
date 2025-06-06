@@ -3,5 +3,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 pref('zen.splitView.enable-tab-drop', true);
+pref('zen.splitView.enable-link-drop', true);
 pref('zen.splitView.min-resize-width', 7);
 pref('zen.splitView.rearrange-hover-size', 24);
