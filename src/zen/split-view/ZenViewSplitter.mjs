@@ -66,7 +66,6 @@ class SplitNode extends SplitLeafNode {
 class ZenSplitViewLinkDrop {
   #zenViewSplitter;
   _linkDropZone = null;
-  _isLinkDragging = false;
 
   #handleLinkDragEnter;
   #handleLinkDragLeave;
@@ -92,8 +91,6 @@ class ZenSplitViewLinkDrop {
   }
 
   _createLinkDropZone() {
-    if (this._linkDropZone) return;
-
     this._linkDropZone = document.createXULElement('box');
     this._linkDropZone.id = 'zen-drop-link-zone';
 
@@ -129,20 +126,11 @@ class ZenSplitViewLinkDrop {
     const tabBox = document.getElementById('tabbrowser-tabbox');
     tabBox.appendChild(this._linkDropZone);
   }
-
-  _showLinkDropZone() {
-    if (!this._linkDropZone) this._createLinkDropZone();
-
-    this._linkDropZone.setAttribute('enabled', 'true');
-  }
-
-  _hideLinkDropZone(force = false) {
-    if (!this._linkDropZone || !this._linkDropZone.hasAttribute('enabled')) return;
-
-    if (this._isLinkDragging && !force) return;
-
-    this._linkDropZone.removeAttribute('enabled');
-    this._linkDropZone.removeAttribute('has-focus');
+  _removeLinkDropZone() {
+    if (this._linkDropZone) {
+      this._linkDropZone.remove();
+      this._linkDropZone = null;
+    }
   }
 
   _validateURI(dataTransfer) {
@@ -178,11 +166,8 @@ class ZenSplitViewLinkDrop {
     const shouldBeDisabled = !this.#zenViewSplitter.canOpenLinkInSplitView();
     if (shouldBeDisabled) return;
 
-    // If the target is our drop zone or one of its children, or already active, do nothing here.
-    if (
-      this._linkDropZone &&
-      (this._linkDropZone.contains(event.target) || this._linkDropZone.hasAttribute('enabled'))
-    ) {
+    // If _linkDropZone is already created, we don't want to do anything
+    if (this._linkDropZone) {
       return;
     }
 
@@ -191,8 +176,7 @@ class ZenSplitViewLinkDrop {
       return;
     }
 
-    this._isLinkDragging = true;
-    this._showLinkDropZone();
+    this._createLinkDropZone();
 
     event.preventDefault();
     event.stopPropagation();
@@ -206,24 +190,19 @@ class ZenSplitViewLinkDrop {
       event.clientY >= window.innerHeight
     ) {
       if (this._linkDropZone && !this._linkDropZone.contains(event.relatedTarget)) {
-        this._isLinkDragging = false;
-        this._hideLinkDropZone();
+        this._removeLinkDropZone();
       }
     }
   }
 
   _handleLinkDragDrop(event) {
     if (!this._linkDropZone || !this._linkDropZone.contains(event.target)) {
-      if (this._linkDropZone && this._linkDropZone.hasAttribute('enabled')) {
-        this._isLinkDragging = false;
-        this._hideLinkDropZone(true); // true for forced hiding
-      }
+      this._removeLinkDropZone();
     }
   }
 
   _handleLinkDragEnd(event) {
-    this._isLinkDragging = false;
-    this._hideLinkDropZone(true); // true for forced hiding
+    this._removeLinkDropZone();
   }
 
   _handleDropForSplit(event) {
@@ -234,7 +213,7 @@ class ZenSplitViewLinkDrop {
     const url = this._validateURI(event.dataTransfer);
 
     if (!url) {
-      this._hideDropZoneAndResetState();
+      this._removeLinkDropZone();
       return;
     }
 
@@ -242,7 +221,7 @@ class ZenSplitViewLinkDrop {
     const newTab = this.#zenViewSplitter.openAndSwitchToTab(url, { inBackground: false });
 
     if (!newTab) {
-      this._hideDropZoneAndResetState();
+      this._removeLinkDropZone();
       return;
     }
 
@@ -250,7 +229,7 @@ class ZenSplitViewLinkDrop {
 
     this._createOrUpdateSplitViewWithSide(currentTab, newTab, linkDropSide);
 
-    this._hideDropZoneAndResetState();
+    this._removeLinkDropZone();
   }
   _calculateDropSide(event, linkDropZone) {
     const rect = linkDropZone.getBoundingClientRect();
@@ -295,13 +274,6 @@ class ZenSplitViewLinkDrop {
 
     if (groupIndex > -1) {
       const group = this.#zenViewSplitter._data[groupIndex];
-
-      if (group.tabs.length >= this.#zenViewSplitter.MAX_TABS) {
-        console.warn(
-          `Cannot add tab to split, MAX_TABS (${this.#zenViewSplitter.MAX_TABS}) reached.`
-        );
-        return;
-      }
 
       const splitViewGroup = this.#zenViewSplitter._getSplitViewGroup(group.tabs);
       if (splitViewGroup && newTab.group !== splitViewGroup) {
@@ -351,13 +323,6 @@ class ZenSplitViewLinkDrop {
     };
 
     this.#zenViewSplitter.splitTabs(tabsToSplit, gridType, initialIndex);
-  }
-
-  _hideDropZoneAndResetState() {
-    if (this._linkDropZone && this._linkDropZone.hasAttribute('enabled')) {
-      this._isLinkDragging = false;
-      this._hideLinkDropZone(true);
-    }
   }
 }
 
