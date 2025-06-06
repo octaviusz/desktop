@@ -747,12 +747,16 @@
     }
 
     onSearchSelectCommand(where) {
+      // Check if glance is enabled in user preferences
+      if (!Services.prefs.getBoolPref('zen.glance.enabled', false)) {
+        return;
+      }
       if (where !== 'tab') {
         return;
       }
       const currentTab = gBrowser.selectedTab;
       const parentTab = currentTab.owner;
-      if (!parentTab) {
+      if (!parentTab || parentTab.hasAttribute('glance-id')) {
         return;
       }
       // Open a new glance if the current tab is a glance tab

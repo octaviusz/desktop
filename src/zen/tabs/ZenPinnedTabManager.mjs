@@ -65,21 +65,8 @@
       this.observer.addPinnedTabListener(this._onPinnedTabEvent.bind(this));
 
       this._zenClickEventListener = this._onTabClick.bind(this);
-      gZenWorkspaces.addChangeListeners(this.onWorkspaceChange.bind(this));
 
-      await ZenPinnedTabsStorage.promiseInitialized;
       gZenWorkspaces._resolvePinnedInitialized();
-    }
-
-    async onWorkspaceChange(newWorkspace, onInit) {
-      if (!this.enabled || PrivateBrowsingUtils.isWindowPrivate(window)) {
-        return;
-      }
-
-      if (onInit) {
-        await this._refreshPinnedTabs({ init: onInit });
-        this._hasFinishedLoading = true;
-      }
     }
 
     log(message) {
@@ -149,13 +136,19 @@
       return this._enabled && !gZenWorkspaces.privateWindowOrDisabled;
     }
 
-    async _refreshPinnedTabs({ init = false } = {}) {
+    async refreshPinnedTabs({ init = false } = {}) {
+      await ZenPinnedTabsStorage.promiseInitialized;
       await gZenWorkspaces.promiseSectionsInitialized;
       await this._initializePinsCache();
-      await this._initializePinnedTabs(init);
-      if (init) {
-        this._resolveInitializedPinnedCache();
-      }
+      (async () => {
+        // Execute in a separate task to avoid blocking the main thread
+        await SessionStore.promiseAllWindowsRestored;
+        await gZenWorkspaces.promiseInitialized;
+        await this._initializePinnedTabs(init);
+        if (init) {
+          this._hasFinishedLoading = true;
+        }
+      })();
     }
 
     async _initializePinsCache() {
@@ -439,7 +432,7 @@
 
       await this.savePin(pin);
       this.resetPinChangedUrl(tab);
-      await this._refreshPinnedTabs();
+      await this.refreshPinnedTabs();
       gZenUIManager.showToast('zen-pinned-tab-replaced');
     }
 
@@ -482,7 +475,7 @@
         return;
       }
       this.onLocationChange(browser);
-      await this._refreshPinnedTabs();
+      await this.refreshPinnedTabs();
     }
 
     async _removePinnedAttributes(tab, isClosing = false) {
@@ -508,7 +501,7 @@
           tab.setAttribute('zen-workspace-id', workspace.uuid);
         }
       }
-      await this._refreshPinnedTabs();
+      await this.refreshPinnedTabs();
       tab.dispatchEvent(
         new CustomEvent('ZenPinnedTabRemoved', {
           detail: { tab },
@@ -624,7 +617,7 @@
         // Remove everything except the entry we want to keep
         state.entries = [state.entries[foundEntryIndex]];
       }
-      state.image = pin.iconUrl || null;
+      state.image ||= pin.iconUrl || null;
       state.index = 0;
 
       SessionStore.setTabState(tab, state);
@@ -753,29 +746,18 @@
 
       const element = window.MozXULElement.parseXULToFragment(`
             <menuitem id="context_zen-add-essential"
-                      data-lazy-l10n-id="tab-context-zen-add-essential"
+                      data-l10n-id="tab-context-zen-add-essential"
+                      data-l10n-args='{"num": "0"}'
                       hidden="true"
-                      command="cmd_zenAddToEssentials"/>
+                      disabled="true"
+                      command="cmd_contextZenAddToEssentials"/>
             <menuitem id="context_zen-remove-essential"
                       data-lazy-l10n-id="tab-context-zen-remove-essential"
                       hidden="true"
-                      command="cmd_zenRemoveFromEssentials"/>
+                      command="cmd_contextZenRemoveFromEssentials"/>
         `);
 
       document.getElementById('context_pinTab')?.before(element);
-    }
-
-    // TODO: remove this as it's not possible to know the base pinned url any more as it's now stored in tab state
-    resetPinnedTabData(tabData) {
-      if (
-        lazy.zenPinnedTabRestorePinnedTabsToPinnedUrl &&
-        tabData.pinned &&
-        tabData.zenPinnedEntry
-      ) {
-        tabData.entries = [JSON.parse(tabData.zenPinnedEntry)];
-        tabData.image = tabData.zenPinnedIcon;
-        tabData.index = 0;
-      }
     }
 
     updatePinnedTabContextMenu(contextTab) {
@@ -788,9 +770,13 @@
         !isVisible || !contextTab.getAttribute('zen-pin-id');
       document.getElementById('context_zen-replace-pinned-url-with-current').hidden = !isVisible;
       document.getElementById('context_zen-add-essential').hidden =
-        contextTab.getAttribute('zen-essential') ||
-        !!contextTab.group ||
-        !this.canEssentialBeAdded(contextTab);
+        contextTab.getAttribute('zen-essential') || !!contextTab.group;
+      document.l10n.setArgs(document.getElementById('context_zen-add-essential'), {
+        num: gBrowser._numZenEssentials,
+      });
+      document
+        .getElementById('cmd_contextZenAddToEssentials')
+        .setAttribute('disabled', !this.canEssentialBeAdded(contextTab));
       document.getElementById('context_zen-remove-essential').hidden =
         !contextTab.getAttribute('zen-essential');
       document.getElementById('context_unpinTab').hidden =
@@ -971,7 +957,7 @@
       const uuid = tab.getAttribute('zen-pin-id');
       await ZenPinnedTabsStorage.updatePinTitle(uuid, newTitle, isEdited, notifyObservers);
 
-      await this._refreshPinnedTabs();
+      await this.refreshPinnedTabs();
 
       const browsers = Services.wm.getEnumerator('navigator:browser');
 
@@ -1123,8 +1109,4 @@
   }
 
   window.gZenPinnedTabManager = new ZenPinnedTabManager();
-
-  gZenPinnedTabManager.promisePinnedCacheInitialized = new Promise((resolve) => {
-    gZenPinnedTabManager._resolveInitializedPinnedCache = resolve;
-  });
 }

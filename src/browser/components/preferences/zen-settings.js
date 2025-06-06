@@ -131,6 +131,11 @@ var gZenMarketplaceManager = {
     return this._modsList;
   },
 
+  _triggerBuildUpdateWithoutRebuild() {
+    this._doNotRebuildModsList = true;
+    gZenMods.triggerModsUpdate();
+  },
+
   async removeMod(modId) {
     await gZenMods.removeMod(modId);
 
@@ -140,20 +145,13 @@ var gZenMarketplaceManager = {
   async disableMod(modId) {
     await gZenMods.disableMod(modId);
 
-    this._doNotRebuildModsList = true;
-    gZenMods.triggerModsUpdate();
+    this._triggerBuildUpdateWithoutRebuild();
   },
 
   async enableMod(modId) {
     await gZenMods.enableMod(modId);
 
-    this._doNotRebuildModsList = true;
-    gZenMods.triggerModsUpdate();
-  },
-
-  _triggerBuildUpdateWithoutRebuild() {
-    this._doNotRebuildModsList = true;
-    gZenMods.triggerModsUpdate();
+    this._triggerBuildUpdateWithoutRebuild();
   },
 
   async _importThemes() {
@@ -1046,9 +1044,12 @@ var gZenCKSSettings = {
 
     input.classList.remove(`${ZEN_CKS_INPUT_FIELD_CLASS}-not-set`);
 
-    // This is because on some OSs (windows/macos mostly) the key is not the same as the keycode
-    // e.g. CTRL+ALT+3 may be displayed as the euro sign
-    let shortcut = event.key;
+    // First, try to read the *physical* key via event.code.
+    // If event.code is like "KeyS", "KeyA", ..., strip off "Key" → "S".
+    // Otherwise, fall back to event.key (e.g. "F5", "Enter", etc.).
+    let shortcut;
+    if (event.code && event.code.startsWith('Key')) shortcut = event.code.slice(3);
+    else shortcut = event.key;
 
     shortcut = shortcut.replace(/Ctrl|Control|Shift|Alt|Option|Cmd|Meta/, ''); // Remove all modifiers
 
