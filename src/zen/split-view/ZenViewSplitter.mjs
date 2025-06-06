@@ -103,7 +103,7 @@ class ZenSplitViewLinkDrop {
     content.setAttribute('flex', '1');
 
     const text = document.createXULElement('description');
-    text.setAttribute('value', 'Drop link to split'); // Localization! data-l10n-id
+    text.setAttribute('data-l10n-id', 'zen-drop-link-zone-label');
 
     content.appendChild(text);
     this._linkDropZone.appendChild(content);
