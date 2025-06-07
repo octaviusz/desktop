@@ -148,6 +148,10 @@ class ZenSplitViewLinkDrop {
 
     const uriString = dt.getData(matchedType).trim();
 
+    if (!uriString) {
+      return null;
+    }
+
     const info = Services.uriFixup.getFixupURIInfo(uriString, fixupFlags);
 
     if (!info || !info.fixedURI) {
