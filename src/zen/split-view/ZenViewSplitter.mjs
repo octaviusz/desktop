@@ -66,6 +66,7 @@ class SplitNode extends SplitLeafNode {
 class ZenSplitViewLinkDrop {
   #zenViewSplitter;
   _linkDropZone = null;
+  _lastSplitSide = "right";
 
   #handleLinkDragEnter;
   #handleLinkDragLeave;
@@ -271,11 +272,11 @@ class ZenSplitViewLinkDrop {
   }
 
   _createOrUpdateSplitViewWithSide(currentTab, newTab, linkDropSide) {
-    const SIDES = ['left', 'right', 'top', 'bottom'];
     const groupIndex = this.#zenViewSplitter._data.findIndex((group) =>
       group.tabs.includes(currentTab)
     );
 
+    // Add to existing split view group
     if (groupIndex > -1) {
       const group = this.#zenViewSplitter._data[groupIndex];
 
@@ -289,9 +290,13 @@ class ZenSplitViewLinkDrop {
         group.tabs.push(newTab);
 
         const targetNode = this.#zenViewSplitter.getSplitNodeFromTab(currentTab);
+        const SIDES = ['left', 'right', 'top', 'bottom'];
         const isValidSide = SIDES.includes(linkDropSide);
 
+        // If targetNode and split side are valid we perform adding a new tab next to the current tab
         if (targetNode && isValidSide) {
+          this._lastSplitSide = linkDropSide;
+
           this.#zenViewSplitter.splitIntoNode(
             targetNode,
             new SplitLeafNode(newTab, 50),
@@ -299,8 +304,10 @@ class ZenSplitViewLinkDrop {
             0.5
           );
         } else {
+          // If we can't determine the side, add the tab considering the previous side
+          const shouldPrepend = ['left', 'top'].includes(this._lastSplitSide);
           const parentNode = targetNode?.parent || group.layoutTree;
-          this.#zenViewSplitter.addTabToSplit(newTab, parentNode, false);
+          this.#zenViewSplitter.addTabToSplit(newTab, parentNode, shouldPrepend);
         }
 
         this.#zenViewSplitter.activateSplitView(group, true);
@@ -315,16 +322,21 @@ class ZenSplitViewLinkDrop {
       bottom: { tabs: [currentTab, newTab], gridType: 'hsep', initialIndex: 1 },
     };
 
+
+    // If linkDropSide is invalid should use the default "vsep"
+    const defaultConfig = {
+      tabs: [currentTab, newTab],
+      gridType: 'vsep',
+      initialIndex: 1,
+    }
+
     const {
       tabs: tabsToSplit,
       gridType,
       initialIndex,
-    } = splitConfig[linkDropSide] || {
-      // If linkDropSide is invalid should use the default "vsep"
-      tabs: [currentTab, newTab],
-      gridType: 'vsep',
-      initialIndex: 1,
-    };
+    } = splitConfig[linkDropSide] || defaultConfig;
+
+    this._lastSplitSide = linkDropSide;
 
     this.#zenViewSplitter.splitTabs(tabsToSplit, gridType, initialIndex);
   }
