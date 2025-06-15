@@ -300,45 +300,48 @@ class ZenSplitViewLinkDrop {
       group.tabs.includes(currentTab)
     );
 
-    // Add to existing split view group
     if (groupIndex > -1) {
-      const group = this.#zenViewSplitter._data[groupIndex];
+      this._addToExistingGroup(groupIndex, currentTab, newTab, linkDropSide);
+    } else {
+      this._createNewSplitGroup(currentTab, newTab, linkDropSide);
+    }
+  }
 
-      const splitViewGroup = this.#zenViewSplitter._getSplitViewGroup(group.tabs);
-      if (splitViewGroup && newTab.group !== splitViewGroup) {
-        this.#zenViewSplitter._moveTabsToContainer([newTab], currentTab);
-        gBrowser.moveTabToGroup(newTab, splitViewGroup);
-      }
+  _addToExistingGroup(groupIndex, currentTab, newTab, linkDropSide) {
+    const group = this.#zenViewSplitter._data[groupIndex];
+    const splitViewGroup = this.#zenViewSplitter._getSplitViewGroup(group.tabs);
 
-      if (!group.tabs.includes(newTab)) {
-        group.tabs.push(newTab);
-
-        const targetNode = this.#zenViewSplitter.getSplitNodeFromTab(currentTab);
-        const SIDES = ['left', 'right', 'top', 'bottom'];
-        const isValidSide = SIDES.includes(linkDropSide);
-
-        // If targetNode and split side are valid we perform adding a new tab next to the current tab
-        if (targetNode && isValidSide) {
-          this._lastSplitSide = linkDropSide;
-
-          this.#zenViewSplitter.splitIntoNode(
-            targetNode,
-            new SplitLeafNode(newTab, 50),
-            linkDropSide,
-            0.5
-          );
-        } else {
-          // If we can't determine the side, add the tab considering the previous side
-          const shouldPrepend = ['left', 'top'].includes(this._lastSplitSide);
-          const parentNode = targetNode?.parent || group.layoutTree;
-          this.#zenViewSplitter.addTabToSplit(newTab, parentNode, shouldPrepend);
-        }
-
-        this.#zenViewSplitter.activateSplitView(group, true);
-      }
-      return;
+    if (splitViewGroup && newTab.group !== splitViewGroup) {
+      this.#zenViewSplitter._moveTabsToContainer([newTab], currentTab);
+      gBrowser.moveTabToGroup(newTab, splitViewGroup);
     }
 
+    if (!group.tabs.includes(newTab)) {
+      group.tabs.push(newTab);
+
+      const targetNode = this.#zenViewSplitter.getSplitNodeFromTab(currentTab);
+      const SIDES = ['left', 'right', 'top', 'bottom'];
+      const isValidSide = SIDES.includes(linkDropSide);
+
+      if (targetNode && isValidSide) {
+        this._lastSplitSide = linkDropSide;
+        this.#zenViewSplitter.splitIntoNode(
+          targetNode,
+          new SplitLeafNode(newTab, 50),
+          linkDropSide,
+          0.5
+        );
+      } else {
+        const shouldPrepend = ['left', 'top'].includes(this._lastSplitSide);
+        const parentNode = targetNode?.parent || group.layoutTree;
+        this.#zenViewSplitter.addTabToSplit(newTab, parentNode, shouldPrepend);
+      }
+
+      this.#zenViewSplitter.activateSplitView(group, true);
+    }
+  }
+
+  _createNewSplitGroup(currentTab, newTab, linkDropSide) {
     const splitConfig = {
       left: { tabs: [newTab, currentTab], gridType: 'vsep', initialIndex: 0 },
       right: { tabs: [currentTab, newTab], gridType: 'vsep', initialIndex: 1 },
@@ -346,7 +349,6 @@ class ZenSplitViewLinkDrop {
       bottom: { tabs: [currentTab, newTab], gridType: 'hsep', initialIndex: 1 },
     };
 
-    // If linkDropSide is invalid should use the default "vsep"
     const defaultConfig = {
       tabs: [currentTab, newTab],
       gridType: 'vsep',
@@ -360,7 +362,6 @@ class ZenSplitViewLinkDrop {
     } = splitConfig[linkDropSide] || defaultConfig;
 
     this._lastSplitSide = linkDropSide;
-
     this.#zenViewSplitter.splitTabs(tabsToSplit, gridType, initialIndex);
   }
 }
