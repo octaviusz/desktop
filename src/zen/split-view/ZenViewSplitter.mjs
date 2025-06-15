@@ -108,34 +108,35 @@ class ZenSplitViewLinkDrop {
     content.appendChild(text);
     this._linkDropZone.appendChild(content);
 
-    this._linkDropZone.addEventListener('dragover', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      event.dataTransfer.dropEffect = 'link';
-
-      clearTimeout(this._linkDropTimer);
-      if (!this._linkDropZone.hasAttribute('has-focus')) {
-        this._linkDropZone.setAttribute('has-focus', 'true');
-      }
-    });
-
-    this._linkDropZone.addEventListener('dragleave', (event) => {
-      event.stopPropagation();
-      if (!this._linkDropZone.contains(event.relatedTarget)) {
-        this._linkDropZone.removeAttribute('has-focus');
-
-        this._linkDropTimer = setTimeout(() => {
-          if (!this._linkDropZone.hasAttribute('has-focus')) {
-            this._removeLinkDropZone();
-          }
-        }, this._linkDropTimeout);
-      }
-    });
-
+    this._linkDropZone.addEventListener('dragover', this._handleDragOver.bind(this));
+    this._linkDropZone.addEventListener('dragleave', this._handleDragLeave.bind(this));
     this._linkDropZone.addEventListener('drop', this._handleDropForSplit.bind(this));
 
     const tabBox = document.getElementById('tabbrowser-tabbox');
     tabBox.appendChild(this._linkDropZone);
+  }
+  _handleDragOver(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.dataTransfer.dropEffect = 'link';
+
+    clearTimeout(this._linkDropTimer);
+    if (!this._linkDropZone.hasAttribute('has-focus')) {
+      this._linkDropZone.setAttribute('has-focus', 'true');
+    }
+  }
+
+  _handleDragLeave(event) {
+    event.stopPropagation();
+    if (!this._linkDropZone.contains(event.relatedTarget)) {
+      this._linkDropZone.removeAttribute('has-focus');
+
+      this._linkDropTimer = setTimeout(() => {
+        if (!this._linkDropZone.hasAttribute('has-focus')) {
+          this._removeLinkDropZone();
+        }
+      }, this._linkDropTimeout);
+    }
   }
   _removeLinkDropZone() {
     clearTimeout(this._linkDropTimer);
