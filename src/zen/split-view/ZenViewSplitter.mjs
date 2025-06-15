@@ -66,7 +66,9 @@ class SplitNode extends SplitLeafNode {
 class ZenSplitViewLinkDrop {
   #zenViewSplitter;
   _linkDropZone = null;
-  _lastSplitSide = "right";
+  _linkDropTimer = null;
+  _linkDropTimeout = Services.prefs.getIntPref('zen.splitView.link-drop-timeout', 1000);
+  _lastSplitSide = 'right';
 
   #handleLinkDragEnter;
   #handleLinkDragLeave;
@@ -110,6 +112,8 @@ class ZenSplitViewLinkDrop {
       event.preventDefault();
       event.stopPropagation();
       event.dataTransfer.dropEffect = 'link';
+
+      clearTimeout(this._linkDropTimer);
       if (!this._linkDropZone.hasAttribute('has-focus')) {
         this._linkDropZone.setAttribute('has-focus', 'true');
       }
@@ -119,6 +123,12 @@ class ZenSplitViewLinkDrop {
       event.stopPropagation();
       if (!this._linkDropZone.contains(event.relatedTarget)) {
         this._linkDropZone.removeAttribute('has-focus');
+
+        this._linkDropTimer = setTimeout(() => {
+          if (!this._linkDropZone.hasAttribute('has-focus')) {
+            this._removeLinkDropZone();
+          }
+        }, this._linkDropTimeout);
       }
     });
 
@@ -128,6 +138,8 @@ class ZenSplitViewLinkDrop {
     tabBox.appendChild(this._linkDropZone);
   }
   _removeLinkDropZone() {
+    clearTimeout(this._linkDropTimer);
+
     if (this._linkDropZone) {
       this._linkDropZone.remove();
       this._linkDropZone = null;
@@ -163,6 +175,9 @@ class ZenSplitViewLinkDrop {
   }
 
   _handleLinkDragEnter(event) {
+    event.preventDefault();
+    event.stopPropagation();
+
     // If rearrangeViewEnabled - don't do anything
     if (this.#zenViewSplitter.rearrangeViewEnabled) {
       return;
@@ -183,11 +198,16 @@ class ZenSplitViewLinkDrop {
 
     this._createLinkDropZone();
 
-    event.preventDefault();
-    event.stopPropagation();
+    this._linkDropTimer = setTimeout(() => {
+      if (!this._linkDropZone.hasAttribute('has-focus')) {
+        this._removeLinkDropZone();
+      }
+    }, this._linkDropTimeout);
   }
 
   _handleLinkDragLeave(event) {
+    clearTimeout(this._linkDropTimer);
+
     if (
       event.target === document.documentElement ||
       (event.clientX <= 0 && event.clientY <= 0) ||
@@ -202,15 +222,18 @@ class ZenSplitViewLinkDrop {
 
   _handleLinkDragDrop(event) {
     if (!this._linkDropZone || !this._linkDropZone.contains(event.target)) {
+      clearTimeout(this._linkDropTimer);
       this._removeLinkDropZone();
     }
   }
 
   _handleLinkDragEnd(event) {
+    clearTimeout(this._linkDropTimer);
     this._removeLinkDropZone();
   }
 
   _handleDropForSplit(event) {
+    clearTimeout(this._linkDropTimer);
     let linkDropZone = this._linkDropZone;
     event.preventDefault();
     event.stopPropagation();
@@ -322,13 +345,12 @@ class ZenSplitViewLinkDrop {
       bottom: { tabs: [currentTab, newTab], gridType: 'hsep', initialIndex: 1 },
     };
 
-
     // If linkDropSide is invalid should use the default "vsep"
     const defaultConfig = {
       tabs: [currentTab, newTab],
       gridType: 'vsep',
       initialIndex: 1,
-    }
+    };
 
     const {
       tabs: tabsToSplit,
