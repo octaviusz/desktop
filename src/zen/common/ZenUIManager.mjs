@@ -34,8 +34,6 @@ var gZenUIManager = {
       true
     );
 
-    gURLBar._zenTrimURL = this.urlbarTrim.bind(this);
-
     document.addEventListener('mousedown', this.handleMouseDown.bind(this), true);
 
     ChromeUtils.defineLazyGetter(this, 'motion', () => {
@@ -48,6 +46,8 @@ var gZenUIManager = {
       return document.getElementById('zen-toast-container');
     });
 
+    gURLBar._zenTrimURL = this.urlbarTrim.bind(this);
+
     new ResizeObserver(this.updateTabsToolbar.bind(this)).observe(
       document.getElementById('TabsToolbar')
     );
@@ -59,7 +59,7 @@ var gZenUIManager = {
       )
     ).observe(gNavToolbox);
 
-    SessionStore.promiseAllWindowsRestored.then(() => {
+    gZenWorkspaces.promiseInitialized.finally(() => {
       this._hasLoadedDOM = true;
       this.updateTabsToolbar();
     });
@@ -67,6 +67,7 @@ var gZenUIManager = {
     window.addEventListener('TabClose', this.onTabClose.bind(this));
 
     gZenMediaController.init();
+    gZenVerticalTabsManager.init();
   },
 
   handleMouseDown(event) {
@@ -82,7 +83,7 @@ var gZenUIManager = {
       '--zen-urlbar-top',
       `${window.innerHeight / 2 - Math.max(kUrlbarHeight, gURLBar.textbox.getBoundingClientRect().height) / 2}px`
     );
-    gURLBar.textbox.style.setProperty('--zen-urlbar-width', `${window.innerWidth / 2}px`);
+    gURLBar.textbox.style.setProperty('--zen-urlbar-width', `${window.innerWidth / 3}px`);
     gZenVerticalTabsManager.actualWindowButtons.removeAttribute('zen-has-hover');
     gZenVerticalTabsManager.recalculateURLBarHeight();
     if (!this._preventToolbarRebuild) {
@@ -156,7 +157,9 @@ var gZenUIManager = {
       if (
         !el.contains(showEvent.explicitOriginalTarget) ||
         (showEvent.explicitOriginalTarget instanceof Element &&
-          showEvent.explicitOriginalTarget?.closest('panel'))
+          showEvent.explicitOriginalTarget?.closest('panel')) ||
+        // See bug #7590: Ignore menupopup elements opening
+        showEvent.explicitOriginalTarget.tagName === 'menupopup'
       ) {
         continue;
       }
@@ -452,7 +455,7 @@ var gZenUIManager = {
     const wrapper = document.createXULElement('hbox');
     const element = document.createXULElement('vbox');
     const label = document.createXULElement('label');
-    document.l10n.setAttributes(label, messageId, options);
+    document.l10n.setAttributes(label, messageId, options.l10nArgs);
     element.appendChild(label);
     if (options.descriptionId) {
       const description = document.createXULElement('label');
@@ -598,7 +601,7 @@ var gZenVerticalTabsManager = {
   },
 
   animateTab(aTab) {
-    if (!gZenUIManager.motion || !aTab || !gZenUIManager._hasLoadedDOM) {
+    if (!gZenUIManager.motion || !aTab || !gZenUIManager._hasLoadedDOM || !aTab.isConnected) {
       return;
     }
     // get next visible tab
@@ -623,7 +626,11 @@ var gZenVerticalTabsManager = {
             easing: 'ease-out',
           }
         )
-        .then(() => {
+        .then(() => {})
+        .catch((err) => {
+          console.error(err);
+        })
+        .finally(() => {
           aTab.style.removeProperty('margin-bottom');
           aTab.style.removeProperty('transform');
           aTab.style.removeProperty('opacity');
@@ -639,7 +646,11 @@ var gZenVerticalTabsManager = {
             easing: 'ease-out',
           }
         )
-        .then(() => {
+        .then(() => {})
+        .catch((err) => {
+          console.error(err);
+        })
+        .finally(() => {
           aTab.querySelector('.tab-stack').style.removeProperty('filter');
         });
     } catch (e) {
@@ -746,7 +757,9 @@ var gZenVerticalTabsManager = {
       document.getElementById('urlbar').style.setProperty('--urlbar-height', '32px');
     } else if (gURLBar.getAttribute('breakout-extend') !== 'true') {
       try {
-        gURLBar.zenUpdateLayoutBreakout();
+        gURLBar.zenUpdateLayoutBreakout().then(() => {
+          gURLBar.valueFormatter._formatURL();
+        });
       } catch (e) {
         console.warn(e);
       }
@@ -956,10 +969,21 @@ var gZenVerticalTabsManager = {
         gZenCompactModeManager.getAndApplySidebarWidth();
       }
       gZenUIManager.updateTabsToolbar();
+      this.rebuildURLBarMenus();
     } catch (e) {
       console.error(e);
     }
     this._isUpdating = false;
+  },
+
+  rebuildURLBarMenus() {
+    if (document.getElementById('paste-and-go')) {
+      return;
+    }
+    gURLBar._initCopyCutController();
+    gURLBar._initPasteAndGo();
+    gURLBar._initStripOnShare();
+    gURLBar._updatePlaceholderFromDefaultEngine();
   },
 
   rebuildAreas() {
@@ -1069,7 +1093,9 @@ var gZenVerticalTabsManager = {
       !gZenVerticalTabsManager._prefsSidebarExpanded
     )
       return;
-    this._tabEdited = event.target.closest('.tabbrowser-tab');
+    this._tabEdited =
+      event.target.closest('.tabbrowser-tab') ||
+      event.target.closest('.zen-current-workspace-indicator-name');
     if (
       !this._tabEdited ||
       ((!this._tabEdited.pinned || this._tabEdited.hasAttribute('zen-essential')) && isTab)
@@ -1077,7 +1103,7 @@ var gZenVerticalTabsManager = {
       this._tabEdited = null;
       return;
     }
-    event.stopPropagation();
+    event.stopPropagation?.();
     document.documentElement.setAttribute('zen-renaming-tab', 'true');
     const label = isTab ? this._tabEdited.querySelector('.tab-label-container') : this._tabEdited;
     label.classList.add('tab-label-container-editing');
@@ -1088,15 +1114,17 @@ var gZenVerticalTabsManager = {
       `);
       label.after(container);
     }
-    const containerHtml = isTab
-      ? this._tabEdited.querySelector('.tab-editor-container')
-      : this._tabEdited.parentNode;
     const input = document.createElement('input');
     input.id = 'tab-label-input';
     input.value = isTab ? this._tabEdited.label : this._tabEdited.textContent;
     input.addEventListener('keydown', this.renameTabKeydown.bind(this));
 
-    containerHtml.appendChild(input);
+    if (isTab) {
+      const containerHtml = this._tabEdited.querySelector('.tab-editor-container');
+      containerHtml.appendChild(input);
+    } else {
+      this._tabEdited.after(input);
+    }
     input.focus();
     input.select();
 

@@ -39,14 +39,6 @@
         document.getElementById('PanelUI-zen-gradient-generator-custom-list')
       );
 
-      XPCOMUtils.defineLazyPreferenceGetter(
-        this,
-        'allowWorkspaceColors',
-        'zen.theme.color-prefs.use-workspace-colors',
-        true,
-        this.onDarkModeChange.bind(this)
-      );
-
       this.panel.addEventListener('popupshowing', this.handlePanelOpen.bind(this));
       this.panel.addEventListener('popuphidden', this.handlePanelClose.bind(this));
       this.panel.addEventListener('command', this.handlePanelCommand.bind(this));
@@ -77,16 +69,20 @@
     initContextMenu() {
       const menu = window.MozXULElement.parseXULToFragment(`
         <menuitem id="zenToolbarThemePicker"
-                  data-lazy-l10n-id="zen-workspaces-change-gradient"
+                  data-lazy-l10n-id="zen-workspaces-change-theme"
                   command="cmd_zenOpenZenThemePicker"/>
       `);
       document.getElementById('toolbar-context-customize').before(menu);
     }
 
     openThemePicker(event) {
+      const fromForm = event.explicitOriginalTarget?.classList?.contains(
+        'zen-workspace-creation-edit-theme-button'
+      );
       PanelMultiView.openPopup(this.panel, this.toolbox, {
         position: 'topright topleft',
         triggerEvent: event,
+        y: fromForm ? -160 : 0,
       });
     }
 
@@ -977,9 +973,14 @@
         texture,
       };
     }
+
     //TODO: add a better noise system that adds noise not just changes transparency
     updateNoise(texture) {
       document.documentElement.style.setProperty('--zen-grainy-background-opacity', texture);
+      document.documentElement.setAttribute(
+        'zen-show-grainy-background',
+        texture > 0 ? 'true' : 'false'
+      );
     }
 
     hexToRgb(hex) {
@@ -1106,9 +1107,14 @@
       let workspaceTheme = theme || workspace.theme;
 
       await this.foreachWindowAsActive(async (browser) => {
+        if (!browser.gZenThemePicker.promiseInitialized) {
+          return;
+        }
+
         if (browser.closing || (await browser.gZenThemePicker?.promiseInitialized)) {
           return;
         }
+
         // Do not rebuild if the workspace is not the same as the current one
         const windowWorkspace = await browser.gZenWorkspaces.getActiveWorkspace();
         if (windowWorkspace.uuid !== uuid && theme !== null) {

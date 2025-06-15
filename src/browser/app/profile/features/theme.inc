@@ -9,15 +9,14 @@ pref('zen.theme.gradient.show-custom-colors', false);
 pref('zen.theme.essentials-favicon-bg', true);
 
 #ifdef XP_MACOSX
-pref('zen.theme.border-radius', 10); // In pixels
+  pref('zen.theme.border-radius', 10); // In pixels
 #else
-pref('zen.theme.border-radius', 8); // In pixels
+  pref('zen.theme.border-radius', 8); // In pixels
 #endif
 
 #ifdef XP_MACOSX
-pref('zen.theme.acrylic-elements', false);
+  pref('zen.theme.acrylic-elements', false);
 #else
-pref('zen.theme.acrylic-elements', false);
+  pref('zen.theme.acrylic-elements', false);
 #endif
 
-pref('zen.theme.color-prefs.use-workspace-colors', true);

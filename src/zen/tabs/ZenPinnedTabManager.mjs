@@ -88,9 +88,7 @@
         } catch {}
       } else {
         if (tab.hasAttribute('zen-essential')) {
-          tab
-            .querySelector('.tab-background')
-            .style.setProperty('--zen-tab-icon', `url(${iconUrl})`);
+          tab.style.setProperty('--zen-essential-tab-icon', `url(${iconUrl})`);
         }
       }
       // TODO: work on this
@@ -126,17 +124,13 @@
     }
 
     get enabled() {
-      if (typeof this._enabled === 'undefined') {
-        this._enabled = !(
-          PrivateBrowsingUtils.isWindowPrivate(window) ||
-          document.documentElement.getAttribute('chromehidden')?.includes('toolbar') ||
-          document.documentElement.getAttribute('chromehidden')?.includes('menubar')
-        );
-      }
-      return this._enabled && !gZenWorkspaces.privateWindowOrDisabled;
+      return !gZenWorkspaces.privateWindowOrDisabled;
     }
 
     async refreshPinnedTabs({ init = false } = {}) {
+      if (!this.enabled) {
+        return;
+      }
       await ZenPinnedTabsStorage.promiseInitialized;
       await gZenWorkspaces.promiseSectionsInitialized;
       await this._initializePinsCache();
@@ -792,6 +786,7 @@
       if (!this.enabled) {
         return false;
       }
+      movingTabs = [...movingTabs];
       try {
         const pinnedTabsTarget =
           event.target.closest('.zen-workspace-pinned-tabs-section') ||
