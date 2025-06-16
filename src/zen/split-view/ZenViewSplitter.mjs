@@ -114,13 +114,25 @@ class ZenSplitViewLinkDrop {
 
     const tabBox = document.getElementById('tabbrowser-tabbox');
     tabBox.appendChild(this._linkDropZone);
+
+    gZenUIManager.motion.animate(this._linkDropZone, {
+      opacity: [0, 1],
+      x: ['-50%', '-50%'],
+      y: ['-40%', '-50%'],
+      scale: [0.1, 1],
+      duration: 0.15,
+      ease: [0.16, 1, 0.3, 1],
+    });
   }
   _handleDragOver(event) {
     event.preventDefault();
     event.stopPropagation();
     event.dataTransfer.dropEffect = 'link';
-
     clearTimeout(this._linkDropTimer);
+
+    const side = this._calculateDropSide(event, this._linkDropZone);
+    this._linkDropZone.setAttribute('drop-side', side);
+
     if (!this._linkDropZone.hasAttribute('has-focus')) {
       this._linkDropZone.setAttribute('has-focus', 'true');
     }
@@ -129,6 +141,7 @@ class ZenSplitViewLinkDrop {
   _handleDragLeave(event) {
     event.stopPropagation();
     if (!this._linkDropZone.contains(event.relatedTarget)) {
+      this._linkDropZone.removeAttribute('drop-side');
       this._linkDropZone.removeAttribute('has-focus');
 
       this._linkDropTimer = setTimeout(() => {
@@ -139,12 +152,22 @@ class ZenSplitViewLinkDrop {
     }
   }
   _removeLinkDropZone() {
+    if (!this._linkDropZone) return;
     clearTimeout(this._linkDropTimer);
 
-    if (this._linkDropZone) {
-      this._linkDropZone.remove();
-      this._linkDropZone = null;
-    }
+    gZenUIManager.motion
+      .animate(this._linkDropZone, {
+        opacity: [1, 0],
+        x: ['-50%', '-50%'],
+        y: ['-40%', '-50%'],
+        scale: [1, 0.1],
+        duration: 0.15,
+        ease: [0.16, 1, 0.3, 1],
+      })
+      .then(() => {
+        this._linkDropZone.remove();
+        this._linkDropZone = null;
+      });
   }
 
   _validateURI(dataTransfer) {
