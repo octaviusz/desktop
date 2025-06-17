@@ -66,31 +66,19 @@ class SplitNode extends SplitLeafNode {
 class ZenSplitViewLinkDrop {
   #zenViewSplitter;
   _linkDropZone = null;
-  _linkDropTimer = null;
-  _linkDropTimeout = Services.prefs.getIntPref('zen.splitView.link-drop-timeout', 1000);
   _lastSplitSide = 'right';
-
-  #handleLinkDragEnter;
-  #handleLinkDragLeave;
-  #handleLinkDragDrop;
-  #handleLinkDragEnd;
 
   constructor(zenViewSplitter) {
     this.#zenViewSplitter = zenViewSplitter;
   }
 
   init() {
-    this.#handleLinkDragEnter = this._handleLinkDragEnter.bind(this);
-    this.#handleLinkDragLeave = this._handleLinkDragLeave.bind(this);
-    this.#handleLinkDragDrop = this._handleLinkDragDrop.bind(this);
-    this.#handleLinkDragEnd = this._handleLinkDragEnd.bind(this);
-
     const tabBox = document.getElementById('tabbrowser-tabbox');
 
-    tabBox.addEventListener('dragenter', this.#handleLinkDragEnter, true);
-    tabBox.addEventListener('dragleave', this.#handleLinkDragLeave, false);
-    tabBox.addEventListener('drop', this.#handleLinkDragDrop, false);
-    tabBox.addEventListener('dragend', this.#handleLinkDragEnd, false);
+    tabBox.addEventListener('dragenter', this._handleLinkDragEnter.bind(this));
+    tabBox.addEventListener('dragleave', this._handleLinkDragLeave.bind(this));
+    tabBox.addEventListener('drop', this._handleLinkDragDrop.bind(this));
+    tabBox.addEventListener('dragend', this._handleLinkDragEnd.bind(this));
   }
 
   _createLinkDropZone() {
@@ -128,8 +116,6 @@ class ZenSplitViewLinkDrop {
     event.preventDefault();
     event.stopPropagation();
     event.dataTransfer.dropEffect = 'link';
-    clearTimeout(this._linkDropTimer);
-
     const side = this._calculateDropSide(event, this._linkDropZone);
     this._linkDropZone.setAttribute('drop-side', side);
 
@@ -143,17 +129,10 @@ class ZenSplitViewLinkDrop {
     if (!this._linkDropZone.contains(event.relatedTarget)) {
       this._linkDropZone.removeAttribute('drop-side');
       this._linkDropZone.removeAttribute('has-focus');
-
-      this._linkDropTimer = setTimeout(() => {
-        if (!this._linkDropZone.hasAttribute('has-focus')) {
-          this._removeLinkDropZone();
-        }
-      }, this._linkDropTimeout);
     }
   }
   _removeLinkDropZone() {
     if (!this._linkDropZone) return;
-    clearTimeout(this._linkDropTimer);
 
     gZenUIManager.motion
       .animate(this._linkDropZone, {
@@ -221,17 +200,9 @@ class ZenSplitViewLinkDrop {
     }
 
     this._createLinkDropZone();
-
-    this._linkDropTimer = setTimeout(() => {
-      if (!this._linkDropZone.hasAttribute('has-focus')) {
-        this._removeLinkDropZone();
-      }
-    }, this._linkDropTimeout);
   }
 
   _handleLinkDragLeave(event) {
-    clearTimeout(this._linkDropTimer);
-
     if (
       event.target === document.documentElement ||
       (event.clientX <= 0 && event.clientY <= 0) ||
@@ -246,18 +217,15 @@ class ZenSplitViewLinkDrop {
 
   _handleLinkDragDrop(event) {
     if (!this._linkDropZone || !this._linkDropZone.contains(event.target)) {
-      clearTimeout(this._linkDropTimer);
       this._removeLinkDropZone();
     }
   }
 
   _handleLinkDragEnd(event) {
-    clearTimeout(this._linkDropTimer);
     this._removeLinkDropZone();
   }
 
   _handleDropForSplit(event) {
-    clearTimeout(this._linkDropTimer);
     let linkDropZone = this._linkDropZone;
     event.preventDefault();
     event.stopPropagation();
@@ -279,10 +247,11 @@ class ZenSplitViewLinkDrop {
 
     const linkDropSide = this._calculateDropSide(event, linkDropZone);
 
-    this._createOrUpdateSplitViewWithSide(currentTab, newTab, linkDropSide);
+    this._dispatchSplitAction(currentTab, newTab, linkDropSide);
 
     this._removeLinkDropZone();
   }
+
   _calculateDropSide(event, linkDropZone) {
     const rect = linkDropZone.getBoundingClientRect();
     const x = event.clientX - rect.left;
@@ -290,9 +259,10 @@ class ZenSplitViewLinkDrop {
     const width = rect.width;
     const height = rect.height;
 
-    const edgeSizeRatio = 0.3; // 30% of the size, maybe increase to 35%
-    const hEdge = width * edgeSizeRatio;
-    const vEdge = height * edgeSizeRatio;
+    // Defines the size of the "active" zone near the edges (30%)
+    const EDGE_SIZE_RATIO = 0.3;
+    const hEdge = width * EDGE_SIZE_RATIO;
+    const vEdge = height * EDGE_SIZE_RATIO;
 
     const isInLeftEdge = x < hEdge;
     const isInRightEdge = x > width - hEdge;
@@ -300,11 +270,14 @@ class ZenSplitViewLinkDrop {
     const isInBottomEdge = y > height - vEdge;
 
     if (isInTopEdge) {
-      if (isInLeftEdge && x / width < y / height) return 'left'; // More left in angle
-      if (isInRightEdge && (width - x) / width < y / height) return 'right'; // More right in angle
+      // If the cursor is in a top corner, determine which side it's proportionally "closer" to
+      // This comparison decides if it's a side drop or a top drop
+      if (isInLeftEdge && x / width < y / height) return 'left';
+      if (isInRightEdge && (width - x) / width < y / height) return 'right';
       return 'top';
     }
     if (isInBottomEdge) {
+      // Similar logic for the bottom corners
       if (isInLeftEdge && x / width < (height - y) / height) return 'left';
       if (isInRightEdge && (width - x) / width < (height - y) / height) return 'right';
       return 'bottom';
@@ -315,10 +288,12 @@ class ZenSplitViewLinkDrop {
     if (isInRightEdge) {
       return 'right';
     }
+
+    // If the cursor is not in any edge zone, it's considered the center
     return 'center';
   }
 
-  _createOrUpdateSplitViewWithSide(currentTab, newTab, linkDropSide) {
+  _dispatchSplitAction(currentTab, newTab, linkDropSide) {
     const groupIndex = this.#zenViewSplitter._data.findIndex((group) =>
       group.tabs.includes(currentTab)
     );
@@ -343,20 +318,27 @@ class ZenSplitViewLinkDrop {
       group.tabs.push(newTab);
 
       const targetNode = this.#zenViewSplitter.getSplitNodeFromTab(currentTab);
-      const SIDES = ['left', 'right', 'top', 'bottom'];
-      const isValidSide = SIDES.includes(linkDropSide);
+      const parentNode = targetNode?.parent || group.layoutTree;
+      const isValidSide = ['left', 'right', 'top', 'bottom'].includes(linkDropSide);
 
       if (targetNode && isValidSide) {
         this._lastSplitSide = linkDropSide;
+
         this.#zenViewSplitter.splitIntoNode(
           targetNode,
-          new SplitLeafNode(newTab, 50),
+          new SplitLeafNode(newTab),
           linkDropSide,
           0.5
         );
+
+        // Rebalance sizes
+        const newSize = 100 / parentNode.children.length;
+        parentNode.children.forEach((child) => {
+          child.sizeInParent = newSize;
+        });
       } else {
+        // If linkDropSide is center, then open a new tab at the start/end
         const shouldPrepend = ['left', 'top'].includes(this._lastSplitSide);
-        const parentNode = targetNode?.parent || group.layoutTree;
         this.#zenViewSplitter.addTabToSplit(newTab, parentNode, shouldPrepend);
       }
 
