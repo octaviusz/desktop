@@ -34,7 +34,8 @@
 
   & toolbarbutton {
     margin: 0;
-    width: 25px;
+    width: 28px;
+    height: 28px;
     display: flex;
     justify-content: center;
     padding: 0 !important;
@@ -69,11 +70,6 @@
     &:hover,
     &[dragged='true']{
       background-color: var(--zen-toolbar-element-bg);
-    }
-
-    &[dragged='true'] {
-      outline: 1px solid var(--zen-colors-primary);
-      outline-offset: -1px;
     }
   }
 
@@ -142,7 +138,7 @@
 /* Mark workspaces indicator */
 .zen-current-workspace-indicator {
   padding: calc(2px + var(--tab-inline-padding) + var(--zen-toolbox-padding));
-  font-weight: 600;
+  font-weight: 500;
   position: relative;
   max-height: var(--zen-workspace-indicator-height);
   min-height: var(--zen-workspace-indicator-height);
@@ -164,7 +160,7 @@
     position: absolute;
     top: var(--zen-toolbox-padding);
     left: calc(var(--zen-toolbox-padding) + 2px);
-    width: calc(100% - var(--zen-toolbox-padding) * 2 - 4px);
+    width: calc(100% - var(--zen-toolbox-padding) * 3);
     height: calc(100% - var(--zen-toolbox-padding) * 2);
   }
 
@@ -198,7 +194,6 @@
   }
 
   .zen-current-workspace-indicator-name {
-    opacity: 0.5;
     display: block;
     white-space: nowrap;
     overflow: hidden;
@@ -207,12 +202,13 @@
   }
 
   .zen-workspaces-actions {
-    --toolbarbutton-inner-padding: 4px;
     margin-left: auto !important;
     opacity: 0;
     visibility: collapse;
     transition: opacity 0.1s;
     order: 5;
+    --toolbarbutton-inner-padding: 6px;
+    --tab-border-radius: 8px;
 
     :root[zen-renaming-tab='true'] & {
       display: none;

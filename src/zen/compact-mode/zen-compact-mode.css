@@ -328,17 +328,12 @@
       }
 
       & #titlebar,
-      & #zen-appcontent-wrapper,
-      & #zen-sidebar-web-panel-wrapper:has(#zen-sidebar-web-panel:not([pinned='true'])) {
+      & #zen-appcontent-wrapper {
         margin-top: var(--zen-element-separation) !important;
       }
 
       & #zen-appcontent-wrapper {
         z-index: 3 !important;
-      }
-
-      & #zen-sidebar-web-panel-wrapper:has(#zen-sidebar-web-panel[pinned='true']) {
-        margin-top: calc(var(--zen-element-separation) * 2) !important;
       }
 
       & #zen-appcontent-navbar-wrapper {

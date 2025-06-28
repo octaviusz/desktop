@@ -1,5 +1,5 @@
 {
-  class ZenWorkspaceCreation extends MozXULElement {
+  class nsZenWorkspaceCreation extends MozXULElement {
     #wasInCollapsedMode = false;
 
     promiseInitialized = new Promise((resolve) => {
@@ -119,7 +119,7 @@
         }
       }
 
-      for (const element of ZenWorkspaceCreation.elementsToDisable) {
+      for (const element of nsZenWorkspaceCreation.elementsToDisable) {
         const el = document.getElementById(element);
         if (el) {
           el.setAttribute('disabled', 'true');
@@ -336,5 +336,5 @@
     }
   }
 
-  customElements.define('zen-workspace-creation', ZenWorkspaceCreation);
+  customElements.define('zen-workspace-creation', nsZenWorkspaceCreation);
 }

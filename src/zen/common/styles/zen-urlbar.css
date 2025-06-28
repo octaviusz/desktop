@@ -66,7 +66,7 @@
   }
 
   &:hover #urlbar-background {
-    background-color: light-dark(rgba(89, 89, 89, 0.15), rgba(255, 255, 255, 0.2)) !important;
+    background-color: light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.2)) !important;
   }
 }
 
@@ -162,9 +162,10 @@
   }
 
   & #urlbar-background {
-    --zen-urlbar-background-base: light-dark(
-      hsl(0, 0%, 100%),
-      color-mix(in srgb, hsl(0, 0%, 5%) 80%, var(--zen-colors-primary) 20%)
+    --zen-urlbar-background-base: color-mix(
+      in srgb,
+      light-dark(hsl(0, 0%, 100%), hsl(0, 0%, 5%)) 80%,
+      var(--zen-colors-primary) 20%
     );
     @media -moz-pref('zen.theme.acrylic-elements') {
       --zen-urlbar-background-transparent: color-mix(
@@ -481,11 +482,14 @@ button.popup-notification-dropmarker {
   left: 50% !important;
 
   #urlbar-container:has(&) {
-    border-radius: 10px;
+    border-radius: var(--border-radius-medium);
     background: var(--toolbarbutton-hover-background);
+    height: var(--urlbar-height) !important;
+    margin-inline: 0.15rem !important;
     :root:not([zen-single-toolbar='true']) & {
       max-height: 32px !important;
-      min-height: unset;
+      min-height: unset !important;
+      margin-block: -1px !important;
     }
   }
 }
