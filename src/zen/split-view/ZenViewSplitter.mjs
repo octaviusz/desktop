@@ -326,7 +326,7 @@ class ZenSplitViewLinkDrop {
 
         this.#zenViewSplitter.splitIntoNode(
           targetNode,
-          new SplitLeafNode(newTab),
+          new nsSplitLeafNode(newTab),
           linkDropSide,
           0.5
         );
