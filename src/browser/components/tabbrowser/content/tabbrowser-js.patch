@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/tabbrowser.js b/browser/components/tabbrowser/content/tabbrowser.js
-index 37570c54b0..1b075923df 100644
+index 37570c54b0..7d578d737d 100644
 --- a/browser/components/tabbrowser/content/tabbrowser.js
 +++ b/browser/components/tabbrowser/content/tabbrowser.js
 @@ -413,11 +413,41 @@
@@ -341,45 +341,19 @@ index 37570c54b0..1b075923df 100644
            let { groupId } = tabData;
            const tabGroup = tabGroupWorkingData.get(groupId);
            // if a tab refers to a tab group we don't know, skip any group
-@@ -3633,14 +3719,30 @@
-             // if this is the first time encountering a tab group, create its
-             // DOM node once and place it in the tabs bar fragment
-             if (!tabGroup.node) {
--              tabGroup.node = this._createTabGroup(
--                tabGroup.stateData.id,
--                tabGroup.stateData.color,
--                tabGroup.stateData.collapsed,
+@@ -3637,7 +3723,10 @@
+                 tabGroup.stateData.id,
+                 tabGroup.stateData.color,
+                 tabGroup.stateData.collapsed,
 -                tabGroup.stateData.name
--              );
--              tabsFragment.appendChild(tabGroup.node);
-+              const nodeName = tabGroup.stateData.nodeName;
-+              let group = document.createXULElement(nodeName, { is: nodeName });
-+              group.id = tabGroup.stateData.id;
-+              group.collapsed = tabGroup.stateData.collapsed;
-+              group.color = tabGroup.stateData.color;
-+              group.label = tabGroup.stateData.name;
-+              group.wasCreatedByAdoption = tabGroup.stateData.isAdoptingGroup;
-+              group.pinned = tabGroup.stateData.pinned;
-+              // group.essential = tabGroup.stateData.essential;
-+              // group.splitView = tabGroup.stateData.splitView;
-+              tabGroup.node = group;
-+              tabsFragment.appendChild(group);
++                tabGroup.stateData.name,
++                tabGroup.stateData.pinned,
++                tabGroup.stateData.essential,
++                tabGroup.stateData.splitView,
+               );
+               tabsFragment.appendChild(tabGroup.node);
              }
-+              // tabGroup.node = this._createTabGroup(
-+              //   tabGroup.stateData.id,
-+              //   tabGroup.stateData.color,
-+              //   tabGroup.stateData.collapsed,
-+              //   tabGroup.stateData.name,
-+              //   tabGroup.stateData.pinned,
-+              //   tabGroup.stateData.essential,
-+              //   tabGroup.stateData.splitView,
-+              // );
-+              // tabsFragment.appendChild(tabGroup.node);
-+            // }
-           }
-         } else {
-           if (tab.hidden) {
-@@ -3685,9 +3787,23 @@
+@@ -3685,9 +3774,23 @@
        // to remove the old selected tab.
        if (tabToSelect) {
          let leftoverTab = this.selectedTab;
@@ -403,7 +377,7 @@ index 37570c54b0..1b075923df 100644
 
        if (tabs.length > 1 || !tabs[0].selected) {
          this._updateTabsAfterInsert();
-@@ -3882,7 +3998,7 @@
+@@ -3882,7 +3985,7 @@
        // Ensure we have an index if one was not provided.
        if (typeof elementIndex != "number" && typeof tabIndex != "number") {
          // Move the new tab after another tab if needed, to the end otherwise.
@@ -412,7 +386,7 @@ index 37570c54b0..1b075923df 100644
          if (
            !bulkOrderedOpen &&
            ((openerTab &&
-@@ -3905,7 +4021,7 @@
+@@ -3905,7 +4008,7 @@
            ) {
              elementIndex = Infinity;
            } else if (previousTab.visible) {
@@ -421,7 +395,7 @@ index 37570c54b0..1b075923df 100644
            } else if (previousTab == FirefoxViewHandler.tab) {
              elementIndex = 0;
            }
-@@ -3933,14 +4049,14 @@
+@@ -3933,14 +4036,14 @@
        }
        // Ensure index is within bounds.
        if (tab.pinned) {
@@ -440,7 +414,7 @@ index 37570c54b0..1b075923df 100644
 
        // Prevent a flash of unstyled content by setting up the tab content
        // and inherited attributes before appending it (see Bug 1592054):
-@@ -3948,7 +4064,7 @@
+@@ -3948,7 +4051,7 @@
 
        this.tabContainer._invalidateCachedTabs();
 
@@ -449,7 +423,7 @@ index 37570c54b0..1b075923df 100644
          if (this.isTab(itemAfter) && itemAfter.group == tabGroup) {
            // Place at the front of, or between tabs in, the same tab group
            this.tabContainer.insertBefore(tab, itemAfter);
-@@ -3981,6 +4097,7 @@
+@@ -3981,6 +4084,7 @@
        if (pinned) {
          this._updateTabBarForPinnedTabs();
        }
@@ -457,7 +431,7 @@ index 37570c54b0..1b075923df 100644
 
        TabBarVisibility.update();
      }
-@@ -4270,6 +4387,9 @@
+@@ -4270,6 +4374,9 @@
          return;
        }
 
@@ -467,7 +441,7 @@ index 37570c54b0..1b075923df 100644
        this.removeTabs(selectedTabs, { isUserTriggered, telemetrySource });
      }
 
-@@ -4526,6 +4646,7 @@
+@@ -4526,6 +4633,7 @@
          telemetrySource,
        } = {}
      ) {
@@ -475,7 +449,7 @@ index 37570c54b0..1b075923df 100644
        // When 'closeWindowWithLastTab' pref is enabled, closing all tabs
        // can be considered equivalent to closing the window.
        if (
-@@ -4615,6 +4736,7 @@
+@@ -4615,6 +4723,7 @@
          if (lastToClose) {
            this.removeTab(lastToClose, aParams);
          }
@@ -483,7 +457,7 @@ index 37570c54b0..1b075923df 100644
        } catch (e) {
          console.error(e);
        }
-@@ -4653,6 +4775,12 @@
+@@ -4653,6 +4762,12 @@
          aTab._closeTimeNoAnimTimerId = Glean.browserTabclose.timeNoAnim.start();
        }
 
@@ -496,7 +470,7 @@ index 37570c54b0..1b075923df 100644
        // Handle requests for synchronously removing an already
        // asynchronously closing tab.
        if (!animate && aTab.closing) {
-@@ -4667,7 +4795,9 @@
+@@ -4667,7 +4782,9 @@
        // frame created for it (for example, by updating the visually selected
        // state).
        let tabWidth = window.windowUtils.getBoundsWithoutFlushing(aTab).width;
@@ -507,7 +481,7 @@ index 37570c54b0..1b075923df 100644
        if (
          !this._beginRemoveTab(aTab, {
            closeWindowFastpath: true,
-@@ -4835,7 +4965,7 @@
+@@ -4835,7 +4952,7 @@
            closeWindowWithLastTab != null
              ? closeWindowWithLastTab
              : !window.toolbar.visible ||
@@ -516,7 +490,7 @@ index 37570c54b0..1b075923df 100644
 
          if (closeWindow) {
            // We've already called beforeunload on all the relevant tabs if we get here,
-@@ -4859,6 +4989,7 @@
+@@ -4859,6 +4976,7 @@
 
          newTab = true;
        }
@@ -524,7 +498,7 @@ index 37570c54b0..1b075923df 100644
        aTab._endRemoveArgs = [closeWindow, newTab];
 
        // swapBrowsersAndCloseOther will take care of closing the window without animation.
-@@ -4899,9 +5030,7 @@
+@@ -4899,9 +5017,7 @@
        aTab._mouseleave();
 
        if (newTab) {
@@ -535,7 +509,7 @@ index 37570c54b0..1b075923df 100644
        } else {
          TabBarVisibility.update();
        }
-@@ -5035,6 +5164,7 @@
+@@ -5035,6 +5151,7 @@
          this.tabs[i]._tPos = i;
        }
 
@@ -543,7 +517,7 @@ index 37570c54b0..1b075923df 100644
        if (!this._windowIsClosing) {
          if (wasPinned) {
            this.tabContainer._positionPinnedTabs();
-@@ -5249,6 +5379,7 @@
+@@ -5249,6 +5366,7 @@
        }
 
        let excludeTabs = new Set(aExcludeTabs);
@@ -551,7 +525,7 @@ index 37570c54b0..1b075923df 100644
 
        // If this tab has a successor, it should be selectable, since
        // hiding or closing a tab removes that tab as a successor.
-@@ -5261,13 +5392,13 @@
+@@ -5261,13 +5379,13 @@
          !excludeTabs.has(aTab.owner) &&
          Services.prefs.getBoolPref("browser.tabs.selectOwnerOnClose")
        ) {
@@ -567,7 +541,7 @@ index 37570c54b0..1b075923df 100644
        );
 
        let tab = this.tabContainer.findNextTab(aTab, {
-@@ -5283,7 +5414,7 @@
+@@ -5283,7 +5401,7 @@
        }
 
        if (tab) {
@@ -576,7 +550,7 @@ index 37570c54b0..1b075923df 100644
        }
 
        // If no qualifying visible tab was found, see if there is a tab in
-@@ -5304,7 +5435,7 @@
+@@ -5304,7 +5422,7 @@
          });
        }
 
@@ -585,7 +559,7 @@ index 37570c54b0..1b075923df 100644
      }
 
      _blurTab(aTab) {
-@@ -5701,10 +5832,10 @@
+@@ -5701,10 +5819,10 @@
        SessionStore.deleteCustomTabValue(aTab, "hiddenBy");
      }
 
@@ -598,7 +572,7 @@ index 37570c54b0..1b075923df 100644
          aTab.selected ||
          aTab.closing ||
          // Tabs that are sharing the screen, microphone or camera cannot be hidden.
-@@ -5924,7 +6055,7 @@
+@@ -5924,7 +6042,7 @@
       *   `true` if element is a `<tab-group>`
       */
      isTabGroup(element) {
@@ -607,7 +581,7 @@ index 37570c54b0..1b075923df 100644
      }
 
      /**
-@@ -6001,7 +6132,7 @@
+@@ -6001,7 +6119,7 @@
 
        // Don't allow mixing pinned and unpinned tabs.
        if (this.isTab(element) && element.pinned) {
@@ -616,7 +590,7 @@ index 37570c54b0..1b075923df 100644
        } else {
          tabIndex = Math.max(tabIndex, this.pinnedTabCount);
        }
-@@ -6027,10 +6158,16 @@
+@@ -6027,10 +6145,16 @@
        this.#handleTabMove(
          element,
          () => {
@@ -635,7 +609,7 @@ index 37570c54b0..1b075923df 100644
            if (neighbor && this.isTab(element) && tabIndex > element._tPos) {
              neighbor.after(element);
            } else {
-@@ -6099,17 +6236,29 @@
+@@ -6099,17 +6223,29 @@
            targetElement = targetElement.group;
          }
        }
@@ -669,7 +643,7 @@ index 37570c54b0..1b075923df 100644
          if (element.pinned && this.tabContainer.verticalMode) {
            return this.tabContainer.verticalPinnedTabsContainer;
          }
-@@ -6120,7 +6269,7 @@
+@@ -6120,7 +6256,7 @@
          element,
          () => {
            if (moveBefore) {
@@ -678,15 +652,44 @@ index 37570c54b0..1b075923df 100644
            } else if (targetElement) {
              targetElement.after(element);
            } else {
-@@ -6169,7 +6318,7 @@
-       if (!this.isTab(aTab)) {
-         throw new Error("Can only move a tab into a tab group");
+@@ -6166,10 +6302,20 @@
+      * @param {TabMetricsContext} [metricsContext]
+      */
+     moveTabToGroup(aTab, aGroup, metricsContext) {
+-      if (!this.isTab(aTab)) {
+-        throw new Error("Can only move a tab into a tab group");
++      // if (!this.isTab(aTab)) {
++      //   throw new Error("Can only move a tab into a tab group");
++      // }
++      if (this.isTabGroup(aTab)) {
++        let parent = aGroup;
++        while (parent) {
++          if (parent === aTab) {
++            return;
++          }
++          parent = parent.group;
++        }
        }
 -      if (aTab.pinned) {
++
 +      if (aTab.pinned != !!aGroup.pinned) {
          return;
        }
        if (aTab.group && aTab.group.id === aGroup.id) {
+@@ -6178,8 +6324,11 @@
+
+       aGroup.collapsed = false;
+       this.#handleTabMove(aTab, () => aGroup.appendChild(aTab), metricsContext);
+-      this.removeFromMultiSelectedTabs(aTab);
+-      this.tabContainer._notifyBackgroundTab(aTab);
++
++      if (this.isTab(aTab)) {
++        this.removeFromMultiSelectedTabs(aTab);
++        this.tabContainer._notifyBackgroundTab(aTab);
++      }
+     }
+
+     /**
 @@ -6263,6 +6412,10 @@
 
        moveActionCallback();

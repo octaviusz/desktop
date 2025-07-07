@@ -125,7 +125,7 @@
     #initContextMenu() {
       const contextMenuItems = window.MozXULElement.parseXULToFragment(`
         <menuitem id="zen-context-menu-new-folder" data-l10n-id="zen-toolbar-context-new-folder"/>
-      `);
+        `);
       document.getElementById('toolbarNavigatorItemsMenuSeparator').before(contextMenuItems);
     }
 
@@ -381,6 +381,78 @@
         anim.beginElement();
       });
       return [];
+    }
+
+    storeDataForSessionStore() {
+      const folders = Array.from(gBrowser.tabContainer.querySelectorAll('zen-folder'));
+      return folders.map((folder) => {
+        return {
+          pinned: folder.pinned,
+          essential: folder.essential,
+          id: folder.id,
+          name: folder.label,
+          collapsed: folder.collapsed,
+          saveOnWindowClose: folder.saveOnWindowClose,
+        };
+      });
+    }
+
+    restoreDataFromSessionStore(data) {
+      if (!data || this._sessionRestoring) {
+        return;
+      }
+
+      this._sessionRestoring = true;
+
+      let tabFolderWorkingData = new Map();
+      let tabsFragment = document.createDocumentFragment();
+
+      for (const folderData of data) {
+        tabFolderWorkingData.set(folderData.id, {
+          stateData: folderData,
+          node: undefined,
+          containingTabsFragment: document.createDocumentFragment(),
+        });
+      }
+
+      for (const folderData of data) {
+        const oldGroup = document.getElementById(folderData.id);
+        const workingData = tabFolderWorkingData.get(folderData.id);
+
+        if (oldGroup && workingData) {
+          if (!workingData.node) {
+            const folder = document.createXULElement('zen-folder', {
+              is: 'zen-folder',
+            });
+
+            folder.id = workingData.stateData.id;
+            folder.collapsed = workingData.stateData.collapsed;
+            folder.label = workingData.stateData.name;
+            folder.pinned = workingData.stateData.pinned;
+            folder.saveOnWindowClose = workingData.stateData.saveOnWindowClose;
+
+            workingData.node = folder;
+            tabsFragment.appendChild(folder);
+          }
+
+          while (oldGroup.tabs.length > 0) {
+            const tab = oldGroup.tabs[0];
+            workingData.containingTabsFragment.appendChild(tab);
+          }
+        }
+      }
+
+      const tabbrowser = gBrowser;
+      tabbrowser.tabContainer.appendChild(tabsFragment);
+
+      for (const tabFolder of tabFolderWorkingData.values()) {
+        if (tabFolder.node) {
+          tabFolder.node.appendChild(tabFolder.containingTabsFragment);
+        }
+      }
+
+      tabbrowser.tabContainer._invalidateCachedTabs();
+      this._sessionRestoring = false;
     }
   }
 
