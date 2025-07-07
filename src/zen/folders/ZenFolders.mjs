@@ -126,7 +126,7 @@
       const contextMenuItems = window.MozXULElement.parseXULToFragment(`
         <menuitem id="zen-context-menu-new-folder" data-l10n-id="zen-toolbar-context-new-folder"/>
         `);
-      document.getElementById('toolbarNavigatorItemsMenuSeparator').before(contextMenuItems);
+      document.getElementById('context_moveTabToGroup').before(contextMenuItems);
     }
 
     #onTabGrouped(event) {
@@ -163,7 +163,6 @@
           tab.setAttribute('had-zen-pinned-changed', true);
         }
       }
-      this.#updateFolderIcon(group, 'auto', false);
     }
 
     #onTabGroupRemoved(event) {}
@@ -237,8 +236,34 @@
     }
 
     #onNewFolder(event) {
-      const tabs = gBrowser.selectedTabs;
-      this.createFolder(tabs);
+      const contextMenu = event.target.parentElement;
+      let tabs = [];
+      let triggerTab =
+      contextMenu.triggerNode &&
+      (contextMenu.triggerNode.tab || contextMenu.triggerNode.closest("tab"));
+
+      tabs.push(triggerTab, ...gBrowser.selectedTabs);
+
+      this.createFolder(tabs, { insertBefore: triggerTab });
+    }
+
+    _createFolderNode(options = {}) {
+      const folder = document.createXULElement('zen-folder', { is: 'zen-folder' });
+      let id = options.id;
+      if (!id) {
+        // Note: If this changes, make sure to also update the
+        // getExtTabGroupIdForInternalTabGroupId implementation in
+        // browser/components/extensions/parent/ext-browser.js.
+        // See: Bug 1960104 - Improve tab group ID generation in addTabGroup
+        id = `${Date.now()}-${Math.round(Math.random() * 100)}`;
+      }
+      folder.id = id;
+      folder.label = options.label || 'New Folder';
+      folder.collapsed = !!options.collapsed;
+      folder.pinned = options.pinned ?? true;
+      folder.saveOnWindowClose = !!options.saveOnWindowClose;
+
+      return folder;
     }
 
     createFolder(tabs, options = {}) {
@@ -250,20 +275,9 @@
         gZenWorkspaces.pinnedTabsContainer.querySelector(
           '.vertical-pinned-tabs-container-separator'
         );
-      const label = options.label || 'New Folder';
-      const folder = document.createXULElement('zen-folder', { is: 'zen-folder' });
-      let id = options.id;
-      if (!id) {
-        // Note: If this changes, make sure to also update the
-        // getExtTabGroupIdForInternalTabGroupId implementation in
-        // browser/components/extensions/parent/ext-browser.js.
-        // See: Bug 1960104 - Improve tab group ID generation in addTabGroup
-        id = `${Date.now()}-${Math.round(Math.random() * 100)}`;
-      }
-      folder.id = id;
-      folder.label = label;
-      folder.collapsed = !!options.collapsed;
-      folder.pinned = true;
+
+      const folder = this._createFolderNode();
+
       insertBefore.before(folder);
       folder.addTabs(tabs);
 
@@ -421,16 +435,13 @@
 
         if (oldGroup && workingData) {
           if (!workingData.node) {
-            const folder = document.createXULElement('zen-folder', {
-              is: 'zen-folder',
+            const folder = this._createFolderNode({
+              id: folderData.id,
+              label: folderData.name,
+              collapsed: folderData.collapsed,
+              pinned: folderData.pinned,
+              saveOnWindowClose: folderData.saveOnWindowClose,
             });
-
-            folder.id = workingData.stateData.id;
-            folder.collapsed = workingData.stateData.collapsed;
-            folder.label = workingData.stateData.name;
-            folder.pinned = workingData.stateData.pinned;
-            folder.saveOnWindowClose = workingData.stateData.saveOnWindowClose;
-
             workingData.node = folder;
             tabsFragment.appendChild(folder);
           }
@@ -439,6 +450,7 @@
             const tab = oldGroup.tabs[0];
             workingData.containingTabsFragment.appendChild(tab);
           }
+          oldGroup.remove();
         }
       }
 
@@ -448,6 +460,7 @@
       for (const tabFolder of tabFolderWorkingData.values()) {
         if (tabFolder.node) {
           tabFolder.node.appendChild(tabFolder.containingTabsFragment);
+          this.#updateFolderIcon(tabFolder.node, 'auto', false);
         }
       }
 
