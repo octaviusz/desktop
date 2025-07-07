@@ -239,8 +239,8 @@
       const contextMenu = event.target.parentElement;
       let tabs = [];
       let triggerTab =
-      contextMenu.triggerNode &&
-      (contextMenu.triggerNode.tab || contextMenu.triggerNode.closest("tab"));
+        contextMenu.triggerNode &&
+        (contextMenu.triggerNode.tab || contextMenu.triggerNode.closest('tab'));
 
       tabs.push(triggerTab, ...gBrowser.selectedTabs);
 
