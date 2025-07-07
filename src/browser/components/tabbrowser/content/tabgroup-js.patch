@@ -1,8 +1,155 @@
 diff --git a/browser/components/tabbrowser/content/tabgroup.js b/browser/components/tabbrowser/content/tabgroup.js
-index 6dc774ea335b0c5dba7dcf76cdb23728faae1343..b0b9ef236c2e8517db4bcf3270596456bbefe11d 100644
+index 6147f5a75e..c63f64f171 100644
 --- a/browser/components/tabbrowser/content/tabgroup.js
 +++ b/browser/components/tabbrowser/content/tabgroup.js
-@@ -301,7 +301,7 @@
+@@ -13,10 +13,13 @@
+
+   class MozTabbrowserTabGroup extends MozXULElement {
+     static markup = `
+-      <vbox class="tab-group-label-container" pack="center">
++      <hbox class="tab-group-label-container" pack="center">
+         <label class="tab-group-label" role="button"/>
+-      </vbox>
+-      <html:slot/>
++      </hbox>
++      <html:div class="tab-group-container">
++        <html:div class="zen-tab-group-start"/>
++      </html:div>
++
+       `;
+
+     /** @type {string} */
+@@ -50,49 +53,50 @@
+       // This is needed to ensure events continue to fire even if the tab group is
+       // moved from the horizontal to vertical tab layout or vice-versa, which
+       // causes the component to be repositioned in the DOM.
+-      this.#observeTabChanges();
+-
+-      if (this._initialized) {
+-        return;
+-      }
+-
+-      this._initialized = true;
+-      this.saveOnWindowClose = true;
+-
+-      this.textContent = "";
+-      this.appendChild(this.constructor.fragment);
+-      this.initializeAttributeInheritance();
+-
+-      this.#labelElement = this.querySelector(".tab-group-label");
+-      // Mirroring MozTabbrowserTab
+-      this.#labelElement.container = gBrowser.tabContainer;
+-      this.#labelElement.group = this;
+-
+-      this.#labelElement.addEventListener("click", this);
+-      this.#labelElement.addEventListener("contextmenu", e => {
+-        e.preventDefault();
+-        gBrowser.tabGroupMenu.openEditModal(this);
+-        return false;
+-      });
+-
+-      this.#updateLabelAriaAttributes();
+-      this.#updateCollapsedAriaAttributes();
+-
+-      this.addEventListener("TabSelect", this);
++        if (!this._initialized) {
++          this._initialized = true;
++          this.saveOnWindowClose = true;
++
++          this.textContent = "";
++          this.appendChild(this.constructor.fragment);
++          this.initializeAttributeInheritance();
++
++          this.#labelElement = this.querySelector(".tab-group-label");
++          // Mirroring MozTabbrowserTab
++          this.#labelElement.container = gBrowser.tabContainer;
++          this.#labelElement.group = this;
++
++          this.querySelector(".tab-group-label-container").addEventListener("click", this);
++          this.#labelElement.addEventListener("contextmenu", e => {
++            e.preventDefault();
++            gBrowser.tabGroupMenu.openEditModal(this);
++            return false;
++          });
++
++          this.#updateLabelAriaAttributes();
++          this.#updateCollapsedAriaAttributes();
++
++          this.addEventListener("TabSelect", this);
++
++          let tabGroupCreateDetail = this.#wasCreatedByAdoption
++            ? { isAdoptingGroup: true }
++            : {};
++          this.dispatchEvent(
++            new CustomEvent("TabGroupCreate", {
++              bubbles: true,
++              detail: tabGroupCreateDetail,
++            })
++          );
++          // Reset `wasCreatedByAdoption` to default of false so that we only
++          // claim that a tab group was created by adoption the first time it
++          // mounts after getting created by `Tabbrowser.adoptTabGroup`.
++          this.#wasCreatedByAdoption = false;
++          this.appendChild = function (child) {
++            this.querySelector('.tab-group-container').appendChild(child);
++          }
++        }
+
+-      let tabGroupCreateDetail = this.#wasCreatedByAdoption
+-        ? { isAdoptingGroup: true }
+-        : {};
+-      this.dispatchEvent(
+-        new CustomEvent("TabGroupCreate", {
+-          bubbles: true,
+-          detail: tabGroupCreateDetail,
+-        })
+-      );
+-      // Reset `wasCreatedByAdoption` to default of false so that we only
+-      // claim that a tab group was created by adoption the first time it
+-      // mounts after getting created by `Tabbrowser.adoptTabGroup`.
+-      this.#wasCreatedByAdoption = false;
++      this.#observeTabChanges();
+     }
+
+     disconnectedCallback() {
+@@ -159,7 +163,10 @@
+           }
+         });
+       }
+-      this.#tabChangeObserver.observe(this, { childList: true });
++      const container = this.querySelector('.tab-group-container');
++      if (container) {
++        this.#tabChangeObserver.observe(container, { childList: true });
++      }
+     }
+
+     get color() {
+@@ -280,9 +287,23 @@
+     }
+
+     get tabs() {
+-      return Array.from(this.children).filter(node => node.matches("tab"));
++      // add other group tabs if they are under this group
++      let childs = Array.from(this.querySelector('.tab-group-container')?.children ?? []);
++      for (let item of childs) {
++        if (gBrowser.isTabGroup(item)) {
++          childs = childs.concat(item.tabs);
++        }
++      }
++      return childs.filter(node => node.matches("tab"));
+     }
+
++    get group() {
++      if (gBrowser.isTabGroup(this.parentElement)) {
++        return this.parentElement.parentElement;
++      }
++      return null;
++     }
++
+     /**
+      * @returns {MozTextLabel}
+      */
+@@ -306,7 +327,7 @@
       */
      addTabs(tabs, metricsContext) {
        for (let tab of tabs) {
@@ -11,3 +158,11 @@ index 6dc774ea335b0c5dba7dcf76cdb23728faae1343..b0b9ef236c2e8517db4bcf3270596456
            tab.ownerGlobal.gBrowser.unpinTab(tab);
          }
          let tabToMove =
+@@ -400,5 +421,6 @@
+     }
+   }
+
++  window.MozTabbrowserTabGroup = MozTabbrowserTabGroup;
+   customElements.define("tab-group", MozTabbrowserTabGroup);
+ }
+

@@ -2700,7 +2700,7 @@ var gZenWorkspaces = new (class extends ZenMultiWindowFeature {
           if (glance) {
             tabs.push(glance);
           }
-        } else if (tab.tagName == 'tab-group') {
+        } else if (tab.tagName == 'tab-group' || tab.tagName == 'zen-folder') {
           for (const groupTab of tab.tabs) {
             tabs.push(groupTab);
             const glance = groupTab.querySelector('.tabbrowser-tab[glance-id]');
@@ -2718,7 +2718,7 @@ var gZenWorkspaces = new (class extends ZenMultiWindowFeature {
   get allTabGroups() {
     if (!this._hasInitializedTabsStrip) {
       let children = this.tabboxChildren;
-      return children.filter((node) => node.tagName == 'tab-group');
+      return children.filter((node) => node.tagName == 'tab-group' || node.tagName == 'zen-folder');
     }
     const pinnedContainers = [];
     const normalContainers = [];
@@ -2733,6 +2733,9 @@ var gZenWorkspaces = new (class extends ZenMultiWindowFeature {
     const tabGroups = [];
     for (const container of containers) {
       for (const tabGroup of container.querySelectorAll('tab-group')) {
+        tabGroups.push(tabGroup);
+      }
+      for (const tabGroup of container.querySelectorAll('zen-folder')) {
         tabGroups.push(tabGroup);
       }
     }

@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/tab.js b/browser/components/tabbrowser/content/tab.js
-index 793ba822f087f4d198c9876ed208ff16d8a41e3b..e53ccd748de015997c355d5d37cb38cc73e90f3d 100644
+index 793ba822f0..c72b0eb5dd 100644
 --- a/browser/components/tabbrowser/content/tab.js
 +++ b/browser/components/tabbrowser/content/tab.js
 @@ -21,6 +21,7 @@
@@ -23,31 +23,42 @@ index 793ba822f087f4d198c9876ed208ff16d8a41e3b..e53ccd748de015997c355d5d37cb38cc
        `;
 @@ -180,7 +183,7 @@
      }
- 
+
      set _visuallySelected(val) {
 -      if (val == this.hasAttribute("visuallyselected")) {
 +      if (val == this.hasAttribute("visuallyselected") || (!val && this.linkedBrowser?.closest('.browserSidebarContainer').classList.contains('zen-glance-background'))) {
          return;
        }
- 
+
 @@ -216,7 +219,7 @@
      }
- 
+
      get visible() {
 -      return this.isOpen && !this.hidden && !this.group?.collapsed;
 +      return this.isOpen && !this.hidden && !this.group?.collapsed && !this.hasAttribute("zen-empty-tab");
      }
- 
+
      get hidden() {
 @@ -287,7 +290,7 @@
          return false;
        }
- 
+
 -      return true;
 +      return !this.hasAttribute("zen-empty-tab");
      }
- 
+
      get lastAccessed() {
+@@ -364,8 +367,8 @@
+     }
+
+     get group() {
+-      if (this.parentElement?.tagName == "tab-group") {
+-        return this.parentElement;
++      if (gBrowser.isTabGroup(this.parentElement?.parentElement)) {
++        return this.parentElement.parentElement;
+       }
+       return null;
+     }
 @@ -459,6 +462,8 @@
          this.style.MozUserFocus = "ignore";
        } else if (
@@ -60,7 +71,7 @@ index 793ba822f087f4d198c9876ed208ff16d8a41e3b..e53ccd748de015997c355d5d37cb38cc
 @@ -513,6 +518,10 @@
        this.style.MozUserFocus = "";
      }
- 
+
 +    get glanceTab() {
 +      return this.querySelector("tab[zen-glance-tab]");
 +    }
@@ -89,7 +100,7 @@ index 793ba822f087f4d198c9876ed208ff16d8a41e3b..e53ccd748de015997c355d5d37cb38cc
 +        gBrowser.tabContainer._blockDblClick = true;
 +      }
      }
- 
+
      on_dblclick(event) {
 @@ -596,6 +614,8 @@
            animate: true,
@@ -99,4 +110,4 @@ index 793ba822f087f4d198c9876ed208ff16d8a41e3b..e53ccd748de015997c355d5d37cb38cc
 +        gZenPinnedTabManager._onTabResetPinButton(event, this, 'reset');
        }
      }
- 
+
