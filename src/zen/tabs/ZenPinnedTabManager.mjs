@@ -794,6 +794,7 @@
           event.target.closest('.zen-current-workspace-indicator');
         const essentialTabsTarget = event.target.closest('.zen-essentials-container');
         const tabsTarget = event.target.closest('.zen-workspace-normal-tabs-section');
+        const folderTarget = event.target.closest('zen-folder');
         // Remove group labels from the moving tabs and replace it
         // with the sub tabs
         for (let i = 0; i < movingTabs.length; i++) {
@@ -813,7 +814,7 @@
         for (const draggedTab of movingTabs) {
           let isRegularTabs = false;
           // Check for pinned tabs container
-          if (pinnedTabsTarget) {
+          if (pinnedTabsTarget || folderTarget) {
             if (!draggedTab.pinned) {
               gBrowser.pinTab(draggedTab);
               moved = true;
@@ -874,7 +875,7 @@
               if (tabsTarget === gBrowser.tabs.at(-1)) {
                 newIndex++;
               }
-              gBrowser.moveTabTo(draggedTab, { tabIndex: newIndex, forceUngrouped: true });
+              gBrowser.moveTabTo(draggedTab, { tabIndex: newIndex, forceUngrouped: !folderTarget });
             }
           }
         }
@@ -1004,6 +1005,7 @@
         this.removeTabContainersDragoverClass();
         return;
       }
+      const folderTarget = event.target.closest('zen-folder');
       const pinnedTabsTarget = event.target.closest('.zen-workspace-pinned-tabs-section');
       const essentialTabsTarget = event.target.closest('.zen-essentials-container');
       const tabsTarget = event.target.closest('.zen-workspace-normal-tabs-section');
@@ -1028,7 +1030,19 @@
       let isVertical = this.expandedSidebarMode;
 
       // Decide whether we should show a dragover class for the given target
-      if (pinnedTabsTarget) {
+      if (folderTarget && (!draggedTab.pinned || draggedTab.hasAttribute('zen-essential'))) {
+        shouldAddDragOverElement = true;
+        const groupTabs = folderTarget.tabs;
+        let newTarget = groupTabs.at(-1);
+        for (const tab of groupTabs) {
+          const rect = tab.getBoundingClientRect();
+          if (event.clientY < rect.top + rect.height / 2) {
+            newTarget = tab;
+            break;
+          }
+        }
+        targetTab = newTarget;
+      } else if (pinnedTabsTarget) {
         if (!draggedTab.pinned || draggedTab.hasAttribute('zen-essential')) {
           shouldAddDragOverElement = true;
         }
