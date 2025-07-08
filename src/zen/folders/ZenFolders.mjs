@@ -419,7 +419,6 @@
       this._sessionRestoring = true;
 
       let tabFolderWorkingData = new Map();
-      let tabsFragment = document.createDocumentFragment();
 
       for (const folderData of data) {
         tabFolderWorkingData.set(folderData.id, {
@@ -443,19 +442,18 @@
               saveOnWindowClose: folderData.saveOnWindowClose,
             });
             workingData.node = folder;
-            tabsFragment.appendChild(folder);
+            oldGroup.before(folder);
           }
 
           while (oldGroup.tabs.length > 0) {
             const tab = oldGroup.tabs[0];
             workingData.containingTabsFragment.appendChild(tab);
           }
+          // MutationObserver should automatically remove the node
+          // from the DOM, but just in case...
           oldGroup.remove();
         }
       }
-
-      const tabbrowser = gBrowser;
-      tabbrowser.tabContainer.appendChild(tabsFragment);
 
       for (const tabFolder of tabFolderWorkingData.values()) {
         if (tabFolder.node) {
@@ -464,7 +462,7 @@
         }
       }
 
-      tabbrowser.tabContainer._invalidateCachedTabs();
+      gBrowser.tabContainer._invalidateCachedTabs();
       this._sessionRestoring = false;
     }
   }
