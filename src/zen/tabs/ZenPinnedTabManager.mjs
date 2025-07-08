@@ -794,6 +794,8 @@
           event.target.closest('.zen-current-workspace-indicator');
         const essentialTabsTarget = event.target.closest('.zen-essentials-container');
         const tabsTarget = event.target.closest('.zen-workspace-normal-tabs-section');
+
+        // TODO: Solve the issue of adding a tab between two groups
         const folderTarget = event.target.closest('zen-folder');
         // Remove group labels from the moving tabs and replace it
         // with the sub tabs
@@ -814,7 +816,7 @@
         for (const draggedTab of movingTabs) {
           let isRegularTabs = false;
           // Check for pinned tabs container
-          if (pinnedTabsTarget || folderTarget) {
+          if (pinnedTabsTarget) {
             if (!draggedTab.pinned) {
               gBrowser.pinTab(draggedTab);
               moved = true;
@@ -854,9 +856,10 @@
           // If the tab was moved, adjust its position relative to the target tab
           if (hasActuallyMoved) {
             const targetTab = event.target.closest('.tabbrowser-tab');
+            let newIndex;
             if (targetTab) {
               const rect = targetTab.getBoundingClientRect();
-              let newIndex = targetTab._tPos;
+              newIndex = targetTab._tPos;
 
               if (isVertical || !this.expandedSidebarMode) {
                 const middleY = targetTab.screenY + rect.height / 2;
@@ -875,7 +878,22 @@
               if (tabsTarget === gBrowser.tabs.at(-1)) {
                 newIndex++;
               }
-              gBrowser.moveTabTo(draggedTab, { tabIndex: newIndex, forceUngrouped: !folderTarget });
+
+              gBrowser.moveTabTo(draggedTab, {
+                tabIndex: newIndex,
+                forceUngrouped: targetTab?.group?.collapsed,
+              });
+            } else if (folderTarget) {
+              const tabs = folderTarget.tabs;
+              if (folderTarget.collapsed) {
+                newIndex = tabs.at(-1)._tPos--;
+              } else {
+                newIndex = tabs.at(0)._tPos++;
+              }
+              gBrowser.moveTabTo(draggedTab, {
+                tabIndex: newIndex,
+                forceUngrouped: folderTarget.collapsed,
+              });
             }
           }
         }

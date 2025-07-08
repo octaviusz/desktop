@@ -397,6 +397,22 @@
       return [];
     }
 
+    #groupInit(group) {
+      // Setup zen-folder icon to the correct position
+      this.#updateFolderIcon(group, 'auto', false);
+
+      const tabsContainer = group.querySelector('.tab-group-container');
+      const groupStart = group.querySelector('.zen-tab-group-start');
+      let containerMargin = 0;
+      for (const item of tabsContainer.children) {
+        const rect = item.getBoundingClientRect();
+        containerMargin += rect.height;
+      }
+      if (group.collapsed) {
+        groupStart.style.marginTop = `-${containerMargin}px`;
+      }
+    }
+
     storeDataForSessionStore() {
       const folders = Array.from(gBrowser.tabContainer.querySelectorAll('zen-folder'));
       return folders.map((folder) => {
@@ -458,7 +474,7 @@
       for (const tabFolder of tabFolderWorkingData.values()) {
         if (tabFolder.node) {
           tabFolder.node.appendChild(tabFolder.containingTabsFragment);
-          this.#updateFolderIcon(tabFolder.node, 'auto', false);
+          this.#groupInit(tabFolder.node);
         }
       }
 
