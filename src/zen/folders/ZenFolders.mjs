@@ -416,6 +416,7 @@
     storeDataForSessionStore() {
       const folders = Array.from(gBrowser.tabContainer.querySelectorAll('zen-folder'));
       return folders.map((folder) => {
+        const parentFolder = folder.parentElement.closest('zen-folder');
         return {
           pinned: folder.pinned,
           essential: folder.essential,
@@ -423,6 +424,7 @@
           name: folder.label,
           collapsed: folder.collapsed,
           saveOnWindowClose: folder.saveOnWindowClose,
+          parentId: parentFolder ? parentFolder.id : null,
         };
       });
     }
@@ -434,47 +436,56 @@
 
       this._sessionRestoring = true;
 
-      let tabFolderWorkingData = new Map();
+      const tabFolderWorkingData = new Map();
 
       for (const folderData of data) {
-        tabFolderWorkingData.set(folderData.id, {
+        console.log("Folder: ",folderData);
+        const workingData = {
           stateData: folderData,
-          node: undefined,
+          node: null,
           containingTabsFragment: document.createDocumentFragment(),
-        });
-      }
+        };
+        tabFolderWorkingData.set(folderData.id, workingData);
 
-      for (const folderData of data) {
         const oldGroup = document.getElementById(folderData.id);
-        const workingData = tabFolderWorkingData.get(folderData.id);
-
-        if (oldGroup && workingData) {
-          if (!workingData.node) {
-            const folder = this._createFolderNode({
-              id: folderData.id,
-              label: folderData.name,
-              collapsed: folderData.collapsed,
-              pinned: folderData.pinned,
-              saveOnWindowClose: folderData.saveOnWindowClose,
-            });
-            workingData.node = folder;
-            oldGroup.before(folder);
-          }
+        if (oldGroup) {
+          const folder = this._createFolderNode({
+            id: folderData.id,
+            label: folderData.name,
+            collapsed: folderData.collapsed,
+            pinned: folderData.pinned,
+            saveOnWindowClose: folderData.saveOnWindowClose,
+          });
+          workingData.node = folder;
+          oldGroup.before(folder);
 
           while (oldGroup.tabs.length > 0) {
-            const tab = oldGroup.tabs[0];
-            workingData.containingTabsFragment.appendChild(tab);
+            workingData.containingTabsFragment.appendChild(oldGroup.tabs[0]);
           }
-          // MutationObserver should automatically remove the node
-          // from the DOM, but just in case...
           oldGroup.remove();
         }
       }
 
-      for (const tabFolder of tabFolderWorkingData.values()) {
-        if (tabFolder.node) {
-          tabFolder.node.appendChild(tabFolder.containingTabsFragment);
-          this.#groupInit(tabFolder.node);
+      for (const { node, containingTabsFragment } of tabFolderWorkingData.values()) {
+        if (node) {
+          node.appendChild(containingTabsFragment);
+        }
+      }
+
+      // Nesting folders into each other according to parentId.
+      for (const { stateData, node } of tabFolderWorkingData.values()) {
+        if (node && stateData.parentId) {
+          const parentWorkingData = tabFolderWorkingData.get(stateData.parentId);
+          if (parentWorkingData && parentWorkingData.node) {
+            parentWorkingData.node.appendChild(node);
+          }
+        }
+      }
+
+      // Initialize UI state for all folders.
+      for (const { node } of tabFolderWorkingData.values()) {
+        if (node) {
+          this.#groupInit(node);
         }
       }
 
