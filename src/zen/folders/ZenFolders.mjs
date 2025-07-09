@@ -439,7 +439,6 @@
       const tabFolderWorkingData = new Map();
 
       for (const folderData of data) {
-        console.log("Folder: ",folderData);
         const workingData = {
           stateData: folderData,
           node: null,

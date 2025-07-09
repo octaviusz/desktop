@@ -2884,7 +2884,7 @@ var gZenWorkspaces = new (class extends ZenMultiWindowFeature {
       parent.removeAttribute('icons-overflow');
       return;
     }
-    const maxButtonSize = 30; // IMPORTANT: This should match the CSS size of the icons
+    const maxButtonSize = 26; // IMPORTANT: This should match the CSS size of the icons
     const minButtonSize = 15;
     const separation = 3; // Space between icons
 
