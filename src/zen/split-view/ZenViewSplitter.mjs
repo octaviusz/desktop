@@ -82,6 +82,9 @@ class ZenSplitViewLinkDrop {
   }
 
   _createLinkDropZone() {
+    const wrapper = document.createXULElement('box');
+    wrapper.id = 'zen-drop-link-wrapper';
+
     this._linkDropZone = document.createXULElement('box');
     this._linkDropZone.id = 'zen-drop-link-zone';
 
@@ -96,17 +99,17 @@ class ZenSplitViewLinkDrop {
     content.appendChild(text);
     this._linkDropZone.appendChild(content);
 
+    wrapper.appendChild(this._linkDropZone);
+
     this._linkDropZone.addEventListener('dragover', this._handleDragOver.bind(this));
     this._linkDropZone.addEventListener('dragleave', this._handleDragLeave.bind(this));
     this._linkDropZone.addEventListener('drop', this._handleDropForSplit.bind(this));
 
     const tabBox = document.getElementById('tabbrowser-tabbox');
-    tabBox.appendChild(this._linkDropZone);
+    tabBox.appendChild(wrapper);
 
     gZenUIManager.motion.animate(this._linkDropZone, {
       opacity: [0, 1],
-      x: ['-50%', '-50%'],
-      y: ['-40%', '-50%'],
       scale: [0.1, 1],
       duration: 0.15,
       ease: [0.16, 1, 0.3, 1],
@@ -121,30 +124,43 @@ class ZenSplitViewLinkDrop {
 
     if (!this._linkDropZone.hasAttribute('has-focus')) {
       this._linkDropZone.setAttribute('has-focus', 'true');
+      gZenUIManager.motion.animate(this._linkDropZone, {
+        scale: [1, 1.2],
+        duration: 0.15,
+      });
     }
   }
 
   _handleDragLeave(event) {
     event.stopPropagation();
     if (!this._linkDropZone.contains(event.relatedTarget)) {
-      this._linkDropZone.removeAttribute('drop-side');
-      this._linkDropZone.removeAttribute('has-focus');
+      gZenUIManager.motion
+        .animate(this._linkDropZone, {
+          scale: [1.2, 1],
+          duration: 0.15,
+        })
+        .then(() => {
+          this._linkDropZone.removeAttribute('has-focus');
+          this._linkDropZone.removeAttribute('drop-side');
+        });
     }
   }
   _removeLinkDropZone() {
     if (!this._linkDropZone) return;
 
+    const wrapper = this._linkDropZone.parentElement;
+
     gZenUIManager.motion
       .animate(this._linkDropZone, {
         opacity: [1, 0],
-        x: ['-50%', '-50%'],
-        y: ['-40%', '-50%'],
         scale: [1, 0.1],
         duration: 0.15,
         ease: [0.16, 1, 0.3, 1],
       })
       .then(() => {
-        this._linkDropZone.remove();
+        if (wrapper) {
+          wrapper.remove();
+        }
         this._linkDropZone = null;
       });
   }
