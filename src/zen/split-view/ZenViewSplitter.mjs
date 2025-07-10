@@ -68,6 +68,19 @@ class ZenSplitViewLinkDrop {
   _linkDropZone = null;
   _lastSplitSide = 'right';
 
+  _svgIcon = new DOMParser().parseFromString(
+    `
+    <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="transition: transform 0.15s ease;">
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M5.25 8C5.25 6.48122 6.48122 5.25 8 5.25H16C17.5188 5.25 18.75 6.48122 18.75 8V16C18.75 17.5188 17.5188 18.75 16 18.75H8C6.48122 18.75 5.25 17.5188 5.25 16V8ZM12.75 17.25H16C16.6904 17.25 17.25 16.6904 17.25 16V8C17.25 7.30964 16.6904 6.75 16 6.75H12.75V17.25ZM11.25 6.75V17.25H8C7.30964 17.25 6.75 16.6904 6.75 16V8C6.75 7.30964 7.30964 6.75 8 6.75H11.25Z" fill="currentColor" fill-opacity="0.5"></path>
+      <path id="left-fill" d="M8 6.75C7.30964 6.75 6.75 7.30964 6.75 8V16C6.75 16.6904 7.30964 17.25 8 17.25H11.25V6.75H8Z" fill="currentColor" style="transition: opacity 0.15s ease;"></path>
+      <path id="right-fill" d="M12.75 6.75H16C16.6904 6.75 17.25 7.30964 17.25 8V16C17.25 16.6904 16.6904 17.25 16 17.25H12.75V6.75Z" fill="currentColor" style="transition: opacity 0.15s ease;"></path>
+    </svg>
+  `,
+    'image/svg+xml'
+  ).documentElement;
+  _svgIconLeftFill = null;
+  _svgIconRightFill = null;
+
   constructor(zenViewSplitter) {
     this.#zenViewSplitter = zenViewSplitter;
   }
@@ -93,8 +106,17 @@ class ZenSplitViewLinkDrop {
     content.setAttribute('pack', 'center');
     content.setAttribute('flex', '1');
 
+    this._svgIcon.id = 'zen-drop-link-icon';
+
+    this._svgIconLeftFill = this._svgIcon.querySelector('#left-fill');
+    this._svgIconRightFill = this._svgIcon.querySelector('#right-fill');
+
+    content.appendChild(this._svgIcon);
+    this._updateIconForSide('center');
+
     const text = document.createXULElement('description');
     text.setAttribute('data-l10n-id', 'zen-drop-link-zone-label');
+    text.style.marginTop = '8px';
 
     content.appendChild(text);
     this._linkDropZone.appendChild(content);
@@ -115,6 +137,30 @@ class ZenSplitViewLinkDrop {
       ease: [0.16, 1, 0.3, 1],
     });
   }
+
+  _updateIconForSide(side) {
+    this._svgIcon.style.transform = 'rotate(0deg)';
+    this._svgIconLeftFill.style.opacity = '1';
+    this._svgIconRightFill.style.opacity = '1';
+
+    switch (side) {
+      case 'left':
+        this._svgIconRightFill.style.opacity = '0';
+        break;
+      case 'right':
+        this._svgIconLeftFill.style.opacity = '0';
+        break;
+      case 'top':
+        this._svgIcon.style.transform = 'rotate(90deg)';
+        this._svgIconRightFill.style.opacity = '0';
+        break;
+      case 'bottom':
+        this._svgIcon.style.transform = 'rotate(-90deg)';
+        this._svgIconRightFill.style.opacity = '0';
+        break;
+    }
+  }
+
   _handleDragOver(event) {
     event.preventDefault();
     event.stopPropagation();
@@ -122,10 +168,12 @@ class ZenSplitViewLinkDrop {
     const side = this._calculateDropSide(event, this._linkDropZone);
     this._linkDropZone.setAttribute('drop-side', side);
 
+    this._updateIconForSide(side);
+
     if (!this._linkDropZone.hasAttribute('has-focus')) {
       this._linkDropZone.setAttribute('has-focus', 'true');
       gZenUIManager.motion.animate(this._linkDropZone, {
-        scale: [1, 1.2],
+        scale: [1, 1.1],
         duration: 0.15,
       });
     }
@@ -134,9 +182,10 @@ class ZenSplitViewLinkDrop {
   _handleDragLeave(event) {
     event.stopPropagation();
     if (!this._linkDropZone.contains(event.relatedTarget)) {
+      this._updateIconForSide('center');
       gZenUIManager.motion
         .animate(this._linkDropZone, {
-          scale: [1.2, 1],
+          scale: [1.1, 1],
           duration: 0.15,
         })
         .then(() => {
@@ -145,6 +194,7 @@ class ZenSplitViewLinkDrop {
         });
     }
   }
+
   _removeLinkDropZone() {
     if (!this._linkDropZone) return;
 
@@ -158,10 +208,10 @@ class ZenSplitViewLinkDrop {
         ease: [0.16, 1, 0.3, 1],
       })
       .then(() => {
-        if (wrapper) {
-          wrapper.remove();
-        }
+        wrapper.remove();
         this._linkDropZone = null;
+        this._svgIconLeftFill = null;
+        this._svgIconRightFill = null;
       });
   }
 
@@ -263,6 +313,23 @@ class ZenSplitViewLinkDrop {
 
     const linkDropSide = this._calculateDropSide(event, linkDropZone);
 
+    if (linkDropSide === 'center') {
+      const rect = event.target.getBoundingClientRect();
+      gZenGlanceManager.openGlance(
+        {
+          clientX: rect.left,
+          clientY: rect.top,
+          width: rect.width,
+          height: rect.height,
+        },
+        newTab,
+        currentTab
+      );
+
+      this._removeLinkDropZone();
+      return;
+    }
+
     this._dispatchSplitAction(currentTab, newTab, linkDropSide);
 
     this._removeLinkDropZone();
@@ -352,10 +419,6 @@ class ZenSplitViewLinkDrop {
         parentNode.children.forEach((child) => {
           child.sizeInParent = newSize;
         });
-      } else {
-        // If linkDropSide is center, then open a new tab at the start/end
-        const shouldPrepend = ['left', 'top'].includes(this._lastSplitSide);
-        this.#zenViewSplitter.addTabToSplit(newTab, parentNode, shouldPrepend);
       }
 
       this.#zenViewSplitter.activateSplitView(group, true);

@@ -224,10 +224,10 @@
 
 @keyframes zen-rotate-orbit {
   0% {
-    transform: translate(-50%, -50%) rotate(0deg) translateX(8px) rotate(0deg);
+    transform: translate(-50%, -50%) rotate(0deg) translateX(6px) rotate(0deg);
   }
   100% {
-    transform: translate(-50%, -50%) rotate(360deg) translateX(8px) rotate(-360deg);
+    transform: translate(-50%, -50%) rotate(360deg) translateX(6px) rotate(-360deg);
   }
 }
 
@@ -238,8 +238,7 @@
   width: 200px;
   height: 260px;
   z-index: 999;
-  pointer-events: none;
-  animation: zen-rotate-orbit 2.5s linear infinite;
+  animation: zen-rotate-orbit 3s linear infinite;
 }
 
 #zen-drop-link-zone {
@@ -259,8 +258,8 @@
   pointer-events: auto;
 
   transition:
-    background-color 0.3s ease,
-    border-color 0.3s ease;
+    background-color 0.15s ease,
+    border-color 0.15s ease;
   will-change: transform;
 
   &::before {
@@ -272,9 +271,8 @@
     bottom: 6px;
 
     border-radius: 12px;
-
-    border: 2px dashed rgba(255, 255, 255, 0.2);
-    transition: border-color 0.3s ease;
+    border: 2px dashed color-mix(in srgb, var(--toolbox-textcolor), transparent 20%);
+    transition: border-color 0.15s ease;
     pointer-events: none;
   }
 
@@ -282,10 +280,10 @@
     border-color: var(--zen-colors-border);
     background: color-mix(in srgb, var(--zen-branding-bg), var(--zen-primary-color) 30%);
     &::before {
-      border: 2px dashed color-mix(in srgb, var(--zen-primary-color), transparent 30%);
+      border: 2px dashed color-mix(in srgb, var(--zen-primary-color), transparent 20%);
     }
     & description {
-      color: color-mix(in srgb, rgba(255, 255, 255, 0.85), var(--zen-primary-color) 50%);
+      color: color-mix(in srgb, var(--toolbox-textcolor), var(--zen-primary-color) 50%);
     }
   }
 
@@ -305,11 +303,16 @@
     border-bottom-color: var(--zen-primary-color);
   }
 
+  #zen-drop-link-icon {
+    width: 48px;
+    height: 48px;
+  }
+
   & description {
     font-size: 14px;
     line-height: 1.4;
     text-align: center;
-    color: rgba(255, 255, 255, 0.85);
+    color: color-mix(in srgb, var(--toolbox-textcolor), transparent 20%);
     font-weight: 600;
     letter-spacing: 0.2px;
     user-select: none;
