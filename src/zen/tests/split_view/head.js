@@ -8,7 +8,7 @@
  * @returns {number} The number of non-empty tabs.
  */
 function getNonEmptyTabCount() {
-  return gBrowser.tabs.filter(tab => !tab.hasAttribute('zen-empty-tab')).length;
+  return gBrowser.tabs.filter((tab) => !tab.hasAttribute('zen-empty-tab')).length;
 }
 
 /**
@@ -98,9 +98,7 @@ async function cleanupSplitView() {
 
   // 4. Remove all other tabs, excluding the newly created one.
   // Convert gBrowser.tabs to an array to avoid issues with live collections changing during iteration.
-  const tabsToRemove = Array.from(gBrowser.tabs).filter(
-    tab => tab !== newTab
-  );
+  const tabsToRemove = Array.from(gBrowser.tabs).filter((tab) => tab !== newTab);
 
   for (const tab of tabsToRemove) {
     // BrowserTestUtils.removeTab correctly waits for the tab to be removed.

@@ -22,4 +22,3 @@ add_task(async function test_link_drop_split_top() {
 
   await cleanupSplitView();
 });
-

@@ -21,4 +21,3 @@ add_task(async function test_link_drop_center_opens_glance() {
 
   await cleanupSplitView();
 });
-
