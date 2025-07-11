@@ -1,0 +1,11 @@
+[DEFAULT]
+prefs = ["zen.splitView.enable-link-drop=true"]
+
+support-files = [
+  "head.js",
+]
+
+["browser_link_drop_split_right.js"]
+["browser_link_drop_split_top.js"]
+["browser_link_drop_center_opens_glance.js"]
+["browser_link_drop_add_to_existing_split.js"]
