@@ -2700,7 +2700,7 @@ var gZenWorkspaces = new (class extends ZenMultiWindowFeature {
           if (glance) {
             tabs.push(glance);
           }
-        } else if (tab.tagName == 'tab-group' || tab.tagName == 'zen-folder') {
+        } else if (gBrowser.isTabGroup(tab)) {
           for (const groupTab of tab.tabs) {
             tabs.push(groupTab);
             const glance = groupTab.querySelector('.tabbrowser-tab[glance-id]');
@@ -2718,7 +2718,8 @@ var gZenWorkspaces = new (class extends ZenMultiWindowFeature {
   get allTabGroups() {
     if (!this._hasInitializedTabsStrip) {
       let children = this.tabboxChildren;
-      return children.filter((node) => node.tagName == 'tab-group' || node.tagName == 'zen-folder');
+      console.log(children);
+      return children.filter((node) => gBrowser.isTabGroup(node));
     }
     const pinnedContainers = [];
     const normalContainers = [];

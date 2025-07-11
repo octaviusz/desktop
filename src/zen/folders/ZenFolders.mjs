@@ -2,6 +2,33 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 {
+  function formatRelativeTime(timestamp) {
+    const now = Date.now();
+
+    const sec = Math.floor((now - timestamp) / 1000);
+    if (sec < 60) {
+      return 'Just now';
+    }
+
+    const min = Math.floor(sec / 60);
+    if (min < 60) {
+      return `${min} minute${min === 1 ? '' : 's'} ago`;
+    }
+
+    const hour = Math.floor(min / 60);
+    if (hour < 24) {
+      return `${hour} hour${hour === 1 ? '' : 's'} ago`;
+    }
+
+    const day = Math.floor(hour / 24);
+    if (day < 30) {
+      return `${day} day${day === 1 ? '' : 's'} ago`;
+    }
+
+    const month = Math.floor(day / 30);
+    return `${month} month${month === 1 ? '' : 's'} ago`;
+  }
+
   class ZenFolder extends MozTabbrowserTabGroup {
     #initialized = false;
 
@@ -9,7 +36,6 @@
       <hbox class="tab-group-label-container" pack="center">
         <html:div class="tab-group-folder-icon"/>
         <label class="tab-group-label" role="button"/>
-        <toolbarbutton class="toolbarbutton-1 zen-folder-tabs-button" tooltiptext="Group tabs button"/>
         <toolbarbutton class="toolbarbutton-1 zen-folder-action-button" tooltiptext="Group action button"/>
       </hbox>
       <html:div class="tab-group-container">
@@ -31,7 +57,7 @@
         </linearGradient>
       </defs>
     <!--Back Folder (path)-->
-      <path shape-rendering="geometricPrecision" d="M -61.3 -5.25 C -61.3 -6.492 -60.293 -7.5 -59.05 -7.5 L -55.102 -7.5 C -54.591 -7.5 -54.096 -7.326 -53.697 -7.007 L -52.84 -6.321 C -52.175 -5.79 -51.349 -5.5 -50.498 -5.5 L -47.05 -5.5 C -45.807 -5.5 -44.8 -4.492 -44.8 -3.25 L -44.731 4.42 L -44.708 6.651 C -44.708 7.894 -45.715 8.901 -46.958 8.901 L -58.958 8.901 C -60.201 8.901 -61.208 7.894 -61.208 6.651 L -61.3 4.752 L -61.3 -5.25 Z" style="stroke-width: 1.25px; transform-box: fill-box; transform-origin: 50% 50%; fill: var(--zen-workspace-color-bg); stroke: var(--zen-workspace-color-stroke);">
+      <path shape-rendering="geometricPrecision" d="M -61.3 -5.25 C -61.3 -6.492 -60.293 -7.5 -59.05 -7.5 L -55.102 -7.5 C -54.591 -7.5 -54.096 -7.326 -53.697 -7.007 L -52.84 -6.321 C -52.175 -5.79 -51.349 -5.5 -50.498 -5.5 L -47.05 -5.5 C -45.807 -5.5 -44.8 -4.492 -44.8 -3.25 L -44.731 4.42 L -44.708 6.651 C -44.708 7.894 -45.715 8.901 -46.958 8.901 L -58.958 8.901 C -60.201 8.901 -61.208 7.894 -61.208 6.651 L -61.3 4.752 L -61.3 -5.25 Z" style="stroke-width: 1.25px; transform-box: fill-box; transform-origin: 50% 50%; fill: var(--zen-primary-color); stroke: var(--toolbox-textcolor);">
         <animateTransform type="skewX" additive="sum" attributeName="transform" values="0;17" dur="0.3s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
         <animateTransform type="translate" additive="sum" attributeName="transform" values="0 0;-1 -1.2" dur="0.3s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
         <animateTransform type="scale" additive="sum" attributeName="transform" values="1 1;0.95 0.95" dur="0.3s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
@@ -42,7 +68,7 @@
         <animateTransform type="scale" additive="sum" attributeName="transform" values="1 1;0.95 0.95" dur="0.3s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
       </path>
     <!--Front Folder (rect)-->
-      <rect shape-rendering="geometricPrecision" x="-61.301" y="-3.768" width="16.5" height="12.798" rx="2.25" style="stroke-width: 1.25px; transform-box: fill-box; transform-origin: 50% 50%; fill: var(--zen-workspace-color-fg); stroke: var(--zen-workspace-color-stroke);" id="object-0">
+      <rect shape-rendering="geometricPrecision" x="-61.301" y="-3.768" width="16.5" height="12.798" rx="2.25" style="stroke-width: 1.25px; transform-box: fill-box; transform-origin: 50% 50%; fill: var(--zen-colors-primary-foreground); stroke: var(--toolbox-textcolor);" id="object-0">
         <animateTransform type="skewX" additive="sum" attributeName="transform" values="0;-17" dur="0.3s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
         <animateTransform type="translate" additive="sum" attributeName="transform" values="0 0;3 -0.5" dur="0.3s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
         <animateTransform type="scale" additive="sum" attributeName="transform" values="1 1;0.9 0.9" dur="0.3s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
@@ -103,9 +129,54 @@
   customElements.define('zen-folder', ZenFolder);
 
   class ZenFolders extends ZenPreloadedFeature {
+    #popup = null;
+    #popupTimer = null;
+    #mouseTimer = null;
+
     init() {
       this.#initContextMenu();
+      this.#initTabsPopup();
       this.#initEventListeners();
+    }
+
+    #initContextMenu() {
+      const contextMenuItems = window.MozXULElement.parseXULToFragment(`
+          <menuitem id="zen-context-menu-new-folder" data-l10n-id="zen-toolbar-context-new-folder"/>
+          `);
+      document.getElementById('context_moveTabToGroup').before(contextMenuItems);
+    }
+
+    #initTabsPopup() {
+      const popupSet = document.querySelector('#mainPopupSet');
+      if (popupSet.querySelector('#zen-folder-tabs-popup')) return;
+      const popup = window.MozXULElement.parseXULToFragment(
+        `
+        <panel id="zen-folder-tabs-popup" type="arrow" orient="vertical">
+        <hbox class="tabs-list-header">
+          <image class="zen-folder-tabs-list-search-icon" src="chrome://global/skin/icons/search-glass.svg"/>
+          <html:input id="zen-folder-tabs-list-search" placeholder="Search tabs" type="search"/>
+        </hbox>
+          <scrollbox class="zen-folder-tabs-list-scrollbox" flex="1">
+            <vbox id="zen-folder-tabs-list"></vbox>
+          </scrollbox>
+        </panel>
+        `
+      ).cloneNode(true);
+
+      popupSet.appendChild(popup);
+
+      this.#popup = document.getElementById('zen-folder-tabs-popup');
+
+      this.#popup.addEventListener('mouseenter', () => {
+        clearTimeout(this.#popupTimer);
+      });
+
+      this.#popup.addEventListener('mouseleave', () => {
+        this.#popupTimer = setTimeout(() => {
+          if (this.#popup.matches(':hover')) return;
+          this.#popup.hidePopup();
+        }, 200);
+      });
     }
 
     #initEventListeners() {
@@ -120,13 +191,6 @@
       document
         .getElementById('zen-context-menu-new-folder')
         .addEventListener('command', this.#onNewFolder.bind(this));
-    }
-
-    #initContextMenu() {
-      const contextMenuItems = window.MozXULElement.parseXULToFragment(`
-        <menuitem id="zen-context-menu-new-folder" data-l10n-id="zen-toolbar-context-new-folder"/>
-        `);
-      document.getElementById('context_moveTabToGroup').before(contextMenuItems);
     }
 
     #onTabGrouped(event) {
@@ -183,6 +247,127 @@
       }
     }
 
+    async #onTabGroupCollapse(event) {
+      const group = event.target;
+
+      const tabsContainer = group.querySelector('.tab-group-container');
+      const animations = [];
+      const groupStart = group.querySelector('.zen-tab-group-start');
+      let heightUntilSelected = 0;
+      let selectedItem = null;
+      let itemsAfterSelected = [];
+      animations.push(...this.#updateFolderIcon(group));
+      for (const item of tabsContainer.children) {
+        const rect = item.getBoundingClientRect();
+        if (item.hasAttribute('visuallyselected')) {
+          selectedItem = item;
+        } else if (!selectedItem) {
+          heightUntilSelected += rect.height;
+        } else {
+          itemsAfterSelected.push(item);
+        }
+      }
+      animations.push(
+        gZenUIManager.motion.animate(
+          groupStart,
+          {
+            marginTop: [0, -heightUntilSelected],
+          },
+          {
+            duration: 0.15,
+            ease: 'linear',
+          }
+        )
+      );
+      // TODO: Do the rest of the items after the selected item
+      await Promise.all(animations);
+    }
+
+    async #onTabGroupExpand(event) {
+      const group = event.target;
+
+      const tabsContainer = group.querySelector('.tab-group-container');
+      const groupStart = group.querySelector('.zen-tab-group-start');
+      const animations = [];
+      tabsContainer.style.overflow = 'hidden';
+      animations.push(...this.#updateFolderIcon(group));
+      animations.push(
+        gZenUIManager.motion.animate(
+          groupStart,
+          {
+            marginTop: 0,
+          },
+          {
+            duration: 0.15,
+            ease: 'linear',
+          }
+        )
+      );
+      await Promise.all(animations);
+      tabsContainer.style.overflow = '';
+    }
+
+    #onNewFolder(event) {
+      const contextMenu = event.target.parentElement;
+      let tabs = [];
+      let triggerTab =
+        contextMenu.triggerNode &&
+        (contextMenu.triggerNode.tab || contextMenu.triggerNode.closest('tab'));
+
+      tabs.push(triggerTab, ...gBrowser.selectedTabs);
+
+      const group = this.createFolder(tabs, { insertBefore: triggerTab });
+      this.#groupInit(group);
+    }
+
+    createFolder(tabs, options = {}) {
+      for (const tab of tabs) {
+        gBrowser.pinTab(tab);
+      }
+      const insertBefore =
+        options.insertBefore ||
+        gZenWorkspaces.pinnedTabsContainer.querySelector(
+          '.vertical-pinned-tabs-container-separator'
+        );
+
+      const folder = this._createFolderNode();
+
+      insertBefore.before(folder);
+      folder.addTabs(tabs);
+
+      // Fixes bug1953801 and bug1954689
+      // Ensure that the tab state cache is updated immediately after creating
+      // a group. This is necessary because we consider group creation a
+      // deliberate user action indicating the tab has importance for the user.
+      // Without this, it is not possible to save and close a tab group with
+      // a short lifetime.
+      folder.tabs.forEach((tab) => {
+        gBrowser.TabStateFlusher.flush(tab.linkedBrowser);
+      });
+
+      this.#updateFolderIcon(folder, 'auto', false);
+      return folder;
+    }
+
+    _createFolderNode(options = {}) {
+      const folder = document.createXULElement('zen-folder', { is: 'zen-folder' });
+      let id = options.id;
+      if (!id) {
+        // Note: If this changes, make sure to also update the
+        // getExtTabGroupIdForInternalTabGroupId implementation in
+        // browser/components/extensions/parent/ext-browser.js.
+        // See: Bug 1960104 - Improve tab group ID generation in addTabGroup
+        id = `${Date.now()}-${Math.round(Math.random() * 100)}`;
+      }
+      folder.id = id;
+      folder.label = options.label || 'New Folder';
+      folder.collapsed = !!options.collapsed;
+      folder.pinned = options.pinned ?? true;
+      folder.saveOnWindowClose = !!options.saveOnWindowClose;
+
+      return folder;
+    }
+
     expandGroupTabs(group) {
       for (const tab of group.tabs.reverse()) {
         gBrowser.ungroupTab(tab);
@@ -235,131 +420,96 @@
       return this._piningFolder;
     }
 
-    #onNewFolder(event) {
-      const contextMenu = event.target.parentElement;
-      let tabs = [];
-      let triggerTab =
-        contextMenu.triggerNode &&
-        (contextMenu.triggerNode.tab || contextMenu.triggerNode.closest('tab'));
+    openTabsPopup(event) {
+      event.stopPropagation();
 
-      tabs.push(triggerTab, ...gBrowser.selectedTabs);
+      const activeGroup = event.target.parentElement;
 
-      this.createFolder(tabs, { insertBefore: triggerTab });
-    }
+      this.#populateTabsList(activeGroup);
 
-    _createFolderNode(options = {}) {
-      const folder = document.createXULElement('zen-folder', { is: 'zen-folder' });
-      let id = options.id;
-      if (!id) {
-        // Note: If this changes, make sure to also update the
-        // getExtTabGroupIdForInternalTabGroupId implementation in
-        // browser/components/extensions/parent/ext-browser.js.
-        // See: Bug 1960104 - Improve tab group ID generation in addTabGroup
-        id = `${Date.now()}-${Math.round(Math.random() * 100)}`;
-      }
-      folder.id = id;
-      folder.label = options.label || 'New Folder';
-      folder.collapsed = !!options.collapsed;
-      folder.pinned = options.pinned ?? true;
-      folder.saveOnWindowClose = !!options.saveOnWindowClose;
+      const search = this.#popup.querySelector('#zen-folder-tabs-list-search');
+      search.placeholder = `Search ${activeGroup.name}...`;
+      const tabsList = this.#popup.querySelector('#zen-folder-tabs-list');
 
-      return folder;
-    }
-
-    createFolder(tabs, options = {}) {
-      for (const tab of tabs) {
-        gBrowser.pinTab(tab);
-      }
-      const insertBefore =
-        options.insertBefore ||
-        gZenWorkspaces.pinnedTabsContainer.querySelector(
-          '.vertical-pinned-tabs-container-separator'
-        );
-
-      const folder = this._createFolderNode();
-
-      insertBefore.before(folder);
-      folder.addTabs(tabs);
-
-      // Fixes bug1953801 and bug1954689
-      // Ensure that the tab state cache is updated immediately after creating
-      // a group. This is necessary because we consider group creation a
-      // deliberate user action indicating the tab has importance for the user.
-      // Without this, it is not possible to save and close a tab group with
-      // a short lifetime.
-      folder.tabs.forEach((tab) => {
-        gBrowser.TabStateFlusher.flush(tab.linkedBrowser);
+      search.addEventListener('input', () => {
+        const query = search.value.toLowerCase();
+        for (const item of tabsList.children) {
+          item.hidden = !item.getAttribute('data-label').includes(query);
+        }
       });
 
-      this.#updateFolderIcon(folder, 'auto', false);
-      return folder;
+      const target = event.target;
+      target.setAttribute('open', true);
+
+      const handlePopupHidden = (event) => {
+        if (event.target !== this.#popup) return;
+        search.value = '';
+        target.removeAttribute('open');
+        this.#popup.removeEventListener('popuphidden', handlePopupHidden);
+      };
+
+      this.#popup.addEventListener('popuphidden', handlePopupHidden);
+      this.#popup.openPopup(target, 'after_start');
     }
 
-    async #onTabGroupCollapse(event) {
-      const group = event.target;
-      if (group.nodeName !== 'zen-folder') return;
+    #populateTabsList(group) {
+      const tabsList = this.#popup.querySelector('#zen-folder-tabs-list');
+      tabsList.replaceChildren();
 
-      const tabsContainer = group.querySelector('.tab-group-container');
-      const animations = [];
-      const groupStart = group.querySelector('.zen-tab-group-start');
-      let heightUntilSelected = 0;
-      let selectedItem = null;
-      let itemsAfterSelected = [];
-      animations.push(...this.#updateFolderIcon(group));
-      for (const item of tabsContainer.children) {
-        const rect = item.getBoundingClientRect();
-        if (item.hasAttribute('visuallyselected')) {
-          selectedItem = item;
-        } else if (!selectedItem) {
-          heightUntilSelected += rect.height;
-        } else {
-          itemsAfterSelected.push(item);
+      for (const tab of group.tabs) {
+        if (tab.hidden) continue;
+
+        const item = document.createElement('div');
+        item.className = 'tabs-list-item';
+
+        const background = document.createElement('div');
+        background.className = 'tabs-list-item-background';
+
+        const content = document.createElement('div');
+        content.className = 'tabs-list-item-content';
+
+        const icon = document.createElement('img');
+        icon.className = 'tabs-list-item-icon';
+
+        let tabURL = tab.linkedBrowser?.currentURI?.spec || '';
+        let tabLabel = tab.label || '';
+        let iconURL =
+          gBrowser.getIcon(tab) ||
+          "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3C/svg%3E";
+
+        icon.src = iconURL;
+
+        const labelsContainer = document.createElement('div');
+        labelsContainer.className = 'tabs-list-item-labels';
+
+        const mainLabel = document.createElement('div');
+        mainLabel.className = 'tabs-list-item-label';
+        mainLabel.textContent = tabLabel;
+
+        const secondaryLabel = document.createElement('div');
+        secondaryLabel.className = 'tab-list-item-secondary-label';
+        secondaryLabel.textContent = formatRelativeTime(tab.lastAccessed);
+
+        labelsContainer.append(mainLabel, secondaryLabel);
+        content.append(icon, labelsContainer);
+        item.append(background, content);
+
+        if (tab.selected) {
+          item.setAttribute('selected', 'true');
         }
+
+        item.setAttribute('data-label', `${tabLabel.toLowerCase()} ${tabURL.toLowerCase()}`);
+
+        item.addEventListener('click', () => {
+          gBrowser.selectedTab = tab;
+          this.#popup.hidePopup();
+        });
+
+        tabsList.appendChild(item);
       }
-      animations.push(
-        gZenUIManager.motion.animate(
-          groupStart,
-          {
-            marginTop: [0, -heightUntilSelected],
-          },
-          {
-            duration: 0.15,
-            ease: 'linear',
-          }
-        )
-      );
-      // TODO: Do the rest of the items after the selected item
-      await Promise.all(animations);
-    }
-
-    async #onTabGroupExpand(event) {
-      const group = event.target;
-      if (group.nodeName !== 'zen-folder') return;
-
-      const tabsContainer = group.querySelector('.tab-group-container');
-      const groupStart = group.querySelector('.zen-tab-group-start');
-      const animations = [];
-      tabsContainer.style.overflow = 'hidden';
-      animations.push(...this.#updateFolderIcon(group));
-      animations.push(
-        gZenUIManager.motion.animate(
-          groupStart,
-          {
-            marginTop: 0,
-          },
-          {
-            duration: 0.15,
-            ease: 'linear',
-          }
-        )
-      );
-      await Promise.all(animations);
-      tabsContainer.style.overflow = '';
     }
 
     #updateFolderIcon(group, state = 'auto', play = true) {
-      if (group.nodeName !== 'zen-folder') return;
-
       const svg = group.querySelector('svg');
       if (!svg) return [];
 
@@ -411,6 +561,24 @@
       if (group.collapsed) {
         groupStart.style.marginTop = `-${containerMargin}px`;
       }
+
+      const labelContainer = group.querySelector('.tab-group-label-container');
+      // Setup mouseenter/mouseleave events for the folder
+      labelContainer.addEventListener('mouseenter', (event) => {
+        if (!group.collapsed) return;
+        this.#mouseTimer = setTimeout(() => {
+          this.openTabsPopup(event);
+        }, 2000);
+      });
+      labelContainer.addEventListener('mouseleave', (event) => {
+        clearTimeout(this.#mouseTimer);
+        if (!group.collapsed) return;
+        this.#mouseTimer = setTimeout(() => {
+          // If popup is focused don't hide it
+          if (this.#popup.matches(':hover')) return;
+          this.#popup.hidePopup();
+        }, 200);
+      });
     }
 
     storeDataForSessionStore() {
