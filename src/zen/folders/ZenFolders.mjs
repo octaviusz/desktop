@@ -147,24 +147,6 @@
     }
 
     #initTabsPopup() {
-      const popupSet = document.querySelector('#mainPopupSet');
-      if (popupSet.querySelector('#zen-folder-tabs-popup')) return;
-      const popup = window.MozXULElement.parseXULToFragment(
-        `
-        <panel id="zen-folder-tabs-popup" type="arrow" orient="vertical">
-        <hbox class="tabs-list-header">
-          <image class="zen-folder-tabs-list-search-icon" src="chrome://global/skin/icons/search-glass.svg"/>
-          <html:input id="zen-folder-tabs-list-search" placeholder="Search tabs" type="search"/>
-        </hbox>
-          <scrollbox class="zen-folder-tabs-list-scrollbox" flex="1">
-            <vbox id="zen-folder-tabs-list"></vbox>
-          </scrollbox>
-        </panel>
-        `
-      ).cloneNode(true);
-
-      popupSet.appendChild(popup);
-
       this.#popup = document.getElementById('zen-folder-tabs-popup');
 
       this.#popup.addEventListener('mouseenter', () => {

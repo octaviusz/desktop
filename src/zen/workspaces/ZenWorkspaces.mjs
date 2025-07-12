@@ -2718,7 +2718,6 @@ var gZenWorkspaces = new (class extends ZenMultiWindowFeature {
   get allTabGroups() {
     if (!this._hasInitializedTabsStrip) {
       let children = this.tabboxChildren;
-      console.log(children);
       return children.filter((node) => gBrowser.isTabGroup(node));
     }
     const pinnedContainers = [];

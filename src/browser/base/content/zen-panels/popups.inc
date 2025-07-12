@@ -30,3 +30,13 @@
   <menuitem data-l10n-id="zen-panel-ui-workspaces-create" command="cmd_zenOpenWorkspaceCreation"/>
   <menuitem id="context_zenDeleteWorkspace" data-l10n-id="zen-workspaces-panel-context-delete" command="cmd_zenCtxDeleteWorkspace"/>
 </menupopup>
+
+<panel id="zen-folder-tabs-popup" type="arrow" orient="vertical">
+  <hbox class="tabs-list-header">
+    <html:input id="zen-folder-tabs-list-search" placeholder="Search tabs" type="search"/>
+    <image class="zen-folder-tabs-list-search-icon" src="chrome://global/skin/icons/search-glass.svg"/>
+  </hbox>
+  <scrollbox class="zen-folder-tabs-list-scrollbox" flex="1">
+    <vbox id="zen-folder-tabs-list"></vbox>
+  </scrollbox>
+</panel>
