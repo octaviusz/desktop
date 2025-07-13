@@ -41,7 +41,7 @@
   }
 
   const MAX_OPACITY = 0.9;
-  const MIN_OPACITY = 0.3;
+  const MIN_OPACITY = AppConstants.platform === 'macosx' ? 0.25 : 0.3;
 
   const EXPLICIT_LIGHTNESS_TYPE = 'explicit-lightness';
 
@@ -425,7 +425,7 @@
     calculateInitialPosition([r, g, b]) {
       // This function is called before the picker is even rendered, so we hard code the dimensions
       // important: If any sort of sizing is changed, make sure changes are reflected here
-      const padding = 20;
+      const padding = 30;
       const rect = {
         width: 338,
         height: 338,
@@ -445,7 +445,7 @@
       // Return a color as hsl based on the position in the gradient
       const gradient = this.panel.querySelector('.zen-theme-picker-gradient');
       const rect = gradient.getBoundingClientRect();
-      const padding = 20; // each side
+      const padding = 30; // each side
       const dotHalfSize = 36 / 2; // half the size of the dot
       x += dotHalfSize;
       y += dotHalfSize;
@@ -462,8 +462,9 @@
       }
       const normalizedDistance = 1 - Math.min(distance / radius, 1); // Normalize distance to [0, 1]
       const hue = (angle / 360) * 360; // Normalize angle to [0, 360)
-      const saturation = normalizedDistance * 100; // Scale distance to [0, 100]
+      let saturation = normalizedDistance * 100; // stays high even in center
       if (type !== EXPLICIT_LIGHTNESS_TYPE) {
+        saturation = 80 + (1 - normalizedDistance) * 20;
         // Set the current lightness to how far we are from the center of the circle
         // For example, moving the dot outside will have higher lightness, while moving it inside will have lower lightness
         this.#currentLightness = Math.round((1 - normalizedDistance) * 100);
@@ -691,7 +692,7 @@
 
       const dotPad = this.panel.querySelector('.zen-theme-picker-gradient');
       const rect = dotPad.getBoundingClientRect();
-      const padding = 20;
+      const padding = 30;
 
       let updatedDots = [...dots];
       const centerPosition = { x: rect.width / 2, y: rect.height / 2 };
@@ -840,7 +841,7 @@
 
       const gradient = this.panel.querySelector('.zen-theme-picker-gradient');
       const rect = gradient.getBoundingClientRect();
-      const padding = 20;
+      const padding = 30;
 
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
@@ -973,7 +974,7 @@
       if (this.dragging) {
         event.preventDefault();
         const rect = this.panel.querySelector('.zen-theme-picker-gradient').getBoundingClientRect();
-        const padding = 20; // each side
+        const padding = 30; // each side
         // do NOT let the ball be draged outside of an imaginary circle. You can drag it anywhere inside the circle
         // if the distance between the center of the circle and the dragged ball is bigger than the radius, then the ball
         // should be placed on the edge of the circle. If it's inside the circle, then the ball just follows the mouse
@@ -1009,6 +1010,7 @@
     }
 
     themedColors(colors) {
+      // For non-Mica themes, we return the colors as they are
       return [...colors];
     }
 
@@ -1032,26 +1034,20 @@
       return `rgba(${baseColor[0]}, ${baseColor[1]}, ${baseColor[2]}, ${baseColor[3]})`;
     }
 
+    get isMica() {
+      return window.matchMedia('(-moz-windows-mica)').matches;
+    }
+
     get canBeTransparent() {
-      return window.matchMedia(
-        '(-moz-windows-mica) or (-moz-platform: macos) or ((-moz-platform: linux) and -moz-pref("zen.widget.linux.transparency"))'
-      ).matches;
+      return (
+        this.isMica ||
+        window.matchMedia(
+          '(-moz-platform: macos) or ((-moz-platform: linux) and -moz-pref("zen.widget.linux.transparency"))'
+        ).matches
+      );
     }
 
     blendWithWhiteOverlay(baseColor, opacity) {
-      if (AppConstants.platform === 'macosx') {
-        const blendColor = [255, 255, 255];
-        const blendAlpha = 0.2;
-        const baseAlpha = baseColor[3] !== undefined ? baseColor[3] : 1;
-        const blended = [];
-
-        for (let i = 0; i < 3; i++) {
-          blended[i] = Math.round(blendColor[i] * (1 - opacity) + baseColor[i] * opacity);
-        }
-
-        const blendedAlpha = +(blendAlpha * (1 - opacity) + baseAlpha * opacity).toFixed(3);
-        return `rgba(${blended[0]}, ${blended[1]}, ${blended[2]}, ${blendedAlpha})`;
-      }
       return `rgba(${baseColor[0]}, ${baseColor[1]}, ${baseColor[2]}, ${opacity})`;
     }
 
@@ -1070,11 +1066,21 @@
       } else {
         color = color.c;
       }
+      if (this.isLegacyVersion && this.isDarkMode) {
+        // In legacy version, we blend with white overlay or black overlay based on if we are in dark mode
+        color = this.blendColors(color, [0, 0, 0], 30);
+      }
       return this.blendWithWhiteOverlay(color, opacity);
     }
 
     luminance([r, g, b]) {
-      return 0.2126 * (r / 255) + 0.7152 * (g / 255) + 0.0722 * (b / 255);
+      // These magic numbers are extracted from the wikipedia article on relative luminance
+      // https://en.wikipedia.org/wiki/Relative_luminance
+      var a = [r, g, b].map((v) => {
+        v /= 255;
+        return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+      });
+      return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
     }
 
     contrastRatio(rgb1, rgb2) {
@@ -1101,7 +1107,11 @@
 
       const rotation = -45; // TODO: Detect rotation based on the accent color
       if (themedColors.length === 0) {
-        return forToolbar ? this.getToolbarModifiedBase() : 'transparent';
+        return forToolbar
+          ? this.getToolbarModifiedBase()
+          : this.isDarkMode
+            ? 'rgba(0, 0, 0, 0.6)'
+            : 'transparent';
       } else if (themedColors.length === 1) {
         return this.getSingleRGBColor(themedColors[0], forToolbar);
       } else {
@@ -1148,6 +1158,10 @@
     }
 
     shouldBeDarkMode(accentColor) {
+      if (Services.prefs.getBoolPref('zen.theme.use-sysyem-colors')) {
+        return this.isDarkMode;
+      }
+
       if (!this.canBeTransparent) {
         const toolbarBg = this.getToolbarModifiedBaseRaw();
         accentColor = this.blendColors(
@@ -1163,7 +1177,9 @@
       let darkText = this.getToolbarColor(true); // e.g. [r, g, b, a]
       let lightText = this.getToolbarColor(false); // e.g. [r, g, b, a]
 
-      lightText[3] -= 0.4; // Reduce alpha for light text
+      if (this.canBeTransparent) {
+        lightText[3] -= 0.25; // Reduce alpha for light text
+      }
 
       // Composite text color over background
       darkText = this.blendColors(bg, darkText.slice(0, 3), (1 - darkText[3]) * 100);
@@ -1315,7 +1331,7 @@
       let workspaceTheme = theme || workspace.theme;
 
       await this.foreachWindowAsActive(async (browser) => {
-        if (!browser.gZenThemePicker.promiseInitialized) {
+        if (!browser.gZenThemePicker?.promiseInitialized) {
           return;
         }
 
@@ -1505,7 +1521,7 @@
         }
 
         if (!skipUpdate) {
-          this.dots = [];
+          browser.gZenThemePicker.dots = [];
           browser.gZenThemePicker.recalculateDots(workspaceTheme.gradientColors);
         }
       });
@@ -1599,7 +1615,7 @@
         currentWorkspace = await gZenWorkspaces.getActiveWorkspace();
       }
 
-      await this.onWorkspaceChange(currentWorkspace, true, skipSave ? gradient : null);
+      await this.onWorkspaceChange(currentWorkspace, skipSave, skipSave ? gradient : null);
     }
 
     async handlePanelClose() {
