@@ -208,7 +208,7 @@ zen-folder {
     margin: var(--tab-block-margin) auto !important;
   }
 
-  &:not([collapsed]) > .tab-group-container {
+  & > .tab-group-container {
     padding-top: var(--tab-block-margin);
     padding-left: var(--zen-folder-indent, 0.5em);
 

@@ -253,7 +253,7 @@
         gZenUIManager.motion.animate(
           groupStart,
           {
-            marginTop: [0, -heightUntilSelected],
+            marginTop: [0, -(heightUntilSelected + 4)],
           },
           {
             duration: 0.15,
