@@ -1,9 +1,9 @@
 diff --git a/browser/components/tabbrowser/content/tabgroup.js b/browser/components/tabbrowser/content/tabgroup.js
-index 6147f5a75e..c63f64f171 100644
+index 6147f5a75ec6f33e030d597e3a40dd0731a9f04f..5b40541b64bc927d7794ed044a39423b9aad8b3b 100644
 --- a/browser/components/tabbrowser/content/tabgroup.js
 +++ b/browser/components/tabbrowser/content/tabgroup.js
 @@ -13,10 +13,13 @@
-
+ 
    class MozTabbrowserTabGroup extends MozXULElement {
      static markup = `
 -      <vbox class="tab-group-label-container" pack="center">
@@ -17,7 +17,7 @@ index 6147f5a75e..c63f64f171 100644
 +      </html:div>
 +
        `;
-
+ 
      /** @type {string} */
 @@ -50,49 +53,50 @@
        // This is needed to ensure events continue to fire even if the tab group is
@@ -94,7 +94,7 @@ index 6147f5a75e..c63f64f171 100644
 +            this.querySelector('.tab-group-container').appendChild(child);
 +          }
 +        }
-
+ 
 -      let tabGroupCreateDetail = this.#wasCreatedByAdoption
 -        ? { isAdoptingGroup: true }
 -        : {};
@@ -110,7 +110,7 @@ index 6147f5a75e..c63f64f171 100644
 -      this.#wasCreatedByAdoption = false;
 +      this.#observeTabChanges();
      }
-
+ 
      disconnectedCallback() {
 @@ -159,7 +163,10 @@
            }
@@ -122,11 +122,11 @@ index 6147f5a75e..c63f64f171 100644
 +        this.#tabChangeObserver.observe(container, { childList: true });
 +      }
      }
-
+ 
      get color() {
 @@ -280,9 +287,23 @@
      }
-
+ 
      get tabs() {
 -      return Array.from(this.children).filter(node => node.matches("tab"));
 +      // add other group tabs if they are under this group
@@ -138,7 +138,7 @@ index 6147f5a75e..c63f64f171 100644
 +      }
 +      return childs.filter(node => node.matches("tab"));
      }
-
+ 
 +    get group() {
 +      if (gBrowser.isTabGroup(this.parentElement)) {
 +        return this.parentElement.parentElement;
@@ -158,11 +158,19 @@ index 6147f5a75e..c63f64f171 100644
            tab.ownerGlobal.gBrowser.unpinTab(tab);
          }
          let tabToMove =
+@@ -369,7 +390,7 @@
+      * @param {PointerEvent} event
+      */
+     on_click(event) {
+-      if (event.target === this.#labelElement && event.button === 0) {
++      if (event.target.closest('.tab-group-label-container') && event.button === 0) {
+         event.preventDefault();
+         this.collapsed = !this.collapsed;
+         gBrowser.tabGroupMenu.close();
 @@ -400,5 +421,6 @@
      }
    }
-
+ 
 +  window.MozTabbrowserTabGroup = MozTabbrowserTabGroup;
    customElements.define("tab-group", MozTabbrowserTabGroup);
  }
-

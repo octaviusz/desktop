@@ -41,7 +41,7 @@
       <html:div class="tab-group-container">
         <html:div class="zen-tab-group-start" />
       </html:div>
-      `;
+    `;
 
     static rawIcon = new DOMParser().parseFromString(
       `
@@ -58,25 +58,25 @@
       </defs>
     <!--Back Folder (path)-->
       <path shape-rendering="geometricPrecision" d="M -61.3 -5.25 C -61.3 -6.492 -60.293 -7.5 -59.05 -7.5 L -55.102 -7.5 C -54.591 -7.5 -54.096 -7.326 -53.697 -7.007 L -52.84 -6.321 C -52.175 -5.79 -51.349 -5.5 -50.498 -5.5 L -47.05 -5.5 C -45.807 -5.5 -44.8 -4.492 -44.8 -3.25 L -44.731 4.42 L -44.708 6.651 C -44.708 7.894 -45.715 8.901 -46.958 8.901 L -58.958 8.901 C -60.201 8.901 -61.208 7.894 -61.208 6.651 L -61.3 4.752 L -61.3 -5.25 Z" style="stroke-width: 1.25px; transform-box: fill-box; transform-origin: 50% 50%; fill: var(--zen-primary-color); stroke: var(--toolbox-textcolor);">
-        <animateTransform type="skewX" additive="sum" attributeName="transform" values="0;17" dur="0.3s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
-        <animateTransform type="translate" additive="sum" attributeName="transform" values="0 0;-1 -1.2" dur="0.3s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
-        <animateTransform type="scale" additive="sum" attributeName="transform" values="1 1;0.95 0.95" dur="0.3s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+        <animateTransform type="skewX" additive="sum" attributeName="transform" values="0;17" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+        <animateTransform type="translate" additive="sum" attributeName="transform" values="0 0;-1 -1.2" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+        <animateTransform type="scale" additive="sum" attributeName="transform" values="1 1;0.95 0.95" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
       </path>
       <path shape-rendering="geometricPrecision" d="M -61.3 -5.25 C -61.3 -6.492 -60.293 -7.5 -59.05 -7.5 L -55.102 -7.5 C -54.591 -7.5 -54.096 -7.326 -53.697 -7.007 L -52.84 -6.321 C -52.175 -5.79 -51.349 -5.5 -50.498 -5.5 L -47.05 -5.5 C -45.807 -5.5 -44.8 -4.492 -44.8 -3.25 L -44.731 4.42 L -44.708 6.651 C -44.708 7.894 -45.715 8.901 -46.958 8.901 L -58.958 8.901 C -60.201 8.901 -61.208 7.894 -61.208 6.651 L -61.3 4.752 L -61.3 -5.25 Z" style="stroke-width: 1.25; fill-opacity: 0.15; fill: url(&quot;#gradient-0&quot;); transform-origin: -53.004px 0.701px;">
-        <animateTransform type="skewX" additive="sum" attributeName="transform" values="0;17" dur="0.3s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
-        <animateTransform type="translate" additive="sum" attributeName="transform" values="0 0;-1 -1.2" dur="0.3s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
-        <animateTransform type="scale" additive="sum" attributeName="transform" values="1 1;0.95 0.95" dur="0.3s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+        <animateTransform type="skewX" additive="sum" attributeName="transform" values="0;17" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+        <animateTransform type="translate" additive="sum" attributeName="transform" values="0 0;-1 -1.2" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+        <animateTransform type="scale" additive="sum" attributeName="transform" values="1 1;0.95 0.95" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
       </path>
     <!--Front Folder (rect)-->
       <rect shape-rendering="geometricPrecision" x="-61.301" y="-3.768" width="16.5" height="12.798" rx="2.25" style="stroke-width: 1.25px; transform-box: fill-box; transform-origin: 50% 50%; fill: var(--zen-colors-primary-foreground); stroke: var(--toolbox-textcolor);" id="object-0">
-        <animateTransform type="skewX" additive="sum" attributeName="transform" values="0;-17" dur="0.3s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
-        <animateTransform type="translate" additive="sum" attributeName="transform" values="0 0;3 -0.5" dur="0.3s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
-        <animateTransform type="scale" additive="sum" attributeName="transform" values="1 1;0.9 0.9" dur="0.3s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+        <animateTransform type="skewX" additive="sum" attributeName="transform" values="0;-17" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+        <animateTransform type="translate" additive="sum" attributeName="transform" values="0 0;3 -0.5" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+        <animateTransform type="scale" additive="sum" attributeName="transform" values="1 1;0.9 0.9" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
       </rect>
       <rect shape-rendering="geometricPrecision" x="-61.3" y="-3.8" width="16.5" height="12.798" style="stroke-width: 1.25; fill-opacity: 0.15; transform-origin: -53.05px 2.599px; fill: url(&quot;#gradient-1&quot;);" id="rect-1" rx="2.25">
-        <animateTransform type="skewX" additive="sum" attributeName="transform" values="0;-17" dur="0.3s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
-        <animateTransform type="translate" additive="sum" attributeName="transform" values="0 0;3 -0.5" dur="0.3s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
-        <animateTransform type="scale" additive="sum" attributeName="transform" values="1 1;0.9 0.9" dur="0.3s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+        <animateTransform type="skewX" additive="sum" attributeName="transform" values="0;-17" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+        <animateTransform type="translate" additive="sum" attributeName="transform" values="0 0;3 -0.5" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+        <animateTransform type="scale" additive="sum" attributeName="transform" values="1 1;0.9 0.9" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
       </rect>
     </svg>
 
@@ -410,7 +410,9 @@
       this.#populateTabsList(activeGroup);
 
       const search = this.#popup.querySelector('#zen-folder-tabs-list-search');
-      search.placeholder = `Search ${activeGroup.name}...`;
+      document.l10n.setArgs(search, {
+        'folder-name': activeGroup.name,
+      });
       const tabsList = this.#popup.querySelector('#zen-folder-tabs-list');
 
       search.addEventListener('input', () => {
@@ -427,11 +429,27 @@
         if (event.target !== this.#popup) return;
         search.value = '';
         target.removeAttribute('open');
-        this.#popup.removeEventListener('popuphidden', handlePopupHidden);
       };
 
-      this.#popup.addEventListener('popuphidden', handlePopupHidden);
-      this.#popup.openPopup(target, 'after_start');
+      this.#popup.addEventListener(
+        'popupshown',
+        () => {
+          search.focus();
+          search.select();
+        },
+        { once: true }
+      );
+
+      this.#popup.addEventListener('popuphidden', handlePopupHidden, { once: true });
+      this.#popup.openPopup(target, this.#searchPopupOptions);
+    }
+
+    get #searchPopupOptions() {
+      return {
+        position: 'topright topleft',
+        x: 0,
+        y: 3,
+      };
     }
 
     #populateTabsList(group) {
@@ -443,9 +461,6 @@
 
         const item = document.createElement('div');
         item.className = 'tabs-list-item';
-
-        const background = document.createElement('div');
-        background.className = 'tabs-list-item-background';
 
         const content = document.createElement('div');
         content.className = 'tabs-list-item-content';
@@ -474,7 +489,7 @@
 
         labelsContainer.append(mainLabel, secondaryLabel);
         content.append(icon, labelsContainer);
-        item.append(background, content);
+        item.append(content);
 
         if (tab.selected) {
           item.setAttribute('selected', 'true');
@@ -547,10 +562,12 @@
       const labelContainer = group.querySelector('.tab-group-label-container');
       // Setup mouseenter/mouseleave events for the folder
       labelContainer.addEventListener('mouseenter', (event) => {
-        if (!group.collapsed) return;
+        if (!group.collapsed || !Services.prefs.getBoolPref('zen.folders.search.enabled')) {
+          return;
+        }
         this.#mouseTimer = setTimeout(() => {
           this.openTabsPopup(event);
-        }, 2000);
+        }, Services.prefs.getIntPref('zen.folders.search.hover-delay'));
       });
       labelContainer.addEventListener('mouseleave', (event) => {
         clearTimeout(this.#mouseTimer);

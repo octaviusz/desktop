@@ -2,8 +2,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include zen-panels/gradient-generator.inc
-#include zen-panels/emojis-picker.inc
-#include zen-panels/folders-search.inc
-
-#include zen-panels/popups.inc
+# Section: Folder search
+pref('zen.folders.search.enabled', true);
+pref('zen.folders.search.hover-delay', 1000); // ms

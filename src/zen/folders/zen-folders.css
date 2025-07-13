@@ -208,7 +208,7 @@ zen-folder {
     margin: var(--tab-block-margin) auto !important;
   }
 
-  & > .tab-group-container {
+  &:not([collapsed]) > .tab-group-container {
     padding-top: var(--tab-block-margin);
     padding-left: var(--zen-folder-indent, 0.5em);
 
@@ -326,36 +326,29 @@ zen-folder {
 #zen-folder-tabs-popup .tabs-list-header {
   display: flex;
   flex-direction: row;
-  background: var(--zen-primary-color);
   padding: 6px;
-  border-bottom: 1px solid var(--arrowpanel-border-color);
-  margin-bottom: 4px;
+  border-bottom: 1px solid color-mix(in srgb, currentColor, transparent 90%);
+  margin-bottom: 2px;
 }
 
 #zen-folder-tabs-popup #zen-folder-tabs-list-search {
-  background-color: var(--zen-primary-color) !important;
+  background-color: transparent;
   border: none !important;
   outline: none !important;
-  color: light-dark(white, black) !important;
   font-size: 1em;
+}
+
+#zen-folder-tabs-popup #zen-folder-tabs-list {
+  padding: 4px;
 }
 
 #zen-folder-tabs-popup .zen-folder-tabs-list-search-icon {
   width: 16px;
   height: 16px;
   margin: 10px 2px 10px 10px;
-  color: light-dark(white, black);
-}
-
-.tabs-list-item:hover .tabs-list-item-background {
-  background-color: var(--tab-hover-background-color);
-  outline-color: var(--tab-hover-outline-color);
-}
-
-.tabs-list-item[selected='true'] .tabs-list-item-background {
-  background-color: rgba(255, 255, 255, 0.12);
-  box-shadow: var(--tab-selected-shadow);
-  border-color: transparent;
+  -moz-context-properties: fill;
+  fill: currentColor;
+  opacity: 0.7;
 }
 
 .tabs-list-item-icon {
@@ -387,7 +380,8 @@ zen-folder {
 
 .tab-list-item-secondary-label {
   opacity: 0.6;
-  font-size: 0.8em;
+  font-size: 0.7em;
+  font-weight: 500;
 }
 
 #zen-folder-tabs-popup .tabs-list-scrollbox {
@@ -398,14 +392,6 @@ zen-folder {
   position: relative;
   border-radius: var(--zen-border-radius);
   cursor: default;
-  margin: 2px;
-}
-
-.tabs-list-item-background {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  margin-inline: var(--tab-block-margin);
 }
 
 .tabs-list-item-content {
@@ -415,4 +401,14 @@ zen-folder {
   align-items: center;
   direction: ltr;
   padding: 0 var(--tab-inline-padding);
+  border-radius: 4px;
+
+  &:hover {
+    background-color: color-mix(in srgb, currentColor, transparent 90%);
+  }
+
+  &:last-child {
+    border-bottom-left-radius: max(calc(var(--panel-border-radius) - 4px), 4px);
+    border-bottom-right-radius: max(calc(var(--panel-border-radius) - 4px), 4px);
+  }
 }
