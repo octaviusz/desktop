@@ -202,6 +202,11 @@ tab-group:not([split-view-group]) {
 zen-folder {
   display: flex !important;
   flex-direction: column !important;
+  --zen-folder-behind-bgcolor: color-mix(in srgb, var(--zen-primary-color), rgba(0, 0, 0, 0.3) 60%);
+  --zen-folder-front-bgcolor: light-dark(
+    var(--zen-colors-primary-foreground),
+    color-mix(in srgb, var(--zen-primary-color), #000 40%)
+  );
 
   :root:not([zen-sidebar-expanded]) {
     width: var(--tab-min-width) !important;
@@ -210,7 +215,10 @@ zen-folder {
 
   & > .tab-group-container {
     padding-top: var(--tab-block-margin);
-    padding-left: var(--zen-folder-indent, 0.5em);
+
+    & > * {
+      margin-inline-start: var(--zen-folder-indent, 0.5em);
+    }
 
     & > tab::before {
       background: none !important;
@@ -222,7 +230,6 @@ zen-folder {
   & > .tab-group-label-container {
     flex: 0 0 auto !important;
     top: 0 !important;
-    z-index: 1000 !important;
     --tab-group-color-pale: transparent !important;
     --tab-group-color: transparent !important;
     padding-block-end: 0 !important;
@@ -241,42 +248,12 @@ zen-folder {
     }
 
     .tab-group-folder-icon {
-      width: 30px;
+      width: 28px;
       height: 28px;
       margin-inline-end: calc(var(--toolbarbutton-inner-padding) / 3) !important;
       align-content: center;
       pointer-events: none;
       flex-shrink: 0;
-    }
-
-    &:hover .zen-folder-action-button {
-      list-style-image: url('chrome://browser/skin/zen-icons/menu.svg');
-    }
-
-    & .zen-folder-action-button {
-      --toolbarbutton-inner-padding: 4px;
-      margin-left: auto !important;
-      flex-shrink: 0;
-
-      &:hover,
-      &[open] {
-        list-style-image: url('chrome://browser/skin/zen-icons/menu.svg');
-      }
-    }
-
-    &:hover .zen-folder-tabs-button {
-      list-style-image: url('chrome://browser/skin/zen-icons/search-glass.svg');
-    }
-
-    & .zen-folder-tabs-button {
-      --toolbarbutton-inner-padding: 4px;
-      margin-left: auto !important;
-      flex-shrink: 0;
-
-      &:hover,
-      &[open] {
-        list-style-image: url('chrome://browser/skin/zen-icons/search-glass.svg');
-      }
     }
 
     &:hover {
@@ -316,7 +293,6 @@ zen-folder {
 #zen-folder-tabs-popup {
   --arrowpanel-padding: 0;
   width: 250px;
-  height: 280px;
 }
 
 #zen-folder-tabs-popup * {
@@ -335,7 +311,6 @@ zen-folder {
   background-color: transparent;
   border: none !important;
   outline: none !important;
-  font-size: 1em;
 }
 
 #zen-folder-tabs-popup #zen-folder-tabs-list {

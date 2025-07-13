@@ -11,4 +11,3 @@
     <vbox id="zen-folder-tabs-list"></vbox>
   </scrollbox>
 </panel>
-

@@ -36,7 +36,6 @@
       <hbox class="tab-group-label-container" pack="center">
         <html:div class="tab-group-folder-icon"/>
         <label class="tab-group-label" role="button"/>
-        <toolbarbutton class="toolbarbutton-1 zen-folder-action-button" tooltiptext="Group action button"/>
       </hbox>
       <html:div class="tab-group-container">
         <html:div class="zen-tab-group-start" />
@@ -46,41 +45,39 @@
     static rawIcon = new DOMParser().parseFromString(
       `
       <svg width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="-67.409 -14.145 29.279 28.92">
-      <defs>
-        <linearGradient gradientUnits="userSpaceOnUse" x1="-53.05" y1="-3.8" x2="-53.05" y2="8.998" id="gradient-1">
-          <stop offset="0" style="stop-color: rgb(255, 255, 255);"/>
-          <stop offset="1" style="stop-color: rgb(0% 0% 0%)"/>
-        </linearGradient>
-        <linearGradient gradientUnits="userSpaceOnUse" x1="-40.286" y1="-3.091" x2="-40.286" y2="13.31" id="gradient-0" gradientTransform="matrix(1, 0, 0, 1, -12.717999, -4.409)">
-          <stop offset="0" style="stop-color: rgb(255, 255, 255);"/>
-          <stop offset="1" style="stop-color: rgb(0% 0% 0%)"/>
-        </linearGradient>
-      </defs>
-    <!--Back Folder (path)-->
-      <path shape-rendering="geometricPrecision" d="M -61.3 -5.25 C -61.3 -6.492 -60.293 -7.5 -59.05 -7.5 L -55.102 -7.5 C -54.591 -7.5 -54.096 -7.326 -53.697 -7.007 L -52.84 -6.321 C -52.175 -5.79 -51.349 -5.5 -50.498 -5.5 L -47.05 -5.5 C -45.807 -5.5 -44.8 -4.492 -44.8 -3.25 L -44.731 4.42 L -44.708 6.651 C -44.708 7.894 -45.715 8.901 -46.958 8.901 L -58.958 8.901 C -60.201 8.901 -61.208 7.894 -61.208 6.651 L -61.3 4.752 L -61.3 -5.25 Z" style="stroke-width: 1.25px; transform-box: fill-box; transform-origin: 50% 50%; fill: var(--zen-primary-color); stroke: var(--toolbox-textcolor);">
-        <animateTransform type="skewX" additive="sum" attributeName="transform" values="0;17" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
-        <animateTransform type="translate" additive="sum" attributeName="transform" values="0 0;-1 -1.2" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
-        <animateTransform type="scale" additive="sum" attributeName="transform" values="1 1;0.95 0.95" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
-      </path>
-      <path shape-rendering="geometricPrecision" d="M -61.3 -5.25 C -61.3 -6.492 -60.293 -7.5 -59.05 -7.5 L -55.102 -7.5 C -54.591 -7.5 -54.096 -7.326 -53.697 -7.007 L -52.84 -6.321 C -52.175 -5.79 -51.349 -5.5 -50.498 -5.5 L -47.05 -5.5 C -45.807 -5.5 -44.8 -4.492 -44.8 -3.25 L -44.731 4.42 L -44.708 6.651 C -44.708 7.894 -45.715 8.901 -46.958 8.901 L -58.958 8.901 C -60.201 8.901 -61.208 7.894 -61.208 6.651 L -61.3 4.752 L -61.3 -5.25 Z" style="stroke-width: 1.25; fill-opacity: 0.15; fill: url(&quot;#gradient-0&quot;); transform-origin: -53.004px 0.701px;">
-        <animateTransform type="skewX" additive="sum" attributeName="transform" values="0;17" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
-        <animateTransform type="translate" additive="sum" attributeName="transform" values="0 0;-1 -1.2" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
-        <animateTransform type="scale" additive="sum" attributeName="transform" values="1 1;0.95 0.95" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
-      </path>
-    <!--Front Folder (rect)-->
-      <rect shape-rendering="geometricPrecision" x="-61.301" y="-3.768" width="16.5" height="12.798" rx="2.25" style="stroke-width: 1.25px; transform-box: fill-box; transform-origin: 50% 50%; fill: var(--zen-colors-primary-foreground); stroke: var(--toolbox-textcolor);" id="object-0">
-        <animateTransform type="skewX" additive="sum" attributeName="transform" values="0;-17" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
-        <animateTransform type="translate" additive="sum" attributeName="transform" values="0 0;3 -0.5" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
-        <animateTransform type="scale" additive="sum" attributeName="transform" values="1 1;0.9 0.9" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
-      </rect>
-      <rect shape-rendering="geometricPrecision" x="-61.3" y="-3.8" width="16.5" height="12.798" style="stroke-width: 1.25; fill-opacity: 0.15; transform-origin: -53.05px 2.599px; fill: url(&quot;#gradient-1&quot;);" id="rect-1" rx="2.25">
-        <animateTransform type="skewX" additive="sum" attributeName="transform" values="0;-17" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
-        <animateTransform type="translate" additive="sum" attributeName="transform" values="0 0;3 -0.5" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
-        <animateTransform type="scale" additive="sum" attributeName="transform" values="1 1;0.9 0.9" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
-      </rect>
-    </svg>
-
-      `,
+        <defs>
+          <linearGradient gradientUnits="userSpaceOnUse" x1="-53.05" y1="-3.8" x2="-53.05" y2="8.998" id="gradient-1">
+            <stop offset="0" style="stop-color: rgb(255, 255, 255);"/>
+            <stop offset="1" style="stop-color: rgb(0% 0% 0%)"/>
+          </linearGradient>
+          <linearGradient gradientUnits="userSpaceOnUse" x1="-40.286" y1="-3.091" x2="-40.286" y2="13.31" id="gradient-0" gradientTransform="matrix(1, 0, 0, 1, -12.717999, -4.409)">
+            <stop offset="0" style="stop-color: rgb(255, 255, 255);"/>
+            <stop offset="1" style="stop-color: rgb(0% 0% 0%)"/>
+          </linearGradient>
+        </defs>
+      <!--Back Folder (path)-->
+        <path shape-rendering="geometricPrecision" d="M -61.3 -5.25 C -61.3 -6.492 -60.293 -7.5 -59.05 -7.5 L -55.102 -7.5 C -54.591 -7.5 -54.096 -7.326 -53.697 -7.007 L -52.84 -6.321 C -52.175 -5.79 -51.349 -5.5 -50.498 -5.5 L -47.05 -5.5 C -45.807 -5.5 -44.8 -4.492 -44.8 -3.25 L -44.731 4.42 L -44.708 6.651 C -44.708 7.894 -45.715 8.901 -46.958 8.901 L -58.958 8.901 C -60.201 8.901 -61.208 7.894 -61.208 6.651 L -61.3 4.752 L -61.3 -5.25 Z" style="stroke-width: 1.25px; transform-box: fill-box; transform-origin: 50% 50%; fill: var(--zen-folder-behind-bgcolor); stroke: var(--toolbox-textcolor);">
+          <animateTransform type="skewX" additive="sum" attributeName="transform" values="0;17" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+          <animateTransform type="translate" additive="sum" attributeName="transform" values="0 0;-1 -1.2" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+          <animateTransform type="scale" additive="sum" attributeName="transform" values="1 1;0.95 0.95" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+        </path>
+        <path shape-rendering="geometricPrecision" d="M -61.3 -5.25 C -61.3 -6.492 -60.293 -7.5 -59.05 -7.5 L -55.102 -7.5 C -54.591 -7.5 -54.096 -7.326 -53.697 -7.007 L -52.84 -6.321 C -52.175 -5.79 -51.349 -5.5 -50.498 -5.5 L -47.05 -5.5 C -45.807 -5.5 -44.8 -4.492 -44.8 -3.25 L -44.731 4.42 L -44.708 6.651 C -44.708 7.894 -45.715 8.901 -46.958 8.901 L -58.958 8.901 C -60.201 8.901 -61.208 7.894 -61.208 6.651 L -61.3 4.752 L -61.3 -5.25 Z" style="stroke-width: 1.25; fill-opacity: 0.1; fill: url(&quot;#gradient-0&quot;); transform-origin: -53.004px 0.701px;">
+          <animateTransform type="skewX" additive="sum" attributeName="transform" values="0;17" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+          <animateTransform type="translate" additive="sum" attributeName="transform" values="0 0;-1 -1.2" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+          <animateTransform type="scale" additive="sum" attributeName="transform" values="1 1;0.95 0.95" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+        </path>
+      <!--Front Folder (rect)-->
+        <rect shape-rendering="geometricPrecision" x="-61.301" y="-3.768" width="16.5" height="12.798" rx="2.25" style="stroke-width: 1.25px; transform-box: fill-box; transform-origin: 50% 50%; fill: var(--zen-folder-front-bgcolor); stroke: var(--toolbox-textcolor);" id="object-0">
+          <animateTransform type="skewX" additive="sum" attributeName="transform" values="0;-17" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+          <animateTransform type="translate" additive="sum" attributeName="transform" values="0 0;3 -0.5" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+          <animateTransform type="scale" additive="sum" attributeName="transform" values="1 1;0.9 0.9" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+        </rect>
+        <rect shape-rendering="geometricPrecision" x="-61.3" y="-3.8" width="16.5" height="12.798" style="stroke-width: 1.25; fill-opacity: 0.1; transform-origin: -53.05px 2.599px; fill: url(&quot;#gradient-1&quot;);" id="rect-1" rx="2.25">
+          <animateTransform type="skewX" additive="sum" attributeName="transform" values="0;-17" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+          <animateTransform type="translate" additive="sum" attributeName="transform" values="0 0;3 -0.5" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+          <animateTransform type="scale" additive="sum" attributeName="transform" values="1 1;0.9 0.9" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+        </rect>
+      </svg>`,
       'image/svg+xml'
     ).documentElement;
 
@@ -104,6 +101,13 @@
       });
 
       this.labelElement.pinned = true;
+      this.labelElement.onRenameFinished = (newLabel) => {
+        this.name = newLabel;
+      };
+
+      if (this.collapsed) {
+        this.querySelector('.tab-group-container').setAttribute('hidden', true);
+      }
     }
 
     get icon() {
@@ -123,6 +127,12 @@
 
     get isZenFolder() {
       return true;
+    }
+
+    rename() {
+      gZenVerticalTabsManager.renameTabStart({
+        target: this.labelElement,
+      });
     }
   }
 
@@ -229,8 +239,18 @@
       }
     }
 
+    #cancelPopupTimer() {
+      if (this.#mouseTimer) {
+        clearTimeout(this.#mouseTimer);
+        this.#mouseTimer = null;
+      }
+      this.#popup.hidePopup();
+    }
+
     async #onTabGroupCollapse(event) {
       const group = event.target;
+
+      this.#cancelPopupTimer();
 
       const tabsContainer = group.querySelector('.tab-group-container');
       const animations = [];
@@ -253,7 +273,7 @@
         gZenUIManager.motion.animate(
           groupStart,
           {
-            marginTop: [0, -(heightUntilSelected + 4)],
+            marginTop: [0, -(heightUntilSelected + 4 * !selectedItem)],
           },
           {
             duration: 0.15,
@@ -263,12 +283,17 @@
       );
       // TODO: Do the rest of the items after the selected item
       await Promise.all(animations);
+      tabsContainer.setAttribute('hidden', true);
     }
 
     async #onTabGroupExpand(event) {
       const group = event.target;
 
+      this.#cancelPopupTimer();
+
       const tabsContainer = group.querySelector('.tab-group-container');
+      tabsContainer.removeAttribute('hidden');
+
       const groupStart = group.querySelector('.zen-tab-group-start');
       const animations = [];
       tabsContainer.style.overflow = 'hidden';
@@ -328,6 +353,8 @@
       });
 
       this.#updateFolderIcon(folder, 'auto', false);
+
+      folder.rename();
       return folder;
     }
 
@@ -346,6 +373,7 @@
       folder.collapsed = !!options.collapsed;
       folder.pinned = options.pinned ?? true;
       folder.saveOnWindowClose = !!options.saveOnWindowClose;
+      folder.color = 'zen-workspace-color';
 
       return folder;
     }

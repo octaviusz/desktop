@@ -1095,7 +1095,8 @@ var gZenVerticalTabsManager = {
       return;
     this._tabEdited =
       event.target.closest('.tabbrowser-tab') ||
-      event.target.closest('.zen-current-workspace-indicator-name');
+      event.target.closest('.zen-current-workspace-indicator-name') ||
+      event.target.closest('.tab-group-label');
     if (
       !this._tabEdited ||
       ((!this._tabEdited.pinned || this._tabEdited.hasAttribute('zen-essential')) && isTab)
