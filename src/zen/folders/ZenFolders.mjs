@@ -77,6 +77,12 @@
           <animateTransform type="translate" additive="sum" attributeName="transform" values="0 0;3 -0.5" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
           <animateTransform type="scale" additive="sum" attributeName="transform" values="1 1;0.9 0.9" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
         </rect>
+        <path id="folder-dots" shape-rendering="geometricPrecision" d="M -59.363 2.243 C -59.363 2.074 -59.33 1.915 -59.262 1.76 C -59.192 1.612 -59.107 1.478 -58.996 1.373 C -58.885 1.256 -58.751 1.165 -58.598 1.101 C -58.448 1.033 -58.289 1 -58.114 1 C -57.945 1 -57.785 1.033 -57.636 1.101 C -57.482 1.165 -57.354 1.256 -57.244 1.373 C -57.131 1.478 -57.042 1.612 -56.972 1.76 C -56.904 1.915 -56.871 2.074 -56.871 2.243 C -56.871 2.414 -56.904 2.573 -56.972 2.727 C -57.042 2.876 -57.131 3.008 -57.244 3.125 C -57.354 3.232 -57.482 3.321 -57.636 3.385 C -57.785 3.455 -57.945 3.486 -58.114 3.486 C -58.289 3.486 -58.448 3.455 -58.598 3.385 C -58.751 3.321 -58.885 3.232 -58.996 3.125 C -59.107 3.008 -59.192 2.876 -59.262 2.727 C -59.33 2.573 -59.363 2.414 -59.363 2.243 Z M -54.38 2.243 C -54.38 2.074 -54.347 1.915 -54.279 1.76 C -54.215 1.612 -54.124 1.478 -54.019 1.373 C -53.902 1.256 -53.769 1.165 -53.621 1.101 C -53.466 1.033 -53.306 1 -53.137 1 C -52.966 1 -52.807 1.033 -52.653 1.101 C -52.504 1.165 -52.372 1.256 -52.265 1.373 C -52.148 1.478 -52.059 1.612 -51.995 1.76 C -51.925 1.915 -51.894 2.074 -51.894 2.243 C -51.894 2.414 -51.925 2.573 -51.995 2.727 C -52.059 2.876 -52.148 3.008 -52.265 3.125 C -52.372 3.232 -52.504 3.321 -52.653 3.385 C -52.807 3.455 -52.966 3.486 -53.137 3.486 C -53.306 3.486 -53.466 3.455 -53.621 3.385 C -53.769 3.321 -53.902 3.232 -54.019 3.125 C -54.124 3.008 -54.215 2.876 -54.279 2.727 C -54.347 2.573 -54.38 2.414 -54.38 2.243 Z M -49.402 2.243 C -49.402 2.074 -49.37 1.915 -49.302 1.76 C -49.232 1.612 -49.147 1.478 -49.036 1.373 C -48.924 1.256 -48.791 1.165 -48.638 1.101 C -48.488 1.033 -48.329 1 -48.154 1 C -47.984 1 -47.824 1.033 -47.676 1.101 C -47.521 1.165 -47.395 1.256 -47.282 1.373 C -47.171 1.478 -47.082 1.612 -47.012 1.76 C -46.942 1.915 -46.911 2.074 -46.911 2.243 C -46.911 2.414 -46.942 2.573 -47.012 2.727 C -47.082 2.876 -47.171 3.008 -47.282 3.125 C -47.395 3.232 -47.521 3.321 -47.676 3.385 C -47.824 3.455 -47.984 3.486 -48.154 3.486 C -48.329 3.486 -48.488 3.455 -48.638 3.385 C -48.791 3.321 -48.924 3.232 -49.036 3.125 C -49.147 3.008 -49.232 2.876 -49.302 2.727 C -49.37 2.573 -49.402 2.414 -49.402 2.243 Z" style="fill-opacity: 1; fill: var(--toolbox-textcolor);">
+          <animateTransform type="skewX" additive="sum" attributeName="transform" values="0;-17" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+          <animateTransform type="translate" additive="sum" attributeName="transform" values="0 0;0 -0.5" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+          <animateTransform type="scale" additive="sum" attributeName="transform" values="1 1;0.9 0.9" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+          <animate attributeName="opacity" values="0;0" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+        </path>
       </svg>`,
       'image/svg+xml'
     ).documentElement;
@@ -473,8 +479,10 @@
     }
 
     get #searchPopupOptions() {
+      const isRightSide = gZenVerticalTabsManager._prefsRightSide;
+      const position = isRightSide ? 'topleft topright' : 'topright topleft';
       return {
-        position: 'topright topleft',
+        position: position,
         x: 0,
         y: 3,
       };
