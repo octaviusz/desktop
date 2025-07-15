@@ -859,7 +859,7 @@
             let newIndex;
             if (targetTab) {
               const rect = targetTab.getBoundingClientRect();
-              newIndex = targetTab._tPos;
+              newIndex = targetTab.elementIndex;
 
               if (isVertical || !this.expandedSidebarMode) {
                 const middleY = targetTab.screenY + rect.height / 2;
