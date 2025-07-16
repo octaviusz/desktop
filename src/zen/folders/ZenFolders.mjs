@@ -138,6 +138,7 @@
     rename() {
       gZenVerticalTabsManager.renameTabStart({
         target: this.labelElement,
+        explicit: true,
       });
     }
   }
@@ -293,7 +294,9 @@
       );
       // TODO: Do the rest of the items after the selected item
       await Promise.all(animations);
-      tabsContainer.setAttribute('hidden', true);
+      if (!selectedItem) {
+        tabsContainer.setAttribute('hidden', true);
+      }
     }
 
     async #onTabGroupExpand(event) {
