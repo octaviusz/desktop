@@ -264,7 +264,6 @@
       let heightUntilSelected = 0;
       let selectedItem = null;
       let itemsAfterSelected = [];
-      animations.push(...this.#updateFolderIcon(group));
       for (const item of tabsContainer.children) {
         const rect = item.getBoundingClientRect();
         if (item.hasAttribute('visuallyselected')) {
@@ -275,6 +274,11 @@
           itemsAfterSelected.push(item);
         }
       }
+      if (selectedItem) {
+        group.setAttribute('has-active', 'true');
+      }
+
+      animations.push(...this.#updateFolderIcon(group));
       animations.push(
         gZenUIManager.motion.animate(
           groupStart,
@@ -303,6 +307,9 @@
       const groupStart = group.querySelector('.zen-tab-group-start');
       const animations = [];
       tabsContainer.style.overflow = 'hidden';
+      if (group.hasAttribute('has-active')) {
+        group.removeAttribute('has-active');
+      }
       animations.push(...this.#updateFolderIcon(group));
       animations.push(
         gZenUIManager.motion.animate(
@@ -564,14 +571,27 @@
         const origValues = anim.dataset.origValues;
         const [fromValue, toValue] = origValues.split(';');
 
-        // Select animation state
-        let newValues = {
-          open: `${fromValue};${toValue}`,
-          close: `${toValue};${fromValue}`,
-          auto: isCollapsed ? `${toValue};${fromValue}` : `${fromValue};${toValue}`,
-        };
+        let newValues;
 
-        anim.setAttribute('values', newValues[state]);
+        // Animate folder dots
+        if (
+          anim.parentElement.id === 'folder-dots' &&
+          anim.getAttribute('attributeName') === 'opacity' &&
+          isCollapsed &&
+          group.hasAttribute('has-active')
+        ) {
+          newValues = '0;1';
+          // Animate folder icon
+        } else {
+          const stateValues = {
+            open: `${fromValue};${toValue}`,
+            close: `${toValue};${fromValue}`,
+            auto: isCollapsed ? `${toValue};${fromValue}` : `${fromValue};${toValue}`,
+          };
+          newValues = stateValues[state];
+        }
+
+        anim.setAttribute('values', newValues);
         anim.beginElement();
       });
       return [];
