@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/tabs.js b/browser/components/tabbrowser/content/tabs.js
-index 1fcebe3962..bf41988e88 100644
+index 1fcebe3962398ff1b7cadef657ac8b68a80e720d..7e506bd92023f4aa563c9207c79b124e7d8a648f 100644
 --- a/browser/components/tabbrowser/content/tabs.js
 +++ b/browser/components/tabbrowser/content/tabs.js
 @@ -289,6 +289,7 @@
@@ -7,7 +7,7 @@ index 1fcebe3962..bf41988e88 100644
        this._invalidateCachedVisibleTabs();
        this._unlockTabSizing();
 +      return;
-
+ 
        // If the user's selected tab is in the collapsing group, kick them off
        // the tab. If no tabs exist outside the group, create a new one and
 @@ -345,7 +346,7 @@
@@ -48,7 +48,7 @@ index 1fcebe3962..bf41988e88 100644
          screenX: event.screenX,
 @@ -933,6 +934,10 @@
        }
-
+ 
        let draggedTab = event.dataTransfer.mozGetDataAt(TAB_DROP_TYPE, 0);
 +      if (draggedTab && effects === "move") {
 +        gZenPinnedTabManager.applyDragoverClass(event, draggedTab);
@@ -58,7 +58,7 @@ index 1fcebe3962..bf41988e88 100644
          (effects == "move" || effects == "copy") &&
          document == draggedTab.ownerDocument &&
 @@ -1089,6 +1094,18 @@
-
+ 
        this._tabDropIndicator.hidden = true;
        event.stopPropagation();
 +      if (draggedTab?.hasAttribute("zen-has-splitted")) {
@@ -100,7 +100,7 @@ index 1fcebe3962..bf41988e88 100644
          } else {
            shouldTranslate &&= oldTranslateX && oldTranslateX != newTranslateX;
          }
-
+ 
 +        let shouldAddGroupToGroup = isTabGroupLabel(draggedTab) && isTabGroup(dropElement.group)
 +
          let moveTabs = () => {
@@ -117,7 +117,7 @@ index 1fcebe3962..bf41988e88 100644
                gBrowser.moveTabTo(
                  tab,
 @@ -1349,6 +1376,7 @@
-
+ 
            let nextItem = this.ariaFocusableItems[newIndex];
            let tabGroup = isTab(nextItem) && nextItem.group;
 +          if (gZenViewSplitter.handleTabDrop(event, urls, replace, inBackground)) return;
@@ -125,7 +125,7 @@ index 1fcebe3962..bf41988e88 100644
              inBackground,
              replace,
 @@ -1381,6 +1409,17 @@
-
+ 
        this.finishMoveTogetherSelectedTabs(draggedTab);
        this.finishAnimateTabMove();
 +
@@ -140,25 +140,25 @@ index 1fcebe3962..bf41988e88 100644
 +      }
 +
        this.#expandGroupOnDrop(draggedTab);
-
+ 
        if (
 @@ -1607,7 +1646,7 @@
      }
-
+ 
      get newTabButton() {
 -      return this.querySelector("#tabs-newtab-button");
 +      return gZenWorkspaces.activeWorkspaceStrip.querySelector("#tabs-newtab-button");
      }
-
+ 
      get verticalMode() {
 @@ -1623,6 +1662,7 @@
      }
-
+ 
      get overflowing() {
 +      gZenWorkspaces.updateOverflowingTabs();
        return this.hasAttribute("overflow");
      }
-
+ 
 @@ -1631,26 +1671,54 @@
        if (this.#allTabs) {
          return this.#allTabs;
@@ -167,7 +167,7 @@ index 1fcebe3962..bf41988e88 100644
 +      let children = gZenWorkspaces.tabboxChildren;
        // remove arrowScrollbox periphery element
        children.pop();
-
+ 
        // explode tab groups
        // Iterate backwards over the array to preserve indices while we modify
        // things in place
@@ -213,24 +213,24 @@ index 1fcebe3962..bf41988e88 100644
 +      this.#allTabs = allTabs;
        return this.#allTabs;
      }
-
+ 
      get allGroups() {
        let children = Array.from(this.arrowScrollbox.children);
 -      return children.filter(node => node.tagName == "tab-group");
 +      return gZenWorkspaces.allTabGroups;
      }
-
+ 
      /**
 @@ -1717,33 +1785,27 @@
-
+ 
        let elementIndex = 0;
-
+ 
 -      for (let i = 0; i < this.pinnedTabsContainer.childElementCount; i++) {
 -        this.pinnedTabsContainer.children[i].elementIndex = elementIndex++;
 -      }
 -      let children = Array.from(this.arrowScrollbox.children);
 +      let children = gZenWorkspaces.tabboxChildrenWithoutEmpty;
-
+ 
        let focusableItems = [];
 -      for (let child of children) {
 +      for (let child of [...gZenWorkspaces.getCurrentEssentialsContainer().children, ...this.pinnedTabsContainer.children, ...children]) {
@@ -254,13 +254,13 @@ index 1fcebe3962..bf41988e88 100644
            }
          }
        }
-
+ 
 -      this.#focusableItems = [
 -        ...this.pinnedTabsContainer.children,
 -        ...focusableItems,
 -      ];
 +      this.#focusableItems = focusableItems;
-
+ 
        return this.#focusableItems;
      }
 @@ -1751,6 +1813,7 @@
@@ -269,7 +269,7 @@ index 1fcebe3962..bf41988e88 100644
        this._invalidateCachedVisibleTabs();
 +      gZenWorkspaces._allStoredTabs = null;
      }
-
+ 
      _invalidateCachedVisibleTabs() {
 @@ -1766,8 +1829,8 @@
      #isContainerVerticalPinnedGrid(tab) {
@@ -283,13 +283,13 @@ index 1fcebe3962..bf41988e88 100644
        );
      }
 @@ -1783,7 +1846,7 @@
-
+ 
        if (node == null) {
          // We have a container for non-tab elements at the end of the scrollbox.
 -        node = this.arrowScrollbox.lastChild;
 +        node = gZenWorkspaces.activeWorkspaceStrip.lastChild;
        }
-
+ 
        node.before(tab);
 @@ -1878,7 +1941,7 @@
            // There are separate "new tab" buttons for horizontal tabs toolbar, vertical tabs and
@@ -301,29 +301,29 @@ index 1fcebe3962..bf41988e88 100644
            const newTabVertical = document.getElementById(
              "vertical-tabs-newtab-button"
 @@ -1973,10 +2036,12 @@
-
+ 
      _handleTabSelect(aInstant) {
        let selectedTab = this.selectedItem;
 +      if (!selectedTab) return;
        if (this.overflowing) {
          this.arrowScrollbox.ensureElementIsVisible(selectedTab, aInstant);
        }
-
+ 
 +      gZenCompactModeManager.flashSidebarIfNecessary(aInstant);
        selectedTab._notselectedsinceload = false;
      }
-
+ 
 @@ -2130,7 +2195,7 @@
          return;
        }
-
+ 
 -      let tabs = this.visibleTabs.slice(0, gBrowser.pinnedTabCount);
 +      let tabs = this.ariaFocusableItems.slice(0, gBrowser._numZenEssentials);
-
+ 
        let directionX = screenX > dragData.animLastScreenX;
        let directionY = screenY > dragData.animLastScreenY;
 @@ -2139,6 +2204,8 @@
-
+ 
        let { width: tabWidth, height: tabHeight } =
          draggedTab.getBoundingClientRect();
 +      tabWidth += 4; // Add 4px to account for the gap
@@ -342,17 +342,17 @@ index 1fcebe3962..bf41988e88 100644
        let lastBoundX =
 @@ -2294,7 +2361,7 @@
        }
-
+ 
        dragData.animDropElementIndex = newIndex;
 -      dragData.dropElement = tabs[newIndex];
 +      dragData.dropElement = tabs[Math.min(newIndex, tabs.length - 1)];
        dragData.dropBefore = newIndex < tabs.length;
-
+ 
        // Shift background tabs to leave a gap where the dragged tab
 @@ -2327,12 +2394,16 @@
-
+ 
        this.#clearDragOverCreateGroupTimer();
-
+ 
 -      let isPinned = draggedTab.pinned;
 -      let numPinned = gBrowser.pinnedTabCount;
 +      let isPinned = draggedTab?.group ? draggedTab.group.pinned : draggedTab.pinned;
@@ -367,7 +367,7 @@ index 1fcebe3962..bf41988e88 100644
 +      if (draggedTab.group?.hasAttribute("split-view-group")) {
 +        draggedTab = draggedTab.group.labelElement;
 +      }
-
+ 
        if (this.#rtlMode) {
          tabs.reverse();
 @@ -2346,7 +2417,7 @@
@@ -378,7 +378,7 @@ index 1fcebe3962..bf41988e88 100644
 +      let { width: tabWidth, height: tabHeight } = bounds(draggedTab.group?.hasAttribute("split-view-group") ? draggedTab.group : draggedTab);
        let translateX = event.screenX - dragData.screenX;
        let translateY = event.screenY - dragData.screenY;
-
+ 
 @@ -2360,12 +2431,21 @@
        let lastTab = tabs.at(-1);
        let lastMovingTab = movingTabs.at(-1);
@@ -411,7 +411,7 @@ index 1fcebe3962..bf41988e88 100644
 +        }
          item.style.transform = `${translateAxis}(${translate}px)`;
        }
-
+ 
 @@ -2521,6 +2604,9 @@
              break;
            }
@@ -430,11 +430,11 @@ index 1fcebe3962..bf41988e88 100644
 +        let dropElementForOverlap = isTabGroupLabel(dropElement) && !dropElement.group?.hasAttribute("split-view-group")
            ? dropElement.parentElement
            : dropElement;
-
+ 
 @@ -2654,26 +2740,6 @@
            dropBefore = !dropBefore;
          }
-
+ 
 -        // If dragging a group over another group, don't make it look like it is
 -        // possible to drop the dragged group inside the other group.
 -        if (
@@ -461,7 +461,7 @@ index 1fcebe3962..bf41988e88 100644
 @@ -2686,12 +2752,7 @@
          }
        }
-
+ 
 -      if (
 -        gBrowser._tabGroupsEnabled &&
 -        isTab(draggedTab) &&
@@ -470,9 +470,22 @@ index 1fcebe3962..bf41988e88 100644
 -      ) {
 +      if (isTab(draggedTab)) {
          let dragOverGroupingThreshold = 1 - moveOverThreshold;
-
+ 
          // When dragging tab(s) over an ungrouped tab, signal to the user
-@@ -2739,7 +2800,7 @@
+@@ -2728,18 +2789,18 @@
+             dropElementGroup &&
+             dropElement == lastUnmovingTabInGroup &&
+             !dropBefore &&
+-            overlapPercent < dragOverGroupingThreshold
++            overlapPercent < dragOverGroupingThreshold && dropElementGroup?.level === 0
+           ) {
+             // Dragging tab over the last tab of a tab group, but not enough
+             // for it to drop into the tab group. Drop it after the tab group instead.
+             dropElement = dropElementGroup;
+             colorCode = undefined;
+           } else if (isTabGroupLabel(dropElement)) {
+-            if (dropBefore) {
++            if (dropBefore && dropElementGroup?.level === 0) {
                // Dropping right before the tab group.
                dropElement = dropElementGroup;
                colorCode = undefined;
@@ -481,7 +494,15 @@ index 1fcebe3962..bf41988e88 100644
                // Dropping right after the collapsed tab group.
                dropElement = dropElementGroup;
                colorCode = undefined;
-@@ -2769,7 +2830,7 @@
+@@ -2749,6 +2810,7 @@
+               dropBefore = true;
+             }
+           }
++          gZenFolders.animateTabMoveToGroup(dropElementGroup, movingTabs);
+           this.#setDragOverGroupColor(colorCode);
+           this.toggleAttribute("movingtab-ungroup", !colorCode);
+         }
+@@ -2769,7 +2831,7 @@
        // Shift background tabs to leave a gap where the dragged tab
        // would currently be dropped.
        for (let item of tabs) {
@@ -489,8 +510,8 @@ index 1fcebe3962..bf41988e88 100644
 +        if (item == draggedTab || (item.group?.hasAttribute("split-view-group") && item.group == draggedTab.group)) {
            continue;
          }
-
-@@ -2778,6 +2839,9 @@
+ 
+@@ -2778,6 +2840,9 @@
          if (isTabGroupLabel(item)) {
            // Shift the `.tab-group-label-container` to shift the label element.
            item = item.parentElement;
@@ -500,10 +521,10 @@ index 1fcebe3962..bf41988e88 100644
          }
          item.style.transform = transform;
        }
-@@ -2830,8 +2894,9 @@
+@@ -2830,8 +2895,9 @@
        );
      }
-
+ 
 -    finishAnimateTabMove() {
 -      if (!this.#isMovingTab()) {
 +    finishAnimateTabMove(always = false) {
@@ -511,8 +532,8 @@ index 1fcebe3962..bf41988e88 100644
 +      if (!this.#isMovingTab() && !always) {
          return;
        }
-
-@@ -2843,6 +2908,12 @@
+ 
+@@ -2843,6 +2909,12 @@
            item = item.parentElement;
          }
          item.style.transform = "";
@@ -525,7 +546,7 @@ index 1fcebe3962..bf41988e88 100644
          item.removeAttribute("dragover-createGroup");
        }
        this.removeAttribute("movingtab-createGroup");
-@@ -2889,7 +2960,7 @@
+@@ -2889,7 +2961,7 @@
          let postTransitionCleanup = () => {
            movingTab._moveTogetherSelectedTabsData.animate = false;
          };
@@ -534,16 +555,16 @@ index 1fcebe3962..bf41988e88 100644
            postTransitionCleanup();
          } else {
            let onTransitionEnd = transitionendEvent => {
-@@ -3062,7 +3133,7 @@
+@@ -3062,7 +3134,7 @@
      }
-
+ 
      _notifyBackgroundTab(aTab) {
 -      if (aTab.pinned || !aTab.visible || !this.overflowing) {
 +      if (aTab.hasAttribute("zen-essential") || !aTab.visible || !this.overflowing) {
          return;
        }
-
-@@ -3188,6 +3259,9 @@
+ 
+@@ -3188,6 +3260,9 @@
            return null;
          }
        }
@@ -552,4 +573,4 @@ index 1fcebe3962..bf41988e88 100644
 +      }
        return target;
      }
-
+ 

@@ -141,6 +141,10 @@
         explicit: true,
       });
     }
+
+    get level() {
+      return this.group?.level + 1 || 0;
+    }
   }
 
   customElements.define('zen-folder', ZenFolder);
@@ -713,6 +717,25 @@
 
       gBrowser.tabContainer._invalidateCachedTabs();
       this._sessionRestoring = false;
+    }
+
+    /**
+     * Animates the folder icon when moving a tab to a group.
+     * @param {MozTabbrowserTabGroup|undefined} folder
+     */
+    animateTabMoveToGroup(folder, movingTabs) {
+      if (!folder) return;
+
+      const baseMargin = 14;
+      const spacing = baseMargin * (folder.level + 1);
+      if (isNaN(spacing)) return;
+      const movingTab = movingTabs[0];
+      let alreadyExistingSpace = baseMargin * (movingTab?.group?.level + 1) || 0;
+      if (movingTab?.group === folder) {
+        alreadyExistingSpace = 0; // No need to adjust if moving within the same group
+      }
+      const margin = spacing - alreadyExistingSpace;
+      gBrowser.tabContainer.style.setProperty('--zen-addtabtogroup-margin', `${margin}px`);
     }
   }
 
