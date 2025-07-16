@@ -29,7 +29,6 @@ pref('zen.haptic-feedback.enabled', true);
 #include features/workspaces.inc
 #include features/split-view.inc
 #include features/kbs.inc
-#include features/folders.inc
 
 // Section: Watermark
 #ifdef MOZILLA_OFFICIAL
