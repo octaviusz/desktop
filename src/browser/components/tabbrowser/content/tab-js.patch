@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/tab.js b/browser/components/tabbrowser/content/tab.js
-index e550995350..ed926b93c9 100644
+index e550995350..733b8821c5 100644
 --- a/browser/components/tabbrowser/content/tab.js
 +++ b/browser/components/tabbrowser/content/tab.js
 @@ -21,6 +21,7 @@
@@ -60,18 +60,21 @@ index e550995350..ed926b93c9 100644
      }
 
      get lastAccessed() {
-@@ -372,8 +375,8 @@
+@@ -372,8 +375,11 @@
      }
 
      get group() {
 -      if (this.parentElement?.tagName == "tab-group") {
 -        return this.parentElement;
++      if (typeof gBrowser === "undefined") {
++        return null;
++      }
 +      if (gBrowser.isTabGroup(this.parentElement?.parentElement)) {
 +        return this.parentElement.parentElement;
        }
        return null;
      }
-@@ -467,6 +470,8 @@
+@@ -467,6 +473,8 @@
          this.style.MozUserFocus = "ignore";
        } else if (
          event.target.classList.contains("tab-close-button") ||
@@ -80,7 +83,7 @@ index e550995350..ed926b93c9 100644
          event.target.classList.contains("tab-icon-overlay") ||
          event.target.classList.contains("tab-audio-button")
        ) {
-@@ -521,6 +526,10 @@
+@@ -521,6 +529,10 @@
        this.style.MozUserFocus = "";
      }
 
@@ -91,7 +94,7 @@ index e550995350..ed926b93c9 100644
      on_click(event) {
        if (event.button != 0) {
          return;
-@@ -569,6 +578,7 @@
+@@ -569,6 +581,7 @@
              )
            );
          } else {
@@ -99,7 +102,7 @@ index e550995350..ed926b93c9 100644
            gBrowser.removeTab(this, {
              animate: true,
              triggeringEvent: event,
-@@ -581,6 +591,14 @@
+@@ -581,6 +594,14 @@
          // (see tabbrowser-tabs 'click' handler).
          gBrowser.tabContainer._blockDblClick = true;
        }
@@ -114,7 +117,7 @@ index e550995350..ed926b93c9 100644
      }
 
      on_dblclick(event) {
-@@ -604,6 +622,8 @@
+@@ -604,6 +625,8 @@
            animate: true,
            triggeringEvent: event,
          });

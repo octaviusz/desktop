@@ -885,11 +885,12 @@
               });
             } else if (folderTarget) {
               const tabs = folderTarget.tabs;
-              if (folderTarget.collapsed) {
-                newIndex = tabs.at(-1)._tPos--;
-              } else {
-                newIndex = tabs.at(0)._tPos++;
-              }
+              // TODO: Fix this
+              // newIndex = tabs.at(0).elementIndex++;
+              // if (folderTarget.collapsed) {
+              //   newIndex = tabs.at(-1).elementIndex++;
+              // } else {
+              // }
               gBrowser.moveTabTo(draggedTab, {
                 tabIndex: newIndex,
                 forceUngrouped: folderTarget.collapsed,
