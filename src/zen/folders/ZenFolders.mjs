@@ -165,6 +165,16 @@
     #initTabsPopup() {
       this.#popup = document.getElementById('zen-folder-tabs-popup');
 
+      const search = this.#popup.querySelector('#zen-folder-tabs-list-search');
+      const tabsList = this.#popup.querySelector('#zen-folder-tabs-list');
+
+      search.addEventListener('input', () => {
+        const query = search.value.toLowerCase();
+        for (const item of tabsList.children) {
+          item.hidden = !item.getAttribute('data-label').includes(query);
+        }
+      });
+
       this.#popup.addEventListener('mouseenter', () => {
         clearTimeout(this.#popupTimer);
       });
