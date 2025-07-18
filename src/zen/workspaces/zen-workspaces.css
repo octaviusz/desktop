@@ -74,6 +74,10 @@
     & label {
       margin: 0 !important;
     }
+
+    :root:not([zen-sidebar-expanded='true']) & {
+      min-width: 36px;
+    }
   }
 
   &[reorder-mode='true'] toolbarbutton:not([dragged='true']) {
@@ -305,6 +309,14 @@ zen-workspace {
     & .zen-workspace-normal-tabs-section {
       height: 100%;
     }
+  }
+}
+
+.workspace-arrowscrollbox {
+  font-size: 14px;
+
+  @media not (-moz-platform: linux) {
+    font-weight: 500;
   }
 }
 
