@@ -856,10 +856,9 @@
           // If the tab was moved, adjust its position relative to the target tab
           if (hasActuallyMoved) {
             const targetTab = event.target.closest('.tabbrowser-tab');
-            let newIndex;
             if (targetTab) {
               const rect = targetTab.getBoundingClientRect();
-              newIndex = targetTab.elementIndex;
+              let newIndex = targetTab.elementIndex;
 
               if (isVertical || !this.expandedSidebarMode) {
                 const middleY = targetTab.screenY + rect.height / 2;
@@ -881,19 +880,7 @@
 
               gBrowser.moveTabTo(draggedTab, {
                 tabIndex: newIndex,
-                forceUngrouped: targetTab?.group?.collapsed,
-              });
-            } else if (folderTarget) {
-              const tabs = folderTarget.tabs;
-              // TODO: Fix this
-              // newIndex = tabs.at(0).elementIndex++;
-              // if (folderTarget.collapsed) {
-              //   newIndex = tabs.at(-1).elementIndex++;
-              // } else {
-              // }
-              gBrowser.moveTabTo(draggedTab, {
-                tabIndex: newIndex,
-                forceUngrouped: folderTarget.collapsed,
+                forceUngrouped: false,
               });
             }
           }
