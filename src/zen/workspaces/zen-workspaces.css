@@ -312,14 +312,6 @@ zen-workspace {
   }
 }
 
-.workspace-arrowscrollbox {
-  font-size: 14px;
-
-  @media not (-moz-platform: linux) {
-    font-weight: 500;
-  }
-}
-
 /** Customiable UI, this is an auto generated ID */
 #wrapper-zen-workspaces-button {
   width: 100%;
