@@ -796,7 +796,6 @@
         const tabsTarget = event.target.closest('.zen-workspace-normal-tabs-section');
 
         // TODO: Solve the issue of adding a tab between two groups
-        const folderTarget = event.target.closest('zen-folder');
         // Remove group labels from the moving tabs and replace it
         // with the sub tabs
         for (let i = 0; i < movingTabs.length; i++) {
@@ -856,19 +855,21 @@
           // If the tab was moved, adjust its position relative to the target tab
           if (hasActuallyMoved) {
             const targetTab = event.target.closest('.tabbrowser-tab');
-            if (targetTab) {
-              const rect = targetTab.getBoundingClientRect();
-              let elementIndex = targetTab.elementIndex;
+            const targetFolder = event.target.closest('zen-folder');
+            const targetElem = targetTab || targetFolder?.labelElement;
+            if (targetElem) {
+              const rect = targetElem.getBoundingClientRect();
+              let elementIndex = targetElem.elementIndex;
 
               if (isVertical || !this.expandedSidebarMode) {
-                const middleY = targetTab.screenY + rect.height / 2;
+                const middleY = targetElem.screenY + rect.height / 2;
                 if (!isRegularTabs && event.screenY > middleY) {
                   elementIndex++;
                 } else if (isRegularTabs && event.screenY < middleY) {
                   elementIndex--;
                 }
               } else {
-                const middleX = targetTab.screenX + rect.width / 2;
+                const middleX = targetElem.screenX + rect.width / 2;
                 if (event.screenX > middleX) {
                   elementIndex++;
                 }
@@ -878,7 +879,7 @@
                 elementIndex++;
               }
 
-              gBrowser.moveTabTo(draggedTab, { elementIndex, forceUngrouped: true });
+              gBrowser.moveTabTo(draggedTab, { elementIndex, forceUngrouped: targetElem?.group?.collapsed !== false });
             }
           }
         }
@@ -1035,12 +1036,12 @@
       // Decide whether we should show a dragover class for the given target
       if (folderTarget && (!draggedTab.pinned || draggedTab.hasAttribute('zen-essential'))) {
         shouldAddDragOverElement = true;
-        const groupTabs = folderTarget.tabs;
-        let newTarget = groupTabs.at(-1);
-        for (const tab of groupTabs) {
-          const rect = tab.getBoundingClientRect();
+        const groupElem = folderTarget.childGroupsAndTabs.filter(tab => !tab.hasAttribute('zen-folder-empty-tab'));
+        let newTarget = groupElem.at(-1);
+        for (const elem of groupElem) {
+          const rect = elem.getBoundingClientRect();
           if (event.clientY < rect.top + rect.height / 2) {
-            newTarget = tab;
+            newTarget = elem;
             break;
           }
         }
