@@ -148,6 +148,7 @@
     #popup = null;
     #popupTimer = null;
     #mouseTimer = null;
+    #lastHighlightedGroup = null;
 
     init() {
       this.#initContextMenu();
@@ -274,7 +275,8 @@
       let heightUntilSelected = 0;
       let selectedItem = null;
       let itemsAfterSelected = [];
-      for (const item of tabsContainer.children) {
+      // FIX: Correctly calculate the distance to the selected tab
+      for (const item of group.childGroupsAndTabs) {
         const rect = item.getBoundingClientRect();
         if (item.hasAttribute('visuallyselected')) {
           selectedItem = item;
@@ -369,7 +371,7 @@
       });
       emptyTab.setAttribute('zen-folder-empty-tab', true);
 
-      tabs = [emptyTab, ...tabs];
+      tabs = [...tabs, emptyTab];
 
       const folder = this._createFolderNode();
 
@@ -760,6 +762,31 @@
       }
       const margin = spacing - alreadyExistingSpace;
       gBrowser.tabContainer.style.setProperty('--zen-addtabtogroup-margin', `${margin}px`);
+    }
+
+    /**
+     * Highlights the given tab group and removes highlight from any previously highlighted group.
+     * @param {MozTabbrowserTabGroup|undefined|null} folder The folder to highlight, or null to clear highlight.
+     */
+    highlightGroupOnDragOver(folder) {
+      if (this.#lastHighlightedGroup && this.#lastHighlightedGroup !== folder) {
+        this.#lastHighlightedGroup.removeAttribute('selected');
+        if (this.#lastHighlightedGroup.collapsed) {
+          this.updateFolderIcon(this.#lastHighlightedGroup, 'close');
+        }
+        this.#lastHighlightedGroup = null;
+      }
+
+      if (
+        folder &&
+        (!folder.hasAttribute('split-view-group') || !folder.hasAttribute('selected'))
+      ) {
+        folder.setAttribute('selected', 'true');
+        if (folder.collapsed) {
+          this.updateFolderIcon(folder, 'open');
+        }
+        this.#lastHighlightedGroup = folder;
+      }
     }
   }
 

@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/tabbrowser.js b/browser/components/tabbrowser/content/tabbrowser.js
-index 96fd8acdc0..9de05998eb 100644
+index 96fd8acdc0..afa2f18e73 100644
 --- a/browser/components/tabbrowser/content/tabbrowser.js
 +++ b/browser/components/tabbrowser/content/tabbrowser.js
 @@ -422,15 +422,49 @@
@@ -375,10 +375,10 @@ index 96fd8acdc0..9de05998eb 100644
 +            gZenWorkspaces._initialTab._shouldRemove = true;
 +          }
 +        }
-       }
++      }
 +      else {
 +        gZenWorkspaces._tabToRemoveForEmpty = this.selectedTab;
-+      }
+       }
 +      this._hasAlreadyInitializedZenSessionStore = true;
 
        if (tabs.length > 1 || !tabs[0].selected) {
@@ -595,7 +595,7 @@ index 96fd8acdc0..9de05998eb 100644
        } else {
          tabIndex = Math.max(tabIndex, this.pinnedTabCount);
        }
-@@ -6055,12 +6181,20 @@
+@@ -6055,10 +6181,16 @@
        this.#handleTabMove(
          element,
          () => {
@@ -613,12 +613,8 @@ index 96fd8acdc0..9de05998eb 100644
 +          }
            if (neighbor && this.isTab(element) && tabIndex > element._tPos) {
              neighbor.after(element);
-+          } else if (neighbor.hasAttribute('zen-folder-empty-tab')) {
-+            neighbor.after(element);
            } else {
-             this.tabContainer.insertBefore(element, neighbor);
-           }
-@@ -6122,16 +6256,17 @@
+@@ -6122,16 +6254,17 @@
            moveBefore = true;
          }
        }
@@ -641,7 +637,7 @@ index 96fd8acdc0..9de05998eb 100644
          moveBefore = false;
        } else if (!element.pinned && targetElement && targetElement.pinned) {
          // If the caller asks to move an unpinned element next to a pinned
-@@ -6145,7 +6280,7 @@
+@@ -6145,7 +6278,7 @@
          //    move the tab group right before the first unpinned tab.
          // 4. Moving a tab group and the first unpinned tab is grouped:
          //    move the tab group right before the first unpinned tab's tab group.
@@ -650,7 +646,7 @@ index 96fd8acdc0..9de05998eb 100644
          if (targetElement.group) {
            targetElement = targetElement.group;
          }
-@@ -6153,6 +6288,7 @@
+@@ -6153,6 +6286,7 @@
        }
 
        let getContainer = () =>
@@ -658,7 +654,7 @@ index 96fd8acdc0..9de05998eb 100644
          element.pinned
            ? this.tabContainer.pinnedTabsContainer
            : this.tabContainer;
-@@ -6161,7 +6297,7 @@
+@@ -6161,7 +6295,7 @@
          element,
          () => {
            if (moveBefore) {
@@ -667,7 +663,7 @@ index 96fd8acdc0..9de05998eb 100644
            } else if (targetElement) {
              targetElement.after(element);
            } else {
-@@ -6210,7 +6346,7 @@
+@@ -6210,7 +6344,7 @@
        if (!this.isTab(aTab)) {
          throw new Error("Can only move a tab into a tab group");
        }
@@ -676,7 +672,7 @@ index 96fd8acdc0..9de05998eb 100644
          return;
        }
        if (aTab.group && aTab.group.id === aGroup.id) {
-@@ -6304,6 +6440,10 @@
+@@ -6304,6 +6438,10 @@
 
        moveActionCallback();
 
@@ -687,7 +683,7 @@ index 96fd8acdc0..9de05998eb 100644
        // Clear tabs cache after moving nodes because the order of tabs may have
        // changed.
        this.tabContainer._invalidateCachedTabs();
-@@ -7198,7 +7338,7 @@
+@@ -7198,7 +7336,7 @@
              // preventDefault(). It will still raise the window if appropriate.
              break;
            }
@@ -696,7 +692,7 @@ index 96fd8acdc0..9de05998eb 100644
            window.focus();
            aEvent.preventDefault();
            break;
-@@ -8143,6 +8283,7 @@
+@@ -8143,6 +8281,7 @@
              aWebProgress.isTopLevel
            ) {
              this.mTab.setAttribute("busy", "true");
@@ -704,7 +700,7 @@ index 96fd8acdc0..9de05998eb 100644
              gBrowser._tabAttrModified(this.mTab, ["busy"]);
              this.mTab._notselectedsinceload = !this.mTab.selected;
            }
-@@ -9108,7 +9249,7 @@ var TabContextMenu = {
+@@ -9108,7 +9247,7 @@ var TabContextMenu = {
      );
      contextUnpinSelectedTabs.hidden =
        !this.contextTab.pinned || !this.multiselected;
@@ -713,7 +709,7 @@ index 96fd8acdc0..9de05998eb 100644
      // Move Tab items
      let contextMoveTabOptions = document.getElementById(
        "context_moveTabOptions"
-@@ -9384,6 +9525,7 @@ var TabContextMenu = {
+@@ -9384,6 +9523,7 @@ var TabContextMenu = {
          )
        );
      } else {

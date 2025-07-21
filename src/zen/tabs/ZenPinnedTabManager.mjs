@@ -879,7 +879,10 @@
                 elementIndex++;
               }
 
-              gBrowser.moveTabTo(draggedTab, { elementIndex, forceUngrouped: targetElem?.group?.collapsed !== false });
+              gBrowser.moveTabTo(draggedTab, {
+                elementIndex,
+                forceUngrouped: targetElem?.group?.collapsed !== false,
+              });
             }
           }
         }
@@ -1036,7 +1039,9 @@
       // Decide whether we should show a dragover class for the given target
       if (folderTarget && (!draggedTab.pinned || draggedTab.hasAttribute('zen-essential'))) {
         shouldAddDragOverElement = true;
-        const groupElem = folderTarget.childGroupsAndTabs.filter(tab => !tab.hasAttribute('zen-folder-empty-tab'));
+        const groupElem = folderTarget.childGroupsAndTabs.filter(
+          (tab) => !tab.hasAttribute('zen-folder-empty-tab')
+        );
         let newTarget = groupElem.at(-1);
         for (const elem of groupElem) {
           const rect = elem.getBoundingClientRect();

@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/tabs.js b/browser/components/tabbrowser/content/tabs.js
-index 1fcebe3962..4cbe5fb3cf 100644
+index 1fcebe3962..6c702945f9 100644
 --- a/browser/components/tabbrowser/content/tabs.js
 +++ b/browser/components/tabbrowser/content/tabs.js
 @@ -289,6 +289,7 @@
@@ -476,19 +476,29 @@ index 1fcebe3962..4cbe5fb3cf 100644
          } else {
            this.removeAttribute("movingtab-createGroup");
            document
-@@ -2728,27 +2781,28 @@
-             dropElementGroup &&
-             dropElement == lastUnmovingTabInGroup &&
-             !dropBefore &&
+@@ -2719,36 +2772,26 @@
+           // Default to dropping into `dropElement`'s tab group, if it exists.
+           let dropElementGroup = dropElement?.group;
+           let colorCode = dropElementGroup?.color;
++          let dragOverFolderThreshold = 0.4;
+
+-          let lastUnmovingTabInGroup = dropElementGroup?.tabs.findLast(
+-            t => !movingTabsSet.has(t)
+-          );
+-          if (
+-            isTab(dropElement) &&
+-            dropElementGroup &&
+-            dropElement == lastUnmovingTabInGroup &&
+-            !dropBefore &&
 -            overlapPercent < dragOverGroupingThreshold
-+            overlapPercent < dragOverGroupingThreshold && dropElementGroup?.level === 0
-           ) {
-             // Dragging tab over the last tab of a tab group, but not enough
-             // for it to drop into the tab group. Drop it after the tab group instead.
-             dropElement = dropElementGroup;
-             colorCode = undefined;
-           } else if (isTabGroupLabel(dropElement)) {
+-          ) {
+-            // Dragging tab over the last tab of a tab group, but not enough
+-            // for it to drop into the tab group. Drop it after the tab group instead.
+-            dropElement = dropElementGroup;
+-            colorCode = undefined;
+-          } else if (isTabGroupLabel(dropElement)) {
 -            if (dropBefore) {
++          if (isTabGroupLabel(dropElement)) {
 +            if (dropBefore && dropElementGroup?.level === 0) {
                // Dropping right before the tab group.
                dropElement = dropElementGroup;
@@ -498,18 +508,22 @@ index 1fcebe3962..4cbe5fb3cf 100644
                // Dropping right after the collapsed tab group.
                dropElement = dropElementGroup;
                colorCode = undefined;
-             } else {
-               // Dropping right before the first tab in the tab group.
-               dropElement = dropElementGroup.tabs[0];
--              dropBefore = true;
-+              dropBefore = false;
+-            } else {
+-              // Dropping right before the first tab in the tab group.
+-              dropElement = dropElementGroup.tabs[0];
++            } else if (overlapPercent > dragOverFolderThreshold) {
++              // Dropping right before the first tab or group in the tab group.
++              dropElement = dropElementGroup.childGroupsAndTabs[0];
+               dropBefore = true;
              }
            }
++
 +          gZenFolders.animateTabMoveToGroup(dropElementGroup, movingTabs);
++          gZenFolders.highlightGroupOnDragOver(dropElementGroup);
            this.#setDragOverGroupColor(colorCode);
            this.toggleAttribute("movingtab-ungroup", !colorCode);
          }
-@@ -2769,7 +2823,7 @@
+@@ -2769,7 +2812,7 @@
        // Shift background tabs to leave a gap where the dragged tab
        // would currently be dropped.
        for (let item of tabs) {
@@ -518,7 +532,7 @@ index 1fcebe3962..4cbe5fb3cf 100644
            continue;
          }
 
-@@ -2778,6 +2832,9 @@
+@@ -2778,6 +2821,9 @@
          if (isTabGroupLabel(item)) {
            // Shift the `.tab-group-label-container` to shift the label element.
            item = item.parentElement;
@@ -528,7 +542,7 @@ index 1fcebe3962..4cbe5fb3cf 100644
          }
          item.style.transform = transform;
        }
-@@ -2830,8 +2887,9 @@
+@@ -2830,12 +2876,14 @@
        );
      }
 
@@ -540,7 +554,12 @@ index 1fcebe3962..4cbe5fb3cf 100644
          return;
        }
 
-@@ -2843,6 +2901,12 @@
+       this.#setMovingTabMode(false);
++      gZenFolders.highlightGroupOnDragOver(null);
+
+       for (let item of this.ariaFocusableItems) {
+         if (isTabGroupLabel(item)) {
+@@ -2843,6 +2891,12 @@
            item = item.parentElement;
          }
          item.style.transform = "";
@@ -553,7 +572,7 @@ index 1fcebe3962..4cbe5fb3cf 100644
          item.removeAttribute("dragover-createGroup");
        }
        this.removeAttribute("movingtab-createGroup");
-@@ -2889,7 +2953,7 @@
+@@ -2889,7 +2943,7 @@
          let postTransitionCleanup = () => {
            movingTab._moveTogetherSelectedTabsData.animate = false;
          };
@@ -562,7 +581,7 @@ index 1fcebe3962..4cbe5fb3cf 100644
            postTransitionCleanup();
          } else {
            let onTransitionEnd = transitionendEvent => {
-@@ -3062,7 +3126,7 @@
+@@ -3062,7 +3116,7 @@
      }
 
      _notifyBackgroundTab(aTab) {
@@ -571,7 +590,7 @@ index 1fcebe3962..4cbe5fb3cf 100644
          return;
        }
 
-@@ -3188,6 +3252,9 @@
+@@ -3188,6 +3242,9 @@
            return null;
          }
        }

@@ -212,6 +212,10 @@ zen-folder {
     color-mix(in srgb, var(--zen-primary-color), #000 40%)
   );
 
+  &[selected] > .tab-group-label-container {
+    background-color: var(--zen-primary-color);
+  }
+
   :root:not([zen-sidebar-expanded]) {
     width: var(--tab-min-width) !important;
     margin: var(--tab-block-margin) auto !important;
@@ -400,5 +404,6 @@ zen-folder {
   &[movingtab][movingtab-addToGroup]:not([movingtab-createGroup], [movingtab-ungroup])
     .tabbrowser-tab:is(:active, [multiselected]) {
     margin-inline-start: var(--zen-addtabtogroup-margin, 14px) !important;
+    transition: margin-inline-start 0.15s ease;
   }
 }
