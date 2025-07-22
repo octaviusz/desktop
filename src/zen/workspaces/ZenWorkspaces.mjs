@@ -496,28 +496,35 @@ var gZenWorkspaces = new (class extends ZenMultiWindowFeature {
     const workspaceTabs = Array.from(tabs).filter(
       (tab) => tab.getAttribute('zen-workspace-id') === workspace.uuid
     );
-    let firstNormalTab = null;
-    for (let tab of workspaceTabs) {
-      if (tab.hasAttribute('zen-essential')) {
-        continue; // Ignore essentials as they need to be in their own section
+    let folders = new Set();
+    const getFolderRoot = (tab) => {
+      let root = tab?.group;
+      while (root?.group) {
+        root = root?.group;
       }
+      return root || tab;
+    };
+    for (let i = workspaceTabs.length - 1; i >= 0; i--) {
+      let tab = workspaceTabs[i];
+      if (tab.hasAttribute('zen-essential')) continue; // Ignore essentials as they need to be in their own section
       // remove tab from list
       tabs.splice(tabs.indexOf(tab), 1);
       tab = tab.group ?? tab;
-      if (tab.pinned) {
-        pinnedSection.insertBefore(tab, pinnedSection.lastChild);
-      } else {
-        if (!firstNormalTab) {
-          firstNormalTab = tab;
-        }
-        section.insertBefore(tab, section.lastChild);
+
+      if (gBrowser.isTabGroup(tab)) {
+        let rootGroup = getFolderRoot(tab);
+
+        if (folders.has(rootGroup)) continue;
+
+        folders.add(rootGroup);
+        tab = rootGroup;
       }
-    }
-    // Kind of a hacky fix, but for some reason the first normal tab in the list
-    // created by session restore is added the the last position of the tab list
-    // let's just prepend it to the section
-    if (firstNormalTab) {
-      section.insertBefore(firstNormalTab, section.firstChild);
+
+      if (tab.pinned) {
+        pinnedSection.insertBefore(tab, pinnedSection.firstChild);
+      } else {
+        section.insertBefore(tab, section.firstChild);
+      }
     }
   }
 

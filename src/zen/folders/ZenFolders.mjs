@@ -213,6 +213,10 @@
         group.removeAttribute('zen-pinned-changed');
         group.setAttribute('had-zen-pinned-changed', true);
       }
+
+      if (group.collapsed && !this._sessionRestoring) {
+        group.collapsed = false;
+      }
     }
 
     #onTabUngrouped(event) {
@@ -659,12 +663,28 @@
 
     storeDataForSessionStore() {
       const folders = Array.from(gBrowser.tabContainer.querySelectorAll('zen-folder'));
-      return folders.map((folder) => {
+      const storedData = [];
+      for (const folder of folders) {
         const parentFolder = folder.parentElement.closest('zen-folder');
         const emptyFolderTabs = folder.tabs
           .filter((tab) => tab.hasAttribute('zen-folder-empty-tab'))
           .map((tab) => tab.getAttribute('zen-pin-id'));
-        return {
+
+        let prevSiblingInfo = null;
+        const prevSibling = folder.previousElementSibling;
+
+        if (prevSibling) {
+          if (gBrowser.isTabGroup(prevSibling)) {
+            prevSiblingInfo = { type: 'group', id: prevSibling.id };
+          } else if (gBrowser.isTab(prevSibling)) {
+            const zenPinId = prevSibling.getAttribute('zen-pin-id');
+            prevSiblingInfo = { type: 'tab', id: zenPinId };
+          } else {
+            prevSiblingInfo = { type: 'start', id: null };
+          }
+        }
+
+        storedData.push({
           pinned: folder.pinned,
           essential: folder.essential,
           id: folder.id,
@@ -672,9 +692,11 @@
           collapsed: folder.collapsed,
           saveOnWindowClose: folder.saveOnWindowClose,
           parentId: parentFolder ? parentFolder.id : null,
+          prevSiblingInfo: prevSiblingInfo,
           emptyTabIds: emptyFolderTabs,
-        };
-      });
+        });
+      }
+      return storedData;
     }
 
     restoreDataFromSessionStore(data) {
@@ -686,7 +708,8 @@
 
       const tabFolderWorkingData = new Map();
 
-      for (const folderData of data) {
+      for (let i = data.length - 1; i >= 0; i--) {
+        const folderData = data[i];
         const workingData = {
           stateData: folderData,
           node: null,
@@ -697,7 +720,7 @@
         const oldGroup = document.getElementById(folderData.id);
         folderData.emptyTabIds.forEach((zenPinId) => {
           oldGroup
-            .querySelector(`tab[zen-pin-id="${zenPinId}"]`)
+            ?.querySelector(`tab[zen-pin-id="${zenPinId}"]`)
             ?.setAttribute('zen-folder-empty-tab', true);
         });
         if (oldGroup) {
@@ -729,7 +752,21 @@
         if (node && stateData.parentId) {
           const parentWorkingData = tabFolderWorkingData.get(stateData.parentId);
           if (parentWorkingData && parentWorkingData.node) {
-            parentWorkingData.node.appendChild(node);
+            switch (stateData?.prevSiblingInfo?.type) {
+              case 'group':
+                const folder = document.querySelector(`[id="${stateData.prevSiblingInfo.id}"]`);
+                gBrowser.moveTabAfter(node, folder);
+                break;
+              case 'tab':
+                const tab = parentWorkingData.node.querySelector(
+                  `[zen-pin-id="${stateData.prevSiblingInfo.id}"]`
+                );
+                gBrowser.moveTabAfter(node, tab);
+                break;
+              default:
+                const start = parentWorkingData.node.querySelector('.zen-tab-group-start');
+                start.after(node);
+            }
           }
         }
       }
