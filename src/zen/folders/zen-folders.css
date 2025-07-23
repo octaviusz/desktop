@@ -286,10 +286,6 @@ zen-folder {
     }
   }
 
-  & tab[zen-folder-empty-tab] {
-    visibility: collapse;
-  }
-
   &[collapsed] {
     & > .tabbrowser-tab:not([hidden]) {
       display: flex;

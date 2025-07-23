@@ -88,6 +88,7 @@
 
     connectedCallback() {
       super.connectedCallback();
+      this.removeAttribute('data-tooltip');
       if (this.#initialized) {
         return;
       }
@@ -371,9 +372,8 @@
         skipAnimation: true,
         pinned: true,
         triggeringPrincipal: Services.scriptSecurityManager.getSystemPrincipal(),
-        _forZenEmptyTab: false,
+        _forZenEmptyTab: true,
       });
-      emptyTab.setAttribute('zen-folder-empty-tab', true);
 
       tabs = [...tabs, emptyTab];
 
@@ -524,7 +524,7 @@
       tabsList.replaceChildren();
 
       for (const tab of group.tabs) {
-        if (tab.hidden || tab.hasAttribute('zen-folder-empty-tab')) continue;
+        if (tab.hidden || tab.hasAttribute('zen-empty-tab')) continue;
 
         const item = document.createElement('div');
         item.className = 'tabs-list-item';
@@ -667,7 +667,7 @@
       for (const folder of folders) {
         const parentFolder = folder.parentElement.closest('zen-folder');
         const emptyFolderTabs = folder.tabs
-          .filter((tab) => tab.hasAttribute('zen-folder-empty-tab'))
+          .filter((tab) => tab.hasAttribute('zen-empty-tab'))
           .map((tab) => tab.getAttribute('zen-pin-id'));
 
         let prevSiblingInfo = null;
@@ -720,7 +720,7 @@
         folderData.emptyTabIds.forEach((zenPinId) => {
           oldGroup
             ?.querySelector(`tab[zen-pin-id="${zenPinId}"]`)
-            ?.setAttribute('zen-folder-empty-tab', true);
+            ?.setAttribute('zen-empty-tab', true);
         });
         if (oldGroup) {
           const folder = this._createFolderNode({
@@ -753,7 +753,9 @@
           if (parentWorkingData && parentWorkingData.node) {
             switch (stateData?.prevSiblingInfo?.type) {
               case 'group':
-                const folder = parentWorkingData.node.querySelector(`[id="${stateData.prevSiblingInfo.id}"]`);
+                const folder = parentWorkingData.node.querySelector(
+                  `[id="${stateData.prevSiblingInfo.id}"]`
+                );
                 gBrowser.moveTabAfter(node, folder);
                 break;
               case 'tab':
@@ -803,8 +805,10 @@
     /**
      * Highlights the given tab group and removes highlight from any previously highlighted group.
      * @param {MozTabbrowserTabGroup|undefined|null} folder The folder to highlight, or null to clear highlight.
+     * @param {Array<MozTabbrowserTab>|null} movingTabs The tabs being moved.
      */
-    highlightGroupOnDragOver(folder) {
+    highlightGroupOnDragOver(folder, movingTabs) {
+      const tab = movingTabs ? movingTabs[0] : null;
       if (this.#lastHighlightedGroup && this.#lastHighlightedGroup !== folder) {
         this.#lastHighlightedGroup.removeAttribute('selected');
         if (this.#lastHighlightedGroup.collapsed) {
@@ -815,7 +819,8 @@
 
       if (
         folder &&
-        (!folder.hasAttribute('split-view-group') || !folder.hasAttribute('selected'))
+        (!folder.hasAttribute('split-view-group') || !folder.hasAttribute('selected')) &&
+        folder !== tab?.group
       ) {
         folder.setAttribute('selected', 'true');
         if (folder.collapsed) {

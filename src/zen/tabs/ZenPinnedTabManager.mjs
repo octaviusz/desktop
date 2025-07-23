@@ -1040,7 +1040,7 @@
       if (folderTarget && (!draggedTab.pinned || draggedTab.hasAttribute('zen-essential'))) {
         shouldAddDragOverElement = true;
         const groupElem = folderTarget.childGroupsAndTabs.filter(
-          (tab) => !tab.hasAttribute('zen-folder-empty-tab')
+          (tab) => !tab.hasAttribute('zen-empty-tab')
         );
         let newTarget = groupElem.at(-1);
         for (const elem of groupElem) {
