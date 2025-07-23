@@ -708,8 +708,7 @@
 
       const tabFolderWorkingData = new Map();
 
-      for (let i = data.length - 1; i >= 0; i--) {
-        const folderData = data[i];
+      for (const folderData of data) {
         const workingData = {
           stateData: folderData,
           node: null,
@@ -754,7 +753,7 @@
           if (parentWorkingData && parentWorkingData.node) {
             switch (stateData?.prevSiblingInfo?.type) {
               case 'group':
-                const folder = document.querySelector(`[id="${stateData.prevSiblingInfo.id}"]`);
+                const folder = parentWorkingData.node.querySelector(`[id="${stateData.prevSiblingInfo.id}"]`);
                 gBrowser.moveTabAfter(node, folder);
                 break;
               case 'tab':
