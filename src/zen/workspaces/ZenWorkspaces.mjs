@@ -1547,8 +1547,6 @@ var gZenWorkspaces = new (class extends ZenMultiWindowFeature {
     gBrowser.pinnedTabsContainer = this.pinnedTabsContainer || gBrowser.pinnedTabsContainer;
     gBrowser.tabContainer.pinnedTabsContainer =
       this.pinnedTabsContainer || gBrowser.tabContainer.pinnedTabsContainer;
-    // Move empty tab to the new workspace
-    this._moveEmptyTabToWorkspace(workspace.uuid);
 
     this.tabContainer._invalidateCachedTabs();
     if (!whileScrolling) {
@@ -1570,16 +1568,12 @@ var gZenWorkspaces = new (class extends ZenMultiWindowFeature {
     });
   }
 
-  _moveEmptyTabToWorkspace(workspaceUuid) {
-    this._makeSureEmptyTabIsLast();
-  }
-
-  _makeSureEmptyTabIsLast() {
+  makeSureEmptyTabIsFirst() {
     const emptyTab = this._emptyTab;
     if (emptyTab) {
       const container = this.activeWorkspaceStrip;
       if (container) {
-        container.insertBefore(emptyTab, container.lastChild);
+        container.insertBefore(emptyTab, container.firstChild);
       }
     }
     this._fixTabPositions();
@@ -2323,6 +2317,7 @@ var gZenWorkspaces = new (class extends ZenMultiWindowFeature {
   }
 
   async updateTabsContainers(target = undefined, forAnimation = false) {
+    this.makeSureEmptyTabIsFirst();
     if (target && !target.target?.parentNode) {
       target = null;
     }

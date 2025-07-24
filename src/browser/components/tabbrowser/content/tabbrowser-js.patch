@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/tabbrowser.js b/browser/components/tabbrowser/content/tabbrowser.js
-index 96fd8acdc0..afa2f18e73 100644
+index 96fd8acdc0..3025a96165 100644
 --- a/browser/components/tabbrowser/content/tabbrowser.js
 +++ b/browser/components/tabbrowser/content/tabbrowser.js
 @@ -422,15 +422,49 @@
@@ -676,7 +676,7 @@ index 96fd8acdc0..afa2f18e73 100644
 
        moveActionCallback();
 
-+      gZenWorkspaces._makeSureEmptyTabIsLast();
++      gZenWorkspaces.makeSureEmptyTabIsFirst();
 +      gZenViewSplitter._maybeRemoveFakeBrowser(false);
 +      gZenViewSplitter._canDrop = false;
 +
