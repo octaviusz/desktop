@@ -663,7 +663,9 @@
 
     storeDataForSessionStore() {
       const folders = Array.from(gBrowser.tabContainer.querySelectorAll('zen-folder'));
-      const splitGroups = Array.from(gBrowser.tabContainer.querySelectorAll('tab-group[split-view-group]'));
+      const splitGroups = Array.from(
+        gBrowser.tabContainer.querySelectorAll('tab-group[split-view-group]')
+      );
       const allData = [...folders, ...splitGroups];
       const storedData = [];
       for (const folder of allData) {
@@ -763,9 +765,7 @@
           if (parentWorkingData && parentWorkingData.node) {
             switch (stateData?.prevSiblingInfo?.type) {
               case 'group':
-                const folder = document.querySelector(
-                  `[id="${stateData.prevSiblingInfo.id}"]`
-                );
+                const folder = document.querySelector(`[id="${stateData.prevSiblingInfo.id}"]`);
                 gBrowser.moveTabAfter(node, folder);
                 break;
               case 'tab':
