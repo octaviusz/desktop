@@ -1866,8 +1866,8 @@ class nsZenViewSplitter extends ZenDOMOperatedFeature {
     for (const group of data) {
       const groupElement = document.getElementById(group.groupId);
       if (groupElement) {
-        const tabs = groupElement.querySelectorAll('tab');
-        this.splitTabs([...tabs], group.gridType);
+        const tabs = groupElement.tabs;
+        this.splitTabs(tabs, group.gridType);
       }
     }
     delete this._sessionRestoring;

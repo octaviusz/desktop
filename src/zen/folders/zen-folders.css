@@ -11,6 +11,7 @@ tab-group {
 }
 
 tab-group[split-view-group] {
+  display: block;
   --zen-split-view-active-tab-bg: color-mix(
     in srgb,
     var(--zen-toolbar-element-bg),
@@ -143,6 +144,8 @@ tab-group[split-view-group] .tabbrowser-tab {
 
 tab-group[split-view-group] .tab-group-label-container {
   visibility: collapse;
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
 tab-group[split-view-group] .tab-close-button {

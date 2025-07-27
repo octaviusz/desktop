@@ -121,8 +121,8 @@ index be029379c1..704db605e9 100644
          winData.tabs,
          winData.groups ?? []
        );
-+      aWindow.gZenViewSplitter?.restoreDataFromSessionStore(winData.splitViewData);
 +      aWindow.gZenFolders?.restoreDataFromSessionStore(winData.folders);
++      aWindow.gZenViewSplitter?.restoreDataFromSessionStore(winData.splitViewData);
        this._log.debug(
          `restoreWindow, createTabsForSessionRestore returned ${tabs.length} tabs`
        );

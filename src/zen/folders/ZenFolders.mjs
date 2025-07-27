@@ -663,9 +663,13 @@
 
     storeDataForSessionStore() {
       const folders = Array.from(gBrowser.tabContainer.querySelectorAll('zen-folder'));
+      const splitGroups = Array.from(gBrowser.tabContainer.querySelectorAll('tab-group[split-view-group]'));
+      const allData = [...folders, ...splitGroups];
       const storedData = [];
-      for (const folder of folders) {
+      for (const folder of allData) {
         const parentFolder = folder.parentElement.closest('zen-folder');
+        // Skip split-view-group if it's not a zen-folder child
+        if (!parentFolder && folder.hasAttribute('split-view-group')) continue;
         const emptyFolderTabs = folder.tabs
           .filter((tab) => tab.hasAttribute('zen-empty-tab'))
           .map((tab) => tab.getAttribute('zen-pin-id'));
@@ -687,6 +691,7 @@
         storedData.push({
           pinned: folder.pinned,
           essential: folder.essential,
+          splitViewGroup: folder.hasAttribute('split-view-group'),
           id: folder.id,
           name: folder.label,
           collapsed: folder.collapsed,
@@ -723,20 +728,25 @@
             ?.setAttribute('zen-empty-tab', true);
         });
         if (oldGroup) {
-          const folder = this._createFolderNode({
-            id: folderData.id,
-            label: folderData.name,
-            collapsed: folderData.collapsed,
-            pinned: folderData.pinned,
-            saveOnWindowClose: folderData.saveOnWindowClose,
-          });
-          workingData.node = folder;
-          oldGroup.before(folder);
-
+          if (!folderData.splitViewGroup) {
+            const folder = this._createFolderNode({
+              id: folderData.id,
+              label: folderData.name,
+              collapsed: folderData.collapsed,
+              pinned: folderData.pinned,
+              saveOnWindowClose: folderData.saveOnWindowClose,
+            });
+            workingData.node = folder;
+            oldGroup.before(folder);
+          } else {
+            workingData.node = oldGroup;
+          }
           while (oldGroup.tabs.length > 0) {
             workingData.containingTabsFragment.appendChild(oldGroup.tabs[0]);
           }
-          oldGroup.remove();
+          if (!folderData.splitViewGroup) {
+            oldGroup.remove();
+          }
         }
       }
 
@@ -753,7 +763,7 @@
           if (parentWorkingData && parentWorkingData.node) {
             switch (stateData?.prevSiblingInfo?.type) {
               case 'group':
-                const folder = parentWorkingData.node.querySelector(
+                const folder = document.querySelector(
                   `[id="${stateData.prevSiblingInfo.id}"]`
                 );
                 gBrowser.moveTabAfter(node, folder);
@@ -773,8 +783,8 @@
       }
 
       // Initialize UI state for all folders.
-      for (const { node } of tabFolderWorkingData.values()) {
-        if (node) {
+      for (const { stateData, node } of tabFolderWorkingData.values()) {
+        if (node && !stateData.splitViewGroup) {
           this.#groupInit(node);
         }
       }
