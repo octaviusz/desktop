@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/tabbrowser.js b/browser/components/tabbrowser/content/tabbrowser.js
-index 96fd8acdc0..d187f530c4 100644
+index 96fd8acdc0..d4087871a1 100644
 --- a/browser/components/tabbrowser/content/tabbrowser.js
 +++ b/browser/components/tabbrowser/content/tabbrowser.js
 @@ -422,15 +422,49 @@
@@ -16,7 +16,7 @@ index 96fd8acdc0..d187f530c4 100644
 +        if (!item.pinned && !item.hasAttribute("zen-glance-tab")) {
 +          break;
 +        }
-+        if ((!item.group?.hasAttribute("split-view-group") && !item.group?.collapsed) && !item.hidden) {
++        if (!item.group?.collapsed && !item.hidden) {
 +          i += !item.hasAttribute("zen-glance-tab");
 +        }
 +      }
@@ -603,7 +603,14 @@ index 96fd8acdc0..d187f530c4 100644
            if (neighbor && this.isTab(element) && tabIndex > element._tPos) {
              neighbor.after(element);
            } else {
-@@ -6122,16 +6252,17 @@
+@@ -6116,22 +6246,26 @@
+     #moveTabNextTo(element, targetElement, moveBefore = false, metricsContext) {
+       if (this.isTabGroupLabel(targetElement)) {
+         targetElement = targetElement.group;
+-        if (!moveBefore && !targetElement.collapsed) {
++        if (!moveBefore && !targetElement.collapsed && !targetElement.hasAttribute("split-view-group")) {
+           // Right after the tab group label = before the first tab in the tab group
+           targetElement = targetElement.tabs[0];
            moveBefore = true;
          }
        }
@@ -616,6 +623,9 @@ index 96fd8acdc0..d187f530c4 100644
        }
 
        // Don't allow mixing pinned and unpinned tabs.
++      if (targetElement.group?.hasAttribute("split-view-group")) {
++        targetElement = targetElement.group;
++      }
 +      targetElement = gZenGlanceManager.getTabOrGlanceParent(targetElement);
 +      if (element.hasAttribute('zen-essential') && !targetElement?.hasAttribute('zen-essential')) {
 +        targetElement = this.tabsWithoutGlance[this._numZenEssentials - 1];
@@ -626,7 +636,7 @@ index 96fd8acdc0..d187f530c4 100644
          moveBefore = false;
        } else if (!element.pinned && targetElement && targetElement.pinned) {
          // If the caller asks to move an unpinned element next to a pinned
-@@ -6145,7 +6276,7 @@
+@@ -6145,7 +6279,7 @@
          //    move the tab group right before the first unpinned tab.
          // 4. Moving a tab group and the first unpinned tab is grouped:
          //    move the tab group right before the first unpinned tab's tab group.
@@ -635,7 +645,7 @@ index 96fd8acdc0..d187f530c4 100644
          if (targetElement.group) {
            targetElement = targetElement.group;
          }
-@@ -6153,6 +6284,7 @@
+@@ -6153,6 +6287,7 @@
        }
 
        let getContainer = () =>
@@ -643,7 +653,7 @@ index 96fd8acdc0..d187f530c4 100644
          element.pinned
            ? this.tabContainer.pinnedTabsContainer
            : this.tabContainer;
-@@ -6161,7 +6293,7 @@
+@@ -6161,7 +6296,7 @@
          element,
          () => {
            if (moveBefore) {
@@ -652,7 +662,7 @@ index 96fd8acdc0..d187f530c4 100644
            } else if (targetElement) {
              targetElement.after(element);
            } else {
-@@ -6210,7 +6342,7 @@
+@@ -6210,7 +6345,7 @@
        if (!this.isTab(aTab)) {
          throw new Error("Can only move a tab into a tab group");
        }
@@ -661,7 +671,7 @@ index 96fd8acdc0..d187f530c4 100644
          return;
        }
        if (aTab.group && aTab.group.id === aGroup.id) {
-@@ -6304,6 +6436,10 @@
+@@ -6304,6 +6439,10 @@
 
        moveActionCallback();
 
@@ -672,7 +682,7 @@ index 96fd8acdc0..d187f530c4 100644
        // Clear tabs cache after moving nodes because the order of tabs may have
        // changed.
        this.tabContainer._invalidateCachedTabs();
-@@ -7198,7 +7334,7 @@
+@@ -7198,7 +7337,7 @@
              // preventDefault(). It will still raise the window if appropriate.
              break;
            }
@@ -681,7 +691,7 @@ index 96fd8acdc0..d187f530c4 100644
            window.focus();
            aEvent.preventDefault();
            break;
-@@ -8143,6 +8279,7 @@
+@@ -8143,6 +8282,7 @@
              aWebProgress.isTopLevel
            ) {
              this.mTab.setAttribute("busy", "true");
@@ -689,7 +699,7 @@ index 96fd8acdc0..d187f530c4 100644
              gBrowser._tabAttrModified(this.mTab, ["busy"]);
              this.mTab._notselectedsinceload = !this.mTab.selected;
            }
-@@ -9108,7 +9245,7 @@ var TabContextMenu = {
+@@ -9108,7 +9248,7 @@ var TabContextMenu = {
      );
      contextUnpinSelectedTabs.hidden =
        !this.contextTab.pinned || !this.multiselected;
@@ -698,7 +708,7 @@ index 96fd8acdc0..d187f530c4 100644
      // Move Tab items
      let contextMoveTabOptions = document.getElementById(
        "context_moveTabOptions"
-@@ -9384,6 +9521,7 @@ var TabContextMenu = {
+@@ -9384,6 +9524,7 @@ var TabContextMenu = {
          )
        );
      } else {
