@@ -12,6 +12,7 @@ tab-group {
 
 tab-group[split-view-group] {
   display: block;
+  transition: var(--tab-dragover-transition);
   --zen-split-view-active-tab-bg: color-mix(
     in srgb,
     var(--zen-toolbar-element-bg),
