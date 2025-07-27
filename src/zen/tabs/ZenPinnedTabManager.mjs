@@ -1007,7 +1007,10 @@
       if (!this.enabled) {
         return;
       }
-      if (gBrowser.isTabGroupLabel(draggedTab) && !draggedTab?.group?.hasAttribute('split-view-group')) {
+      if (
+        gBrowser.isTabGroupLabel(draggedTab) &&
+        !draggedTab?.group?.hasAttribute('split-view-group')
+      ) {
         // If the target is a tab group label, we don't want to apply the dragover class
         this.removeTabContainersDragoverClass();
         return;
