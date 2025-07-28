@@ -623,7 +623,7 @@ index 96fd8acdc0..d4087871a1 100644
        }
 
        // Don't allow mixing pinned and unpinned tabs.
-+      if (targetElement.group?.hasAttribute("split-view-group")) {
++      if (targetElement?.group?.hasAttribute("split-view-group")) {
 +        targetElement = targetElement.group;
 +      }
 +      targetElement = gZenGlanceManager.getTabOrGlanceParent(targetElement);

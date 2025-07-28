@@ -281,7 +281,10 @@
       let selectedItem = null;
       let itemsAfterSelected = [];
       // FIX: Correctly calculate the distance to the selected tab
-      for (const item of group.childGroupsAndTabs) {
+      for (let item of group.childGroupsAndTabs) {
+        if (gBrowser.isTabGroupLabel(item)) {
+          item = item.parentNode;
+        }
         const rect = item.getBoundingClientRect();
         if (item.hasAttribute('visuallyselected')) {
           selectedItem = item;
@@ -375,7 +378,7 @@
         _forZenEmptyTab: true,
       });
 
-      tabs = [...tabs, emptyTab];
+      tabs = [emptyTab, ...tabs];
 
       const folder = this._createFolderNode();
 
@@ -667,7 +670,17 @@
         gBrowser.tabContainer.querySelectorAll('tab-group[split-view-group]')
       );
       const allData = [...folders, ...splitGroups];
+
+      // Sort elements in the order in which they appear in the DOM
+      allData.sort((a, b) => {
+        const position = a.compareDocumentPosition(b);
+        if (position & Node.DOCUMENT_POSITION_FOLLOWING) return -1;
+        if (position & Node.DOCUMENT_POSITION_PRECEDING) return 1;
+        return 0;
+      });
+
       const storedData = [];
+
       for (const folder of allData) {
         const parentFolder = folder.parentElement.closest('zen-folder');
         // Skip split-view-group if it's not a zen-folder child
@@ -818,6 +831,7 @@
      * @param {Array<MozTabbrowserTab>|null} movingTabs The tabs being moved.
      */
     highlightGroupOnDragOver(folder, movingTabs) {
+      if (folder === this.#lastHighlightedGroup) return;
       const tab = movingTabs ? movingTabs[0] : null;
       if (this.#lastHighlightedGroup && this.#lastHighlightedGroup !== folder) {
         this.#lastHighlightedGroup.removeAttribute('selected');
