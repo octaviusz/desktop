@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/tabgroup.js b/browser/components/tabbrowser/content/tabgroup.js
-index 2ed2fa02b16013e40a32391b3dba0a4301d65262..ad205517f13067e967436d61e940ec23d3804d1c 100644
+index 2ed2fa02b16013e40a32391b3dba0a4301d65262..d913f100f631e8ad180caf9cd2a150dc863c3b80 100644
 --- a/browser/components/tabbrowser/content/tabgroup.js
 +++ b/browser/components/tabbrowser/content/tabgroup.js
 @@ -13,10 +13,12 @@
@@ -18,7 +18,7 @@ index 2ed2fa02b16013e40a32391b3dba0a4301d65262..ad205517f13067e967436d61e940ec23
        `;
  
      /** @type {string} */
-@@ -50,49 +52,46 @@
+@@ -50,11 +52,8 @@
        // This is needed to ensure events continue to fire even if the tab group is
        // moved from the horizontal to vertical tab layout or vice-versa, which
        // causes the component to be repositioned in the DOM.
@@ -29,78 +29,37 @@ index 2ed2fa02b16013e40a32391b3dba0a4301d65262..ad205517f13067e967436d61e940ec23
 -      }
 +      if (!this._initialized) {
  
--      this._initialized = true;
--      this.saveOnWindowClose = true;
-+        this._initialized = true;
-+        this.saveOnWindowClose = true;
- 
--      this.textContent = "";
--      this.appendChild(this.constructor.fragment);
--      this.initializeAttributeInheritance();
-+        this.textContent = "";
-+        this.appendChild(this.constructor.fragment);
-+        this.initializeAttributeInheritance();
- 
--      this.#labelElement = this.querySelector(".tab-group-label");
--      // Mirroring MozTabbrowserTab
--      this.#labelElement.container = gBrowser.tabContainer;
--      this.#labelElement.group = this;
-+        this.#labelElement = this.querySelector(".tab-group-label");
-+        // Mirroring MozTabbrowserTab
-+        this.#labelElement.container = gBrowser.tabContainer;
-+        this.#labelElement.group = this;
+       this._initialized = true;
+       this.saveOnWindowClose = true;
+@@ -68,12 +67,14 @@
+       this.#labelElement.container = gBrowser.tabContainer;
+       this.#labelElement.group = this;
  
 -      this.#labelElement.addEventListener("click", this);
--      this.#labelElement.addEventListener("contextmenu", e => {
--        e.preventDefault();
--        gBrowser.tabGroupMenu.openEditModal(this);
--        return false;
--      });
-+        this.querySelector(".tab-group-label-container").addEventListener("click", this);
++      this.querySelector(".tab-group-label-container").addEventListener("click", this);
++      if (!this.isZenFolder) {
+       this.#labelElement.addEventListener("contextmenu", e => {
+         e.preventDefault();
+         gBrowser.tabGroupMenu.openEditModal(this);
+         return false;
+       });
++      }
  
--      this.#updateLabelAriaAttributes();
--      this.#updateCollapsedAriaAttributes();
-+        this.#updateLabelAriaAttributes();
-+        this.#updateCollapsedAriaAttributes();
- 
--      this.addEventListener("TabSelect", this);
-+        this.addEventListener("TabSelect", this);
- 
--      let tabGroupCreateDetail = this.#wasCreatedByAdoption
--        ? { isAdoptingGroup: true }
--        : {};
--      this.dispatchEvent(
--        new CustomEvent("TabGroupCreate", {
--          bubbles: true,
--          detail: tabGroupCreateDetail,
--        })
--      );
--      // Reset `wasCreatedByAdoption` to default of false so that we only
--      // claim that a tab group was created by adoption the first time it
--      // mounts after getting created by `Tabbrowser.adoptTabGroup`.
--      this.#wasCreatedByAdoption = false;
-+        let tabGroupCreateDetail = this.#wasCreatedByAdoption
-+          ? { isAdoptingGroup: true }
-+          : {};
-+        this.dispatchEvent(
-+          new CustomEvent("TabGroupCreate", {
-+            bubbles: true,
-+            detail: tabGroupCreateDetail,
-+          })
-+        );
-+        // Reset `wasCreatedByAdoption` to default of false so that we only
-+        // claim that a tab group was created by adoption the first time it
-+        // mounts after getting created by `Tabbrowser.adoptTabGroup`.
-+        this.#wasCreatedByAdoption = false;
-+        this.appendChild = function (child) {
-+          this.querySelector(".tab-group-container").appendChild(child);
-+        }
+       this.#updateLabelAriaAttributes();
+       this.#updateCollapsedAriaAttributes();
+@@ -93,6 +94,11 @@
+       // claim that a tab group was created by adoption the first time it
+       // mounts after getting created by `Tabbrowser.adoptTabGroup`.
+       this.#wasCreatedByAdoption = false;
++      this.appendChild = function (child) {
++        this.querySelector(".tab-group-container").appendChild(child);
++      }
 +      }
 +      this.#observeTabChanges();
      }
  
      disconnectedCallback() {
-@@ -123,7 +122,10 @@
+@@ -123,7 +129,10 @@
            }
          });
        }
@@ -112,7 +71,7 @@ index 2ed2fa02b16013e40a32391b3dba0a4301d65262..ad205517f13067e967436d61e940ec23
      }
  
      get color() {
-@@ -244,7 +246,53 @@
+@@ -244,7 +253,53 @@
      }
  
      get tabs() {
@@ -167,7 +126,7 @@ index 2ed2fa02b16013e40a32391b3dba0a4301d65262..ad205517f13067e967436d61e940ec23
      }
  
      /**
-@@ -270,7 +318,7 @@
+@@ -270,7 +325,7 @@
       */
      addTabs(tabs, metricsContext) {
        for (let tab of tabs) {
@@ -176,7 +135,7 @@ index 2ed2fa02b16013e40a32391b3dba0a4301d65262..ad205517f13067e967436d61e940ec23
            tab.ownerGlobal.gBrowser.unpinTab(tab);
          }
          let tabToMove =
-@@ -333,7 +381,7 @@
+@@ -333,7 +388,7 @@
       * @param {PointerEvent} event
       */
      on_click(event) {
@@ -185,7 +144,7 @@ index 2ed2fa02b16013e40a32391b3dba0a4301d65262..ad205517f13067e967436d61e940ec23
          event.preventDefault();
          this.collapsed = !this.collapsed;
          gBrowser.tabGroupMenu.close();
-@@ -364,5 +412,6 @@
+@@ -364,5 +419,6 @@
      }
    }
  

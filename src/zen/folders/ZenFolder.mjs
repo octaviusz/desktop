@@ -75,6 +75,8 @@
         }
       });
 
+      this.labelElement.setAttribute('context', 'zenFolderActions');
+
       this.labelElement.pinned = true;
       this.labelElement.onRenameFinished = (newLabel) => {
         this.name = newLabel;

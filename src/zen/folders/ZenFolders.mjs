@@ -35,6 +35,8 @@
     #mouseTimer = null;
     #lastHighlightedGroup = null;
 
+    #lastFolderContextMenu = null;
+
     init() {
       this.#initContextMenu();
       this.#initTabsPopup();
@@ -46,6 +48,30 @@
           <menuitem id="zen-context-menu-new-folder" data-l10n-id="zen-toolbar-context-new-folder"/>
           `);
       document.getElementById('context_moveTabToGroup').before(contextMenuItems);
+
+      const folderActionsMenu = document.getElementById('zenFolderActions');
+      folderActionsMenu.addEventListener('popupshowing', (event) => {
+        const folder = event.explicitOriginalTarget?.group;
+        // We only want to rename zen-folders as firefox groups don't work well with this
+        if (!folder || folder.tagName.toLowerCase() !== 'zen-folder') {
+          return;
+        }
+        this.#lastFolderContextMenu = folder;
+        folderActionsMenu.addEventListener(
+          'popuphidden',
+          () => {
+            this.#lastFolderContextMenu = null;
+          },
+          { once: true }
+        );
+      });
+
+      document.getElementById('context_zenFolderRename').addEventListener('command', () => {
+        if (!this.#lastFolderContextMenu) {
+          return;
+        }
+        this.#lastFolderContextMenu.rename();
+      });
     }
 
     #initTabsPopup() {
@@ -166,14 +192,19 @@
       let itemsAfterSelected = [];
       // FIX: Correctly calculate the distance to the selected tab
       for (let item of group.childGroupsAndTabs) {
+        let isGroup = false;
         if (gBrowser.isTabGroupLabel(item)) {
-          item = item.parentNode;
+          item = item.group;
+          isGroup = true;
         }
         const rect = item.getBoundingClientRect();
         if (item.hasAttribute('visuallyselected')) {
           selectedItem = item;
         } else if (!selectedItem) {
           heightUntilSelected += rect.height;
+          if (isGroup) {
+            heightUntilSelected += 4; // Add extra space for group label
+          }
         } else {
           itemsAfterSelected.push(item);
         }
@@ -693,25 +724,6 @@
 
       gBrowser.tabContainer._invalidateCachedTabs();
       this._sessionRestoring = false;
-    }
-
-    /**
-     * Animates the folder icon when moving a tab to a group.
-     * @param {MozTabbrowserTabGroup|undefined} folder
-     */
-    animateTabMoveToGroup(folder, movingTabs) {
-      if (!folder) return;
-
-      const baseMargin = 14;
-      const spacing = baseMargin * (folder.level + 1);
-      if (isNaN(spacing)) return;
-      const movingTab = movingTabs[0];
-      let alreadyExistingSpace = baseMargin * (movingTab?.group?.level + 1) || 0;
-      if (movingTab?.group === folder) {
-        alreadyExistingSpace = 0; // No need to adjust if moving within the same group
-      }
-      const margin = spacing - alreadyExistingSpace;
-      gBrowser.tabContainer.style.setProperty('--zen-addtabtogroup-margin', `${margin}px`);
     }
 
     /**

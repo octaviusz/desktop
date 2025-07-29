@@ -32,6 +32,6 @@
 </menupopup>
 
 <menupopup id="zenFolderActions">
-  <menuitem id="context_zenFolderRename" data-l10n-id="zen-folders-panel-rename-folder" command="cmd_zenRenameFolder"/>
+  <menuitem id="context_zenFolderRename" data-l10n-id="zen-folders-panel-rename-folder"/>
 </menupopup>
 
