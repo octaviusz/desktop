@@ -189,29 +189,52 @@
       const groupStart = group.querySelector('.zen-tab-group-start');
       let heightUntilSelected = 0;
       let selectedItem = null;
+      let selectedGroupId = null;
       let itemsAfterSelected = [];
-      // FIX: Correctly calculate the distance to the selected tab
-      for (let item of group.childGroupsAndTabs) {
-        let isGroup = false;
-        if (gBrowser.isTabGroupLabel(item)) {
-          item = item.group;
-          isGroup = true;
-        }
-        const rect = item.getBoundingClientRect();
+
+      const splitViewGroups = new Set();
+
+      const items = group.childGroupsAndTabs.map((item) => {
+        if (gBrowser.isTabGroupLabel(item)) item = item.parentNode;
+
+        const isSplitView = item.group?.hasAttribute?.('split-view-group');
+        const splitGroupId = isSplitView ? item.group.id : null;
+
         if (item.hasAttribute('visuallyselected')) {
           selectedItem = item;
-        } else if (!selectedItem) {
-          heightUntilSelected += rect.height;
-          if (isGroup) {
-            heightUntilSelected += 4; // Add extra space for group label
-          }
-        } else {
-          itemsAfterSelected.push(item);
+          selectedGroupId = splitGroupId;
         }
+
+        return { item, isSplitView, splitGroupId };
+      });
+
+      for (const { item, isSplitView, splitGroupId } of items) {
+        if (item === selectedItem || (selectedGroupId && splitGroupId === selectedGroupId)) break;
+
+        let itemHeight = 0;
+        if (!splitViewGroups.has(splitGroupId)) {
+          // FIX: split-view-group have a completely different margin and height
+          itemHeight = item.getBoundingClientRect().height;
+          splitViewGroups.add(splitGroupId);
+        } else if (!isSplitView) {
+          itemHeight = item.getBoundingClientRect().height;
+        }
+
+        heightUntilSelected += itemHeight;
+        if (gBrowser.isTabGroupLabel(item.lastChild)) heightUntilSelected += 4;
       }
-      if (selectedItem) {
-        group.setAttribute('has-active', 'true');
+
+      let afterSelected = false;
+      for (const { item, groupId } of items) {
+        if (item === selectedItem) {
+          afterSelected = true;
+          continue;
+        }
+        if (selectedGroupId && groupId === selectedGroupId) continue;
+        if (afterSelected) itemsAfterSelected.push(item);
       }
+
+      if (selectedItem) group.setAttribute('has-active', 'true');
 
       animations.push(...this.updateFolderIcon(group));
       animations.push(
@@ -220,17 +243,12 @@
           {
             marginTop: [0, -(heightUntilSelected + 4 * !selectedItem)],
           },
-          {
-            duration: 0.15,
-            ease: 'linear',
-          }
+          { duration: 0.15, ease: 'linear' }
         )
       );
-      // TODO: Do the rest of the items after the selected item
+
       await Promise.all(animations);
-      if (!selectedItem) {
-        tabsContainer.setAttribute('hidden', true);
-      }
+      if (!selectedItem) tabsContainer.setAttribute('hidden', true);
     }
 
     async #onTabGroupExpand(event) {
@@ -528,7 +546,7 @@
           isCollapsed &&
           group.hasAttribute('has-active')
         ) {
-          newValues = '0;1';
+          newValues = state === 'open' ? '0;0' : '0;1';
           // Animate folder icon
         } else {
           const stateValues = {
