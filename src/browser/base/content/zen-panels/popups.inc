@@ -30,3 +30,8 @@
   <menuitem data-l10n-id="zen-panel-ui-workspaces-create" command="cmd_zenOpenWorkspaceCreation"/>
   <menuitem id="context_zenDeleteWorkspace" data-l10n-id="zen-workspaces-panel-context-delete" command="cmd_zenCtxDeleteWorkspace"/>
 </menupopup>
+
+<menupopup id="zenFolderActions">
+  <menuitem id="context_zenFolderRename" data-l10n-id="zen-folders-panel-rename-folder" command="cmd_zenRenameFolder"/>
+</menupopup>
+
