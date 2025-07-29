@@ -145,7 +145,7 @@
 
   customElements.define('zen-folder', ZenFolder);
 
-  class ZenFolders extends ZenPreloadedFeature {
+  class nsZenFolders extends nsZenPreloadedFeature {
     #popup = null;
     #popupTimer = null;
     #mouseTimer = null;
@@ -653,7 +653,7 @@
           this.openTabsPopup(event);
         }, Services.prefs.getIntPref('zen.folders.search.hover-delay'));
       });
-      labelContainer.addEventListener('mouseleave', (event) => {
+      labelContainer.addEventListener('mouseleave', () => {
         clearTimeout(this.#mouseTimer);
         if (!group.collapsed) return;
         this.#mouseTimer = setTimeout(() => {
@@ -777,19 +777,22 @@
           const parentWorkingData = tabFolderWorkingData.get(stateData.parentId);
           if (parentWorkingData && parentWorkingData.node) {
             switch (stateData?.prevSiblingInfo?.type) {
-              case 'group':
+              case 'group': {
                 const folder = document.querySelector(`[id="${stateData.prevSiblingInfo.id}"]`);
                 gBrowser.moveTabAfter(node, folder);
                 break;
-              case 'tab':
+              }
+              case 'tab': {
                 const tab = parentWorkingData.node.querySelector(
                   `[zen-pin-id="${stateData.prevSiblingInfo.id}"]`
                 );
                 gBrowser.moveTabAfter(node, tab);
                 break;
-              default:
+              }
+              default: {
                 const start = parentWorkingData.node.querySelector('.zen-tab-group-start');
                 start.after(node);
+              }
             }
           }
         }
@@ -855,5 +858,5 @@
     }
   }
 
-  window.gZenFolders = new ZenFolders();
+  window.gZenFolders = new nsZenFolders();
 }
