@@ -113,6 +113,21 @@
       });
     }
 
+    ungroup() {
+      for (const tab of this.tabs) {
+        if (!tab.hasAttribute('zen-empty-tab') && !tab.group.hasAttribute('split-view-group')) {
+          gBrowser.ungroupTab(tab);
+        }
+      }
+    }
+
+    async delete() {
+      for (const tab of this.tabs) {
+        await ZenPinnedTabsStorage.removePin(tab.getAttribute('zen-pin-id'));
+      }
+      gBrowser.removeTabGroup(this, { isUserTriggered: true });
+    }
+
     get level() {
       return this.group?.level + 1 || 0;
     }

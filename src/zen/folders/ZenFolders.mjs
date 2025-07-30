@@ -51,7 +51,8 @@
 
       const folderActionsMenu = document.getElementById('zenFolderActions');
       folderActionsMenu.addEventListener('popupshowing', (event) => {
-        const folder = event.explicitOriginalTarget?.group;
+        const folder =
+          event.explicitOriginalTarget?.group || event.explicitOriginalTarget.parentElement?.group;
         // We only want to rename zen-folders as firefox groups don't work well with this
         if (!folder || folder.tagName.toLowerCase() !== 'zen-folder') {
           return;
@@ -66,11 +67,19 @@
         );
       });
 
-      document.getElementById('context_zenFolderRename').addEventListener('command', () => {
-        if (!this.#lastFolderContextMenu) {
-          return;
+      folderActionsMenu.addEventListener('command', (event) => {
+        if (!this.#lastFolderContextMenu) return;
+        switch (event.target.id) {
+          case 'context_zenFolderRename':
+            this.#lastFolderContextMenu.rename();
+            break;
+          case 'context_zenFolderUngroup':
+            this.#lastFolderContextMenu.ungroup();
+            break;
+          case 'context_zenFolderDelete':
+            this.#lastFolderContextMenu.delete();
+            break;
         }
-        this.#lastFolderContextMenu.rename();
       });
     }
 
@@ -311,7 +320,7 @@
         _forZenEmptyTab: true,
       });
 
-      tabs = [emptyTab, ...tabs];
+      tabs = [...tabs, emptyTab];
 
       const folder = this._createFolderNode();
 
