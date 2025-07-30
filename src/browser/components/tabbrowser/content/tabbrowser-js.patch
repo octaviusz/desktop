@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/tabbrowser.js b/browser/components/tabbrowser/content/tabbrowser.js
-index 96fd8acdc0..f5c019a591 100644
+index 96fd8acdc09cc4c9649d1ed7503c2a0bde536613..bfbd3bdb3f12810435a60e76406549ef3a66f648 100644
 --- a/browser/components/tabbrowser/content/tabbrowser.js
 +++ b/browser/components/tabbrowser/content/tabbrowser.js
 @@ -422,15 +422,49 @@
@@ -62,13 +62,7 @@ index 96fd8acdc0..f5c019a591 100644
        tab.linkedPanel = uniqueId;
        this._selectedTab = tab;
        this._selectedBrowser = browser;
-@@ -858,14 +893,18 @@
-       aTab,
-       { telemetrySource = this.TabMetrics.METRIC_SOURCE.UNKNOWN } = {}
-     ) {
--      if (aTab.pinned || aTab == FirefoxViewHandler.tab) {
-+      if (aTab.pinned || aTab == FirefoxViewHandler.tab || aTab.hasAttribute("zen-empty-tab")) {
-         return;
+@@ -863,9 +898,13 @@
        }
  
        this.showTab(aTab);

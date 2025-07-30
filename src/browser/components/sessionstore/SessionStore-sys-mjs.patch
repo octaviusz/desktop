@@ -1,5 +1,5 @@
 diff --git a/browser/components/sessionstore/SessionStore.sys.mjs b/browser/components/sessionstore/SessionStore.sys.mjs
-index be029379c1..cfa861920b 100644
+index be029379c101a0105d4837136e064e6007b67c3e..cfa861920b15c2f535f1d9351425e29ee03bbdda 100644
 --- a/browser/components/sessionstore/SessionStore.sys.mjs
 +++ b/browser/components/sessionstore/SessionStore.sys.mjs
 @@ -2120,7 +2120,6 @@ var SessionStoreInternal = {

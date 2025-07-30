@@ -316,7 +316,7 @@ var gZenWorkspaces = new (class extends nsZenMultiWindowFeature {
   _initializeEmptyTab() {
     for (const tab of gBrowser.tabs) {
       // Check if session store has an empty tab
-      if (tab.hasAttribute('zen-empty-tab')) {
+      if (tab.hasAttribute('zen-empty-tab') && !tab.pinned) {
         this.log('Found existing empty tab from session store!');
         this._emptyTab = tab;
         return;
