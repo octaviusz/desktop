@@ -61,7 +61,6 @@
 
     connectedCallback() {
       super.connectedCallback();
-      this.removeAttribute('data-tooltip');
       if (this.#initialized) {
         return;
       }
@@ -125,11 +124,17 @@
       for (const tab of this.tabs) {
         await ZenPinnedTabsStorage.removePin(tab.getAttribute('zen-pin-id'));
       }
-      gBrowser.removeTabGroup(this, { isUserTriggered: true });
+      await gBrowser.removeTabGroup(this, { isUserTriggered: true });
     }
 
     get level() {
       return this.group?.level + 1 || 0;
+    }
+
+    get allItems() {
+      return [...this.querySelector('.tab-group-container').children].filter(
+        (child) => !child.classList.contains('zen-tab-group-start')
+      );
     }
   }
 

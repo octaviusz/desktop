@@ -1585,6 +1585,7 @@ var gZenWorkspaces = new (class extends nsZenMultiWindowFeature {
   makeSureEmptyTabIsFirst() {
     const emptyTab = this._emptyTab;
     if (emptyTab) {
+      emptyTab.setAttribute('zen-workspace-id', this.activeWorkspace);
       const container = this.activeWorkspaceStrip;
       if (container) {
         container.insertBefore(emptyTab, container.firstChild);
@@ -2320,6 +2321,9 @@ var gZenWorkspaces = new (class extends nsZenMultiWindowFeature {
         }
       }
       this.registerPinnedResizeObserver();
+      await this.updateTabsContainers({
+        target: this.workspaceElement(workspaceData.uuid).pinnedTabsContainer,
+      });
       let changed = extraTabs.length > 0;
       if (changed) {
         gBrowser.tabContainer._invalidateCachedTabs();
@@ -2509,7 +2513,7 @@ var gZenWorkspaces = new (class extends nsZenMultiWindowFeature {
     workspace.containerTabId = userContextId + 0; // +0 to convert to number
     await this.saveWorkspace(workspace);
     await this._organizeWorkspaceStripLocations(this.getActiveWorkspaceFromCache(), true);
-    await gZenWorkspaces.updateTabsContainers();
+    await this.updateTabsContainers();
     this.tabContainer._invalidateCachedTabs();
   }
 

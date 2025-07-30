@@ -37,16 +37,26 @@
 
     #lastFolderContextMenu = null;
 
+    #foldersEnabled = false;
+
     init() {
+      this.#foldersEnabled =
+        Services.prefs.getBoolPref('zen.folders.enabled', true) &&
+        !gZenWorkspaces.privateWindowOrDisabled;
+
+      if (!this.#foldersEnabled) {
+        return;
+      }
+
       this.#initContextMenu();
       this.#initTabsPopup();
       this.#initEventListeners();
     }
 
     #initContextMenu() {
-      const contextMenuItems = window.MozXULElement.parseXULToFragment(`
-          <menuitem id="zen-context-menu-new-folder" data-l10n-id="zen-toolbar-context-new-folder"/>
-          `);
+      const contextMenuItems = window.MozXULElement.parseXULToFragment(
+        `<menuitem id="zen-context-menu-new-folder" data-l10n-id="zen-toolbar-context-new-folder"/>`
+      );
       document.getElementById('context_moveTabToGroup').before(contextMenuItems);
 
       const folderActionsMenu = document.getElementById('zenFolderActions');
@@ -78,6 +88,9 @@
             break;
           case 'context_zenFolderDelete':
             this.#lastFolderContextMenu.delete();
+            break;
+          case 'context_zenFolderToSpace':
+            this.#convertFolderToSpace(this.#lastFolderContextMenu);
             break;
         }
       });
@@ -302,6 +315,50 @@
 
       const group = this.createFolder(tabs, { insertBefore: triggerTab });
       this.#groupInit(group);
+    }
+
+    async #convertFolderToSpace(folder) {
+      const currentWorkspace = gZenWorkspaces.getActiveWorkspaceFromCache();
+      let selectedTab = folder.tabs.find((tab) => tab.selected);
+      const newSpace = await gZenWorkspaces.createAndSaveWorkspace(
+        folder.label,
+        /* icon= */ undefined,
+        /* dontChange= */ false,
+        currentWorkspace.containerTabId,
+        {
+          beforeChangeCallback: async (newWorkspace) => {
+            await new Promise((resolve) => {
+              requestAnimationFrame(async () => {
+                const workspacePinnedContainer = gZenWorkspaces.workspaceElement(
+                  newWorkspace.uuid
+                ).pinnedTabsContainer;
+                const tabs = folder.allItems.filter((tab) => !tab.hasAttribute('zen-empty-tab'));
+                workspacePinnedContainer.append(...tabs);
+                await folder.delete();
+                folder.remove(); // TODO: Do we need remove()? Or should delete() already do it?
+                gBrowser.tabContainer._invalidateCachedTabs();
+                if (selectedTab) {
+                  selectedTab.setAttribute('zen-workspace-id', newWorkspace.uuid);
+                  gZenWorkspaces._lastSelectedWorkspaceTabs[newWorkspace.uuid] = selectedTab;
+                }
+                resolve();
+              });
+            });
+          },
+        }
+      );
+      // Change the ID for all tabs
+      for (const tab of gBrowser.tabs) {
+        if (!tab.hasAttribute('zen-essential')) {
+          tab.setAttribute('zen-workspace-id', newSpace.uuid);
+        }
+        gBrowser.TabStateFlusher.flush(tab.linkedBrowser);
+        if (gZenWorkspaces._lastSelectedWorkspaceTabs[currentWorkspace.uuid] === tab) {
+          // This tab is no longer the last selected tab in the previous workspace because it's being moved to
+          // the current workspace
+          delete gZenWorkspaces._lastSelectedWorkspaceTabs[currentWorkspace.uuid];
+        }
+      }
     }
 
     createFolder(tabs, { renameFolder = true, ...options } = {}) {

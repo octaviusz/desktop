@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/tabgroup.js b/browser/components/tabbrowser/content/tabgroup.js
-index 2ed2fa02b16013e40a32391b3dba0a4301d65262..d913f100f631e8ad180caf9cd2a150dc863c3b80 100644
+index 2ed2fa02b16013e40a32391b3dba0a4301d65262..486e1d9fa38af854cc78f30df21459022ed241f3 100644
 --- a/browser/components/tabbrowser/content/tabgroup.js
 +++ b/browser/components/tabbrowser/content/tabgroup.js
 @@ -13,10 +13,12 @@
@@ -71,7 +71,15 @@ index 2ed2fa02b16013e40a32391b3dba0a4301d65262..d913f100f631e8ad180caf9cd2a150dc
      }
  
      get color() {
-@@ -244,7 +253,53 @@
+@@ -172,7 +181,6 @@
+       // always create a text node and get consistent layout.
+       this.setAttribute("label", val || "\u200b");
+ 
+-      this.dataset.tooltip = val;
+ 
+       this.#updateLabelAriaAttributes();
+       if (diff) {
+@@ -244,7 +252,53 @@
      }
  
      get tabs() {
@@ -126,7 +134,7 @@ index 2ed2fa02b16013e40a32391b3dba0a4301d65262..d913f100f631e8ad180caf9cd2a150dc
      }
  
      /**
-@@ -270,7 +325,7 @@
+@@ -270,7 +324,7 @@
       */
      addTabs(tabs, metricsContext) {
        for (let tab of tabs) {
@@ -135,7 +143,7 @@ index 2ed2fa02b16013e40a32391b3dba0a4301d65262..d913f100f631e8ad180caf9cd2a150dc
            tab.ownerGlobal.gBrowser.unpinTab(tab);
          }
          let tabToMove =
-@@ -333,7 +388,7 @@
+@@ -333,7 +387,7 @@
       * @param {PointerEvent} event
       */
      on_click(event) {
@@ -144,7 +152,7 @@ index 2ed2fa02b16013e40a32391b3dba0a4301d65262..d913f100f631e8ad180caf9cd2a150dc
          event.preventDefault();
          this.collapsed = !this.collapsed;
          gBrowser.tabGroupMenu.close();
-@@ -364,5 +419,6 @@
+@@ -364,5 +418,6 @@
      }
    }
  

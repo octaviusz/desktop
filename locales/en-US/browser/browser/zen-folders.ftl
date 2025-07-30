@@ -11,3 +11,5 @@ zen-folders-panel-ungroup-folder =
 zen-folders-panel-delete-folder =
     .label = Delete Folder
 
+zen-folders-panel-convert-folder-to-space =
+    .label = Convert folder to Space

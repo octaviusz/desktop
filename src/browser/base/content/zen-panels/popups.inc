@@ -35,6 +35,8 @@
   <menuitem id="context_zenFolderRename" data-l10n-id="zen-folders-panel-rename-folder"/>
   <menuitem id="context_zenFolderUngroup" data-l10n-id="zen-folders-panel-ungroup-folder"/>
   <menuseparator />
+  <menuitem id="context_zenFolderToSpace" data-l10n-id="zen-folders-panel-convert-folder-to-space" />
+  <menuseparator />
   <menuitem id="context_zenFolderDelete" data-l10n-id="zen-folders-panel-delete-folder"/>
 </menupopup>
 
