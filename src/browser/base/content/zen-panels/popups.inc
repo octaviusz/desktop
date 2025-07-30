@@ -33,7 +33,7 @@
 
 <menupopup id="zenFolderActions">
   <menuitem id="context_zenFolderRename" data-l10n-id="zen-folders-panel-rename-folder"/>
-  <menuitem id="context_zenFolderUngroup" data-l10n-id="zen-folders-panel-ungroup-folder"/>
+  <menuitem id="context_zenFolderExpand" data-l10n-id="zen-folders-panel-expand-folder"/>
   <menuseparator />
   <menuitem id="context_zenFolderToSpace" data-l10n-id="zen-folders-panel-convert-folder-to-space" />
   <menuseparator />

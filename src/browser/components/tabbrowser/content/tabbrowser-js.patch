@@ -16,7 +16,7 @@ index 96fd8acdc09cc4c9649d1ed7503c2a0bde536613..bfbd3bdb3f12810435a60e76406549ef
 +        if (!item.pinned && !item.hasAttribute("zen-glance-tab")) {
 +          break;
 +        }
-+        if ((!item.group?.hasAttribute("split-view-group") && !item.group?.collapsed) && !item.hidden) {
++        if (!item.group?.collapsed && !item.hidden) {
 +          i += !item.hasAttribute("zen-glance-tab");
 +        }
 +      }

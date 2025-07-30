@@ -83,8 +83,8 @@
           case 'context_zenFolderRename':
             this.#lastFolderContextMenu.rename();
             break;
-          case 'context_zenFolderUngroup':
-            this.#lastFolderContextMenu.ungroup();
+          case 'context_zenFolderExpand':
+            this.#lastFolderContextMenu.expandGroupTabs();
             break;
           case 'context_zenFolderDelete':
             this.#lastFolderContextMenu.delete();
@@ -426,12 +426,6 @@
       folder.color = 'zen-workspace-color';
 
       return folder;
-    }
-
-    expandGroupTabs(group) {
-      for (const tab of group.tabs.reverse()) {
-        gBrowser.ungroupTab(tab);
-      }
     }
 
     handleTabPin(tab) {

@@ -112,9 +112,13 @@
       });
     }
 
-    ungroup() {
-      for (const tab of this.tabs) {
-        if (!tab.hasAttribute('zen-empty-tab') && !tab.group.hasAttribute('split-view-group')) {
+    async expandGroupTabs() {
+      for (let tab of this.allItems.reverse()) {
+        tab = tab.group.hasAttribute('split-view-group') ? tab.group : tab;
+        if (tab.hasAttribute('zen-empty-tab')) {
+          await ZenPinnedTabsStorage.removePin(tab.getAttribute('zen-pin-id'));
+          gBrowser.removeTab(tab);
+        } else {
           gBrowser.ungroupTab(tab);
         }
       }
