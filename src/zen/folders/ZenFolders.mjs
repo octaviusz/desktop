@@ -130,6 +130,7 @@
       window.addEventListener('TabUnpinned', this.#onTabUnpinned.bind(this));
       window.addEventListener('TabGroupExpand', this.#onTabGroupExpand.bind(this));
       window.addEventListener('TabGroupCollapse', this.#onTabGroupCollapse.bind(this));
+      window.addEventListener('FolderGrouped', this.#onFolderGrouped.bind(this));
       document
         .getElementById('zen-context-menu-new-folder')
         .addEventListener('command', this.#onNewFolder.bind(this));
@@ -150,6 +151,11 @@
       if (group.collapsed && !this._sessionRestoring) {
         group.collapsed = false;
       }
+    }
+
+    #onFolderGrouped(event) {
+      const folder = event.detail;
+      folder.group.collapsed = false;
     }
 
     #onTabUngrouped(event) {
