@@ -341,7 +341,6 @@
                 const tabs = folder.allItems.filter((tab) => !tab.hasAttribute('zen-empty-tab'));
                 workspacePinnedContainer.append(...tabs);
                 await folder.delete();
-                folder.remove(); // TODO: Do we need remove()? Or should delete() already do it?
                 gBrowser.tabContainer._invalidateCachedTabs();
                 if (selectedTab) {
                   selectedTab.setAttribute('zen-workspace-id', newWorkspace.uuid);
@@ -373,9 +372,7 @@
       }
       const insertBefore =
         options.insertBefore ||
-        gZenWorkspaces.pinnedTabsContainer.querySelector(
-          '.vertical-pinned-tabs-container-separator'
-        );
+        gZenWorkspaces.pinnedTabsContainer.querySelector('.pinned-tabs-container-separator');
       const emptyTab = gBrowser.addTab('about:blank', {
         skipAnimation: true,
         pinned: true,

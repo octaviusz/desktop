@@ -127,6 +127,11 @@
     async delete() {
       for (const tab of this.tabs) {
         await ZenPinnedTabsStorage.removePin(tab.getAttribute('zen-pin-id'));
+        if (tab.hasAttribute('zen-empty-tab')) {
+          // Manually remove the empty tabs as removeTabs() inside removeTabGroup
+          // does ignore them.
+          gBrowser.removeTab(tab);
+        }
       }
       await gBrowser.removeTabGroup(this, { isUserTriggered: true });
     }
