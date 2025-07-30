@@ -108,6 +108,11 @@
       return true;
     }
 
+    // Dont expand the folder when the user selects a tab in it
+    on_TabSelect() {
+      this.collapsed = this.hasAttribute('has-active');
+    }
+
     rename() {
       gZenVerticalTabsManager.renameTabStart({
         target: this.labelElement,
