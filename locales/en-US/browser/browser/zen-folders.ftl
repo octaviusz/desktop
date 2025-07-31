@@ -13,3 +13,6 @@ zen-folders-panel-delete-folder =
 
 zen-folders-panel-convert-folder-to-space =
     .label = Convert folder to Space
+
+zen-folders-panel-change-folder-space =
+    .label = Change Space...

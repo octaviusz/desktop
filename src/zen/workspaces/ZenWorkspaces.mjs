@@ -1627,7 +1627,7 @@ var gZenWorkspaces = new (class extends nsZenMultiWindowFeature {
           }
         );
       } else {
-        window.requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
           workspaceElement.style.paddingTop = essentialsHeight + 'px';
         });
       }

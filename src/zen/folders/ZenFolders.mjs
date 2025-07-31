@@ -68,14 +68,40 @@
           return;
         }
         this.#lastFolderContextMenu = folder;
-        folderActionsMenu.addEventListener(
-          'popuphidden',
-          () => {
-            this.#lastFolderContextMenu = null;
-          },
-          { once: true }
-        );
+        const changeFolderSpace = document
+          .getElementById('context_zenChangeFolderSpace')
+          .querySelector('menupopup');
+        changeFolderSpace.innerHTML = '';
+        for (const workspace of [...gZenWorkspaces._workspaceCache.workspaces].reverse()) {
+          const item = document.createXULElement('menuitem');
+          item.className = 'zen-workspace-context-menu-item';
+          item.setAttribute('zen-workspace-id', workspace.uuid);
+          item.setAttribute('disabled', workspace.uuid === this.activeWorkspace);
+          let name = workspace.name;
+          if (workspace.icon && workspace.icon !== '') {
+            name = `${workspace.icon}  ${name}`;
+          }
+          item.setAttribute('label', name);
+          item.addEventListener('command', (event) => {
+            if (!this.#lastFolderContextMenu) return;
+            this.changeFolderToSpace(
+              this.#lastFolderContextMenu,
+              event.target.closest('menuitem').getAttribute('zen-workspace-id')
+            );
+          });
+          changeFolderSpace.appendChild(item);
+        }
       });
+
+      folderActionsMenu.addEventListener(
+        'popuphidden',
+        (event) => {
+          if (event.target === folderActionsMenu) {
+            this.#lastFolderContextMenu = null;
+          }
+        },
+        { once: true }
+      );
 
       folderActionsMenu.addEventListener('command', (event) => {
         if (!this.#lastFolderContextMenu) return;
@@ -364,6 +390,25 @@
           delete gZenWorkspaces._lastSelectedWorkspaceTabs[currentWorkspace.uuid];
         }
       }
+    }
+
+    changeFolderToSpace(folder, workspaceId) {
+      const currentWorkspace = gZenWorkspaces.getActiveWorkspaceFromCache();
+      if (currentWorkspace.uuid === workspaceId) {
+        return;
+      }
+      const workspaceElement = gZenWorkspaces.workspaceElement(workspaceId);
+      const pinnedTabsContainer = workspaceElement.pinnedTabsContainer;
+      pinnedTabsContainer.appendChild(folder);
+      for (const tab of folder.tabs) {
+        tab.setAttribute('zen-workspace-id', workspaceId);
+        gBrowser.TabStateFlusher.flush(tab.linkedBrowser);
+        if (gZenWorkspaces._lastSelectedWorkspaceTabs[workspaceId] === tab) {
+          // This tab is no longer the last selected tab in the previous workspace because it's being moved to a new workspace
+          delete gZenWorkspaces._lastSelectedWorkspaceTabs[workspaceId];
+        }
+      }
+      gZenWorkspaces.changeWorkspaceWithID(workspaceId);
     }
 
     createFolder(tabs, { renameFolder = true, ...options } = {}) {
