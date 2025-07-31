@@ -7,6 +7,7 @@ add_task(async function test_Create_Folder() {
   const tab = BrowserTestUtils.addTab(gBrowser, 'about:blank');
   const folder = await gZenFolders.createFolder([tab], {
     renameFolder: false,
+    label: 'test',
   });
   debugger;
   ok(folder, 'Folder created successfully');
@@ -16,6 +17,12 @@ add_task(async function test_Create_Folder() {
     'Folder contains the tab and the empty tab created by Zen Folders'
   );
   ok(tab.pinned, 'Tab is pinned after folder creation');
+  Assert.equal(
+    folder.label,
+    'test',
+    'Folder label is set correctly'
+  );
+  ok(!folder.collapsed, 'Folder is expanded after creation');
   const removeEvent = BrowserTestUtils.waitForEvent(window, 'TabGroupRemoved');
   folder.delete();
   await removeEvent;

@@ -168,6 +168,21 @@ tab-group:not([split-view-group]) {
     justify-content: start;
     margin-top: 10px;
     margin-bottom: 10px;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: calc(-1 * var(--zen-toolbox-padding));
+      width: calc(100% + 2 * var(--zen-toolbox-padding));
+      height: 100%;
+      background-color: var(--zen-colors-border-contrast);
+      border-radius: var(--border-radius-medium);
+      z-index: -1;
+      transition: opacity 0.01s ease-in-out;
+      opacity: 0;
+      pointer-events: none;
+    }
   }
 
   & .tab-group-label {
@@ -216,8 +231,8 @@ zen-folder {
     color-mix(in srgb, var(--zen-primary-color), #000 40%)
   );
 
-  &[selected] > .tab-group-label-container {
-    background-color: var(--zen-primary-color);
+  &[selected] > .tab-group-label-container::before {
+    opacity: 1;
   }
 
   :root:not([zen-sidebar-expanded]) {

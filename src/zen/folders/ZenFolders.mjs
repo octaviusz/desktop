@@ -40,9 +40,7 @@
     #foldersEnabled = false;
 
     init() {
-      this.#foldersEnabled =
-        Services.prefs.getBoolPref('zen.folders.enabled', true) &&
-        !gZenWorkspaces.privateWindowOrDisabled;
+      this.#foldersEnabled = !gZenWorkspaces.privateWindowOrDisabled;
 
       if (!this.#foldersEnabled) {
         return;
@@ -411,7 +409,7 @@
       gZenWorkspaces.changeWorkspaceWithID(workspaceId);
     }
 
-    createFolder(tabs = [], { renameFolder = true, ...options } = {}) {
+    createFolder(tabs = [], options = {}) {
       for (const tab of tabs) {
         gBrowser.pinTab(tab);
       }
@@ -427,7 +425,7 @@
 
       tabs = [...tabs, emptyTab];
 
-      const folder = this._createFolderNode();
+      const folder = this._createFolderNode(options);
 
       insertBefore.before(folder);
       gZenVerticalTabsManager.animateItemOpen(folder);
@@ -446,7 +444,7 @@
 
       this.updateFolderIcon(folder, 'auto', false);
 
-      if (renameFolder) {
+      if (options.renameFolder) {
         folder.rename();
       }
       return folder;
