@@ -141,11 +141,7 @@ add_task(async function test_Welcome_Steps() {
 
       gBrowser.selectedTab = selectedTab;
       const groups = gBrowser.tabGroups;
-      Assert.equal(
-        groups.length,
-        1,
-        'There should be one tab group after the welcome process'
-      );
+      Assert.equal(groups.length, 1, 'There should be one tab group after the welcome process');
       const group = groups[0];
       Assert.equal(
         group.tabs.length,
