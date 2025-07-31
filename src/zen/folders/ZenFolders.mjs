@@ -275,7 +275,7 @@
         }
 
         heightUntilSelected += itemHeight;
-        if (gBrowser.isTabGroupLabel(item.lastChild)) heightUntilSelected += 4;
+        if (gBrowser.isTabGroupLabel(item.lastChild)) heightUntilSelected += 2;
       }
 
       let afterSelected = false;

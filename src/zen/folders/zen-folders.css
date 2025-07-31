@@ -230,9 +230,17 @@ zen-folder {
       margin-inline-start: var(--zen-folder-indent, 14px);
     }
 
+    & > zen-folder {
+      transition: margin-inline-start 0.15s ease;
+    }
+
     & > tab::before {
       background: none !important;
     }
+  }
+
+  &[collapsed][has-active='true'] > .tab-group-container > zen-folder {
+    margin-inline-start: 0 !important;
   }
 
   margin: var(--tab-block-margin);
