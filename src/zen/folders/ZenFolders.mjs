@@ -76,7 +76,7 @@
           const item = document.createXULElement('menuitem');
           item.className = 'zen-workspace-context-menu-item';
           item.setAttribute('zen-workspace-id', workspace.uuid);
-          item.setAttribute('disabled', workspace.uuid === this.activeWorkspace);
+          item.setAttribute('disabled', workspace.uuid === gZenWorkspaces.activeWorkspace);
           let name = workspace.name;
           if (workspace.icon && workspace.icon !== '') {
             name = `${workspace.icon}  ${name}`;
@@ -399,7 +399,7 @@
       }
       const workspaceElement = gZenWorkspaces.workspaceElement(workspaceId);
       const pinnedTabsContainer = workspaceElement.pinnedTabsContainer;
-      pinnedTabsContainer.appendChild(folder);
+      pinnedTabsContainer.insertBefore(folder, pinnedTabsContainer.lastChild);
       for (const tab of folder.tabs) {
         tab.setAttribute('zen-workspace-id', workspaceId);
         gBrowser.TabStateFlusher.flush(tab.linkedBrowser);
