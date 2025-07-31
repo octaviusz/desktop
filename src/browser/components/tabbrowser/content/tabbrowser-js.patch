@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/tabbrowser.js b/browser/components/tabbrowser/content/tabbrowser.js
-index 96fd8acdc09cc4c9649d1ed7503c2a0bde536613..bfbd3bdb3f12810435a60e76406549ef3a66f648 100644
+index 96fd8acdc09cc4c9649d1ed7503c2a0bde536613..70c3844536ab0b16720c416cbad255f1c0c5f659 100644
 --- a/browser/components/tabbrowser/content/tabbrowser.js
 +++ b/browser/components/tabbrowser/content/tabbrowser.js
 @@ -422,15 +422,49 @@
@@ -251,7 +251,7 @@ index 96fd8acdc09cc4c9649d1ed7503c2a0bde536613..bfbd3bdb3f12810435a60e76406549ef
        }
  
 +      if (typeof window.gZenVerticalTabsManager !== "undefined") {
-+        gZenVerticalTabsManager.animateTab(t);
++        gZenVerticalTabsManager.animateItemOpen(t);
 +      }
 +      if (typeof window.gZenCompactModeManager !== "undefined" && !skipLoad && insertTab) {
 +        gZenCompactModeManager._onTabOpen(t, inBackground);

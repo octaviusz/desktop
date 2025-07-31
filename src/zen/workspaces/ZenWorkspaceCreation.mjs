@@ -15,6 +15,7 @@
       return [
         'cmd_zenOpenWorkspacePanel',
         'cmd_zenOpenWorkspaceCreation',
+        'cmd_zenOpenFolderCreation',
         'cmd_zenToggleSidebar',
         'cmd_newNavigatorTab',
         'cmd_newNavigatorTabNoEvent',

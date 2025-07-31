@@ -275,7 +275,7 @@
         }
 
         heightUntilSelected += itemHeight;
-        if (gBrowser.isTabGroupLabel(item.lastChild)) heightUntilSelected += 4;
+        if (gBrowser.isTabGroupLabel(item.lastChild)) heightUntilSelected += 2;
       }
 
       let afterSelected = false;
@@ -411,7 +411,7 @@
       gZenWorkspaces.changeWorkspaceWithID(workspaceId);
     }
 
-    createFolder(tabs, { renameFolder = true, ...options } = {}) {
+    createFolder(tabs = [], { renameFolder = true, ...options } = {}) {
       for (const tab of tabs) {
         gBrowser.pinTab(tab);
       }
@@ -430,6 +430,8 @@
       const folder = this._createFolderNode();
 
       insertBefore.before(folder);
+      gZenVerticalTabsManager.animateItemOpen(folder);
+
       folder.addTabs(tabs);
 
       // Fixes bug1953801 and bug1954689
