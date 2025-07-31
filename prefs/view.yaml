@@ -42,3 +42,6 @@
 
 - name: zen.view.window.scheme
   value: 2
+
+- name: zen.view.drag-and-drop.move-over-threshold
+  value: 80

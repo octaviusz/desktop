@@ -298,7 +298,7 @@
           {
             marginTop: [0, -(heightUntilSelected + 4 * !selectedItem)],
           },
-          { duration: 0.15, ease: 'linear' }
+          { duration: 0.15, ease: 'easeInOut' }
         )
       );
 
@@ -531,9 +531,15 @@
 
       search.addEventListener('input', () => {
         const query = search.value.toLowerCase();
+        let foundTabs = 0;
         for (const item of tabsList.children) {
-          item.hidden = !item.getAttribute('data-label').includes(query);
+          const found = item.getAttribute('data-label').includes(query);
+          item.hidden = !found;
+          if (found) {
+            foundTabs++;
+          }
         }
+        document.getElementById('zen-folder-tabs-search-no-results').hidden = foundTabs > 0;
       });
 
       const target = event.target;

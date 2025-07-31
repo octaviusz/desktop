@@ -19,3 +19,5 @@ zen-folders-panel-change-folder-space =
 
 zen-folders-panel-change-icon-folder =
     .label = Change Icon
+
+zen-folders-search-no-results = No tabs matching that search 🤔

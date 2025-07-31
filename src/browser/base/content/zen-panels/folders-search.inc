@@ -9,5 +9,6 @@
   </hbox>
   <scrollbox class="zen-folder-tabs-list-scrollbox" flex="1">
     <vbox id="zen-folder-tabs-list"></vbox>
+    <hbox id="zen-folder-tabs-search-no-results" flex="1" data-l10n-id="zen-folders-search-no-results" />
   </scrollbox>
 </panel>

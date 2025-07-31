@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/tabs.js b/browser/components/tabbrowser/content/tabs.js
-index 1fcebe3962..4b216642d8 100644
+index 1fcebe3962398ff1b7cadef657ac8b68a80e720d..20d13f48dda1920c42e78e9ad742dc77c49bf8ff 100644
 --- a/browser/components/tabbrowser/content/tabs.js
 +++ b/browser/components/tabbrowser/content/tabs.js
 @@ -289,6 +289,7 @@
@@ -416,6 +416,15 @@ index 1fcebe3962..4b216642d8 100644
            ? dropElement.parentElement
            : dropElement;
  
+@@ -2624,7 +2701,7 @@
+           ? Services.prefs.getIntPref(
+               "browser.tabs.dragDrop.moveOverThresholdPercent"
+             ) / 100
+-          : 0.5;
++          : Services.prefs.getIntPref('zen.view.drag-and-drop.move-over-threshold') / 100;
+         moveOverThreshold = Math.min(1, Math.max(0, moveOverThreshold));
+         let shouldMoveOver = overlapPercent > moveOverThreshold;
+         if (logicalForward && shouldMoveOver) {
 @@ -2656,23 +2733,23 @@
  
          // If dragging a group over another group, don't make it look like it is
