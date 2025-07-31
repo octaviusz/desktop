@@ -628,6 +628,7 @@
       if (!svg) return [];
 
       const isCollapsed = group.collapsed;
+      const hasActive = group.hasAttribute('has-active');
       const animStates = {
         open: 0.3,
         close: 0,
@@ -635,7 +636,6 @@
       };
 
       svg.unpauseAnimations();
-
       if (!play) {
         svg.pauseAnimations();
         svg.setCurrentTime(animStates[state]);
@@ -643,22 +643,19 @@
       }
 
       const animations = svg.querySelectorAll('animate, animateTransform, animateMotion');
-
       animations.forEach((anim) => {
         const origValues = anim.dataset.origValues;
         const [fromValue, toValue] = origValues.split(';');
-
         let newValues;
 
-        // Animate folder dots
-        if (
-          anim.parentElement.id === 'folder-dots' &&
-          anim.getAttribute('attributeName') === 'opacity' &&
-          isCollapsed &&
-          group.hasAttribute('has-active')
-        ) {
+        const parentId = anim.parentElement.id;
+        const isOpacity = anim.getAttribute('attributeName') === 'opacity';
+        const isActive = isCollapsed && hasActive && isOpacity;
+
+        if (parentId === 'folder-dots' && isActive) {
           newValues = state === 'open' ? '0;0' : '0;1';
-          // Animate folder icon
+        } else if (parentId === 'folder-emoji' && isActive) {
+          newValues = state === 'open' ? '1;1' : '0;0';
         } else {
           const stateValues = {
             open: `${fromValue};${toValue}`,
