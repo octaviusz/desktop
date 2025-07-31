@@ -116,6 +116,9 @@
           case 'context_zenFolderToSpace':
             this.#convertFolderToSpace(this.#lastFolderContextMenu);
             break;
+          case 'context_zenFolderChangeIcon':
+            this.changeFolderEmojiIcon(this.#lastFolderContextMenu);
+            break;
         }
       });
     }
@@ -671,9 +674,36 @@
       return [];
     }
 
-    #groupInit(group) {
+    changeFolderEmojiIcon(group) {
+      if (!group) return;
+
+      gZenEmojiPicker
+        .open(group)
+        .then((icon) => {
+          this.setFolderEmojiIcon(group, icon);
+        })
+        .catch((err) => {
+          console.error(err);
+          return;
+        });
+    }
+
+    setFolderEmojiIcon(group, icon) {
+      const svgText = group.icon.querySelector('svg text');
+      if (!svgText) return;
+
+      // Save animations
+      const animations = Array.from(svgText.children);
+      // Change folder icon
+      svgText.textContent = icon;
+      // Restore animations
+      animations.forEach((anim) => svgText.appendChild(anim));
+    }
+
+    #groupInit(group, stateData) {
       // Setup zen-folder icon to the correct position
       this.updateFolderIcon(group, 'auto', false);
+      this.setFolderEmojiIcon(group, stateData.emojiIcon);
 
       const tabsContainer = group.querySelector('.tab-group-container');
       const groupStart = group.querySelector('.zen-tab-group-start');
@@ -734,6 +764,7 @@
 
         let prevSiblingInfo = null;
         const prevSibling = folder.previousElementSibling;
+        const emojiIcon = folder?.icon?.querySelector('svg text') || '';
 
         if (prevSibling) {
           if (gBrowser.isTabGroup(prevSibling)) {
@@ -757,6 +788,7 @@
           parentId: parentFolder ? parentFolder.id : null,
           prevSiblingInfo: prevSiblingInfo,
           emptyTabIds: emptyFolderTabs,
+          emojiIcon: emojiIcon.textContent,
         });
       }
       return storedData;
@@ -844,7 +876,7 @@
       // Initialize UI state for all folders.
       for (const { stateData, node } of tabFolderWorkingData.values()) {
         if (node && !stateData.splitViewGroup) {
-          this.#groupInit(node);
+          this.#groupInit(node, stateData);
         }
       }
 

@@ -46,6 +46,12 @@
           <animateTransform type="skewX" additive="sum" attributeName="transform" values="1;-17" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
           <animateTransform type="translate" additive="sum" attributeName="transform" values="0 0.5;3 -0.5" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
         </rect>
+      <!--Emoji (text)-->
+        <text shape-rendering="geometricPrecision"  x="-53.05" y="5.399" fill="black" font-size="8">
+          <animateTransform type="skewX" additive="sum" attributeName="transform" values="0;-10" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+          <animateTransform type="translate" additive="sum" attributeName="transform" values="-5 0;0 0" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+        </text>
+        <!--End Emoji (text)-->
         <g id="folder-dots" style="fill-opacity: 1; fill: var(--toolbox-textcolor);">
           <animateTransform type="skewX" additive="sum" attributeName="transform" values="1;-17" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
           <animateTransform type="translate" additive="sum" attributeName="transform" values="0 0.5;5 -0.5" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>

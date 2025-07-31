@@ -16,3 +16,6 @@ zen-folders-panel-convert-folder-to-space =
 
 zen-folders-panel-change-folder-space =
     .label = Change Space...
+
+zen-folders-panel-change-icon-folder =
+    .label = Change Icon
