@@ -34,9 +34,8 @@
 
 <menupopup id="zenFolderActions">
   <menuitem id="context_zenFolderRename" data-l10n-id="zen-folders-panel-rename-folder"/>
-  <menuitem id="context_zenFolderExpand" data-l10n-id="zen-folders-panel-expand-folder"/>
-  <menuseparator />
   <menuitem id="context_zenFolderChangeIcon" data-l10n-id="zen-folders-panel-change-icon-folder"/>
+  <menuitem id="context_zenFolderExpand" data-l10n-id="zen-folders-panel-expand-folder"/>
   <menuseparator />
   <menu id="context_zenChangeFolderSpace"
     data-l10n-id="zen-folders-panel-change-folder-space">

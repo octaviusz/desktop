@@ -906,6 +906,7 @@
         folder !== tab?.group
       ) {
         folder.setAttribute('selected', 'true');
+        folder.style.transform = "";
         if (folder.collapsed) {
           this.updateFolderIcon(folder, 'open');
         }
