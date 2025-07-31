@@ -110,6 +110,9 @@ document.addEventListener(
           case 'cmd_zenOpenWorkspaceCreation':
             gZenWorkspaces.openWorkspaceCreation(event);
             break;
+          case 'cmd_zenOpenFolderCreation':
+            gZenFolders.createFolder();
+            break;
           default:
             gZenGlanceManager.handleMainCommandSet(event);
             if (event.target.id.startsWith('cmd_zenWorkspaceSwitch')) {

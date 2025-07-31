@@ -226,8 +226,6 @@ zen-folder {
   }
 
   & > .tab-group-container {
-    padding-top: var(--tab-block-margin);
-
     & > * {
       margin-inline-start: var(--zen-folder-indent, 14px);
     }
