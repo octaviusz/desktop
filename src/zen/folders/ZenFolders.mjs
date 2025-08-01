@@ -710,6 +710,41 @@
       animations.forEach((anim) => svgText.appendChild(anim));
     }
 
+    collapseVisibleTab(group) {
+      const groupStart = group.querySelector('.zen-tab-group-start');
+      groupStart.setAttribute('old-margin', groupStart.style.marginTop);
+      let itemHeight = 0;
+      for (const item of group.allItems) {
+        itemHeight += item.getBoundingClientRect().height;
+      }
+      const newMargin = -(itemHeight + 4);
+      groupStart.setAttribute('new-margin', newMargin);
+
+      gZenUIManager.motion.animate(
+        groupStart,
+        {
+          marginTop: newMargin,
+        },
+        { duration: 0.15, ease: 'easeInOut' }
+      );
+    }
+
+    expandVisibleTab(group) {
+      const groupStart = group.querySelector('.zen-tab-group-start');
+      let oldMargin = groupStart.getAttribute('old-margin');
+      let newMargin = groupStart.getAttribute('new-margin');
+
+      gZenUIManager.motion.animate(
+        groupStart,
+        {
+          marginTop: [`${newMargin}px`, oldMargin],
+        },
+        { duration: 0.15, ease: 'easeInOut' }
+      );
+      groupStart.removeAttribute('old-margin');
+      groupStart.removeAttribute('new-margin');
+    }
+
     #groupInit(group, stateData) {
       // Setup zen-folder icon to the correct position
       this.updateFolderIcon(group, 'auto', false);
