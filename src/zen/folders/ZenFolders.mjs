@@ -272,12 +272,21 @@
         if (item === selectedItem || (selectedGroupId && splitGroupId === selectedGroupId)) break;
 
         let itemHeight = 0;
-        if (!splitViewGroups.has(splitGroupId)) {
+        if (!splitViewGroups.has(splitGroupId) && isSplitView) {
           // FIX: split-view-group have a completely different margin and height
-          itemHeight = item.getBoundingClientRect().height;
+          itemHeight = window.windowUtils.getBoundsWithoutFlushing(item).height;
           splitViewGroups.add(splitGroupId);
         } else if (!isSplitView) {
-          itemHeight = item.getBoundingClientRect().height;
+          // We shoudnt be adding the height of hidden tabs.
+          if (
+            gBrowser.isTab(item) &&
+            item.group?.collapsed &&
+            item.group !== group &&
+            !item.hasAttribute('folder-active')
+          ) {
+            continue;
+          }
+          itemHeight = window.windowUtils.getBoundsWithoutFlushing(item).height;
         }
 
         heightUntilSelected += itemHeight;
@@ -719,7 +728,7 @@
       const svgIcon = group.icon.querySelector('svg #folder-icon image');
       if (!svgIcon) return;
       svgIcon.setAttribute('href', icon);
-      svgIcon.setAttribute('transform', 'translate(-53, 2.5) scale(0.8)');
+      svgIcon.setAttribute('transform', 'translate(-52, 2)');
     }
 
     collapseVisibleTab(group) {

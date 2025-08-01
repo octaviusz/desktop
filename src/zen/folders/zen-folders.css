@@ -226,9 +226,9 @@ zen-folder {
     }
 
     .tab-group-folder-icon {
-      width: 28px;
+      width: 30px;
       height: 28px;
-      margin-inline-end: calc(var(--toolbarbutton-inner-padding) / 3) !important;
+      margin-inline-end: calc(var(--toolbarbutton-inner-padding) / 4) !important;
       align-content: center;
       pointer-events: none;
       flex-shrink: 0;
@@ -263,10 +263,6 @@ zen-folder {
 
     & > .tab-group-container {
       overflow-y: clip;
-    }
-
-    &[has-active] {
-      transition: var(--tab-dragover-transition);
     }
   }
 }
