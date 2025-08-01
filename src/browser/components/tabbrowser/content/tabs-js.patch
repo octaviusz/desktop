@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/tabs.js b/browser/components/tabbrowser/content/tabs.js
-index 1fcebe3962398ff1b7cadef657ac8b68a80e720d..20d13f48dda1920c42e78e9ad742dc77c49bf8ff 100644
+index 1fcebe3962398ff1b7cadef657ac8b68a80e720d..7fc22bbeaeeb36702372e45ce5db79c2be79031a 100644
 --- a/browser/components/tabbrowser/content/tabs.js
 +++ b/browser/components/tabbrowser/content/tabs.js
 @@ -289,6 +289,7 @@
@@ -510,7 +510,7 @@ index 1fcebe3962398ff1b7cadef657ac8b68a80e720d..20d13f48dda1920c42e78e9ad742dc77
            let dropElementGroup = dropElement?.group;
            let colorCode = dropElementGroup?.color;
 +          let dragOverFolderThreshold = Services.prefs.getIntPref(
-+              "browser.tabs.dragdrop.moveOverThresholdPercent"
++              "zen.view.drag-and-drop.move-over-threshold"
 +            ) / 100;
  
            let lastUnmovingTabInGroup = dropElementGroup?.tabs.findLast(
