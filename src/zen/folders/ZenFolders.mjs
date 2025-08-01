@@ -716,35 +716,10 @@
     }
 
     setFolderUserIcon(group, icon) {
-      group.icon.setAttribute('icon-src', icon);
-      fetch(icon)
-        .then((response) => response.text())
-        .then((svgContent) => this.createFolderUserIcon(group, svgContent));
-    }
-
-    createFolderUserIcon(group, icon) {
-      const svgIcon = group.icon.querySelector('svg #folder-icon');
+      const svgIcon = group.icon.querySelector('svg #folder-icon image');
       if (!svgIcon) return;
-
-      // Clear current content (except animations)
-      const nonAnimationChildren = Array.from(svgIcon.children).filter(
-        (child) => !['animateTransform', 'animate'].includes(child.tagName)
-      );
-      nonAnimationChildren.forEach((child) => child.remove());
-
-      // Parse new icon
-      const rawIcon = new DOMParser().parseFromString(icon, 'image/svg+xml').documentElement;
-
-      const iconGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-
-      iconGroup.setAttribute('transform', 'translate(-53, 2.5) scale(0.8)');
-
-      Array.from(rawIcon.children).forEach((child) => {
-        const clonedChild = child.cloneNode(true);
-        iconGroup.appendChild(clonedChild);
-      });
-
-      svgIcon.appendChild(iconGroup);
+      svgIcon.setAttribute('href', icon);
+      svgIcon.setAttribute('transform', 'translate(-53, 2.5) scale(0.8)');
     }
 
     collapseVisibleTab(group) {
@@ -846,7 +821,7 @@
 
         let prevSiblingInfo = null;
         const prevSibling = folder.previousElementSibling;
-        const userIcon = folder?.icon?.getAttribute('icon-src') || '';
+        const userIcon = folder?.icon?.querySelector('svg #folder-icon image') || '';
 
         if (prevSibling) {
           if (gBrowser.isTabGroup(prevSibling)) {
@@ -870,7 +845,7 @@
           parentId: parentFolder ? parentFolder.id : null,
           prevSiblingInfo: prevSiblingInfo,
           emptyTabIds: emptyFolderTabs,
-          userIcon: userIcon,
+          userIcon: userIcon.getAttribute('href'),
         });
       }
       return storedData;

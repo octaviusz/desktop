@@ -48,6 +48,7 @@
         </rect>
       <!--Icon (g)-->
         <g id="folder-icon" shape-rendering="geometricPrecision" style="fill-opacity: 1; transform-origin: -53.05px 5.399px; fill: var(--toolbox-textcolor);">
+          <image href="" height="24px" width="24px"/>
           <animateTransform type="skewX" additive="sum" attributeName="transform" values="0;-17" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
           <animateTransform type="translate" additive="sum" attributeName="transform" values="-10 -9;-7 -9" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
           <animate attributeName="opacity" values="1;1" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
