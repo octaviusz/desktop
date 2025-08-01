@@ -121,7 +121,7 @@
             this.#convertFolderToSpace(this.#lastFolderContextMenu);
             break;
           case 'context_zenFolderChangeIcon':
-            this.changeFolderEmojiIcon(this.#lastFolderContextMenu);
+            this.changeFolderUserIcon(this.#lastFolderContextMenu);
             break;
         }
       });
@@ -670,13 +670,13 @@
         if (parentId === 'folder-dots' && isActive) {
           newValues = '0;1';
           anim.dataset.origValues = '1;0';
-        } else if (parentId === 'folder-emoji' && isActive) {
+        } else if (parentId === 'folder-icon' && isActive) {
           newValues = '1;0';
           anim.dataset.origValues = '0;1';
         } else {
           if (parentId === 'folder-dots' && isOpacity) {
             anim.dataset.origValues = '0;0';
-          } else if (parentId === 'folder-emoji' && isOpacity) {
+          } else if (parentId === 'folder-icon' && isOpacity) {
             anim.dataset.origValues = '1;1';
           }
           const stateValues = {
@@ -693,13 +693,13 @@
       return [];
     }
 
-    changeFolderEmojiIcon(group) {
+    changeFolderUserIcon(group) {
       if (!group) return;
 
       gZenEmojiPicker
         .open(group, { onlySvgIcons: true })
         .then((icon) => {
-          this.setFolderEmojiIcon(group, icon);
+          this.setFolderUserIcon(group, icon); 
         })
         .catch((err) => {
           console.error(err);
@@ -707,16 +707,34 @@
         });
     }
 
-    setFolderEmojiIcon(group, icon) {
-      const svgText = group.icon.querySelector('svg text');
-      if (!svgText) return;
+    setFolderUserIcon(group, icon) {
+      group.icon.setAttribute('icon-src', icon); 
+      fetch(icon).then(response => response.text()).then(svgContent => this.createFolderUserIcon(group, svgContent));
+    }
 
-      // Save animations
-      const animations = Array.from(svgText.children);
-      // Change folder icon
-      svgText.textContent = icon;
-      // Restore animations
-      animations.forEach((anim) => svgText.appendChild(anim));
+    createFolderUserIcon(group, icon) {
+      const svgIcon = group.icon.querySelector('svg #folder-icon');
+      if (!svgIcon) return;
+
+      // Clear current content (except animations)
+      const nonAnimationChildren = Array.from(svgIcon.children).filter(
+        child => !['animateTransform', 'animate'].includes(child.tagName)
+      );
+      nonAnimationChildren.forEach(child => child.remove());
+
+      // Parse new icon
+      const rawIcon = new DOMParser().parseFromString(icon, 'image/svg+xml').documentElement;
+
+      const iconGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
+      iconGroup.setAttribute('transform', 'translate(-53, 2.5) scale(0.8)');
+
+      Array.from(rawIcon.children).forEach(child => {
+        const clonedChild = child.cloneNode(true);
+        iconGroup.appendChild(clonedChild);
+      });
+
+      svgIcon.appendChild(iconGroup);
     }
 
     collapseVisibleTab(group) {
@@ -757,7 +775,7 @@
     #groupInit(group, stateData) {
       // Setup zen-folder icon to the correct position
       this.updateFolderIcon(group, 'auto', false);
-      this.setFolderEmojiIcon(group, stateData.emojiIcon);
+      this.setFolderUserIcon(group, stateData.userIcon);
 
       const tabsContainer = group.querySelector('.tab-group-container');
       const groupStart = group.querySelector('.zen-tab-group-start');
@@ -818,7 +836,7 @@
 
         let prevSiblingInfo = null;
         const prevSibling = folder.previousElementSibling;
-        const emojiIcon = folder?.icon?.querySelector('svg text') || '';
+        const userIcon = folder?.icon?.getAttribute('icon-src') || ''; 
 
         if (prevSibling) {
           if (gBrowser.isTabGroup(prevSibling)) {
@@ -842,7 +860,7 @@
           parentId: parentFolder ? parentFolder.id : null,
           prevSiblingInfo: prevSiblingInfo,
           emptyTabIds: emptyFolderTabs,
-          emojiIcon: emojiIcon.textContent,
+          userIcon: userIcon,
         });
       }
       return storedData;
