@@ -192,6 +192,11 @@
         tab.setAttribute('zen-pinned-changed', true);
         tab.removeAttribute('had-zen-pinned-changed');
       }
+      if (group.hasAttribute('has-active')) {
+        group.removeAttribute('has-active');
+        this.collapseVisibleTab(group);
+        this.updateFolderIcon(group, 'close');
+      }
     }
 
     #onTabGroupCreate(event) {
