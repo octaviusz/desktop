@@ -877,7 +877,9 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
    */
   removeGroup(groupIndex) {
     const group = this._data[groupIndex];
-    gZenFolders.expandGroupTabs(group);
+    for (const tab of group.tabs.reverse()) {
+      gBrowser.ungroupTab(tab);
+    }
     if (this.currentView === groupIndex) {
       this.deactivateCurrentSplitView();
     }
