@@ -707,7 +707,7 @@
       gZenEmojiPicker
         .open(group, { onlySvgIcons: true })
         .then((icon) => {
-          this.setFolderUserIcon(group, icon); 
+          this.setFolderUserIcon(group, icon);
         })
         .catch((err) => {
           console.error(err);
@@ -716,8 +716,10 @@
     }
 
     setFolderUserIcon(group, icon) {
-      group.icon.setAttribute('icon-src', icon); 
-      fetch(icon).then(response => response.text()).then(svgContent => this.createFolderUserIcon(group, svgContent));
+      group.icon.setAttribute('icon-src', icon);
+      fetch(icon)
+        .then((response) => response.text())
+        .then((svgContent) => this.createFolderUserIcon(group, svgContent));
     }
 
     createFolderUserIcon(group, icon) {
@@ -726,9 +728,9 @@
 
       // Clear current content (except animations)
       const nonAnimationChildren = Array.from(svgIcon.children).filter(
-        child => !['animateTransform', 'animate'].includes(child.tagName)
+        (child) => !['animateTransform', 'animate'].includes(child.tagName)
       );
-      nonAnimationChildren.forEach(child => child.remove());
+      nonAnimationChildren.forEach((child) => child.remove());
 
       // Parse new icon
       const rawIcon = new DOMParser().parseFromString(icon, 'image/svg+xml').documentElement;
@@ -737,7 +739,7 @@
 
       iconGroup.setAttribute('transform', 'translate(-53, 2.5) scale(0.8)');
 
-      Array.from(rawIcon.children).forEach(child => {
+      Array.from(rawIcon.children).forEach((child) => {
         const clonedChild = child.cloneNode(true);
         iconGroup.appendChild(clonedChild);
       });
@@ -844,7 +846,7 @@
 
         let prevSiblingInfo = null;
         const prevSibling = folder.previousElementSibling;
-        const userIcon = folder?.icon?.getAttribute('icon-src') || ''; 
+        const userIcon = folder?.icon?.getAttribute('icon-src') || '';
 
         if (prevSibling) {
           if (gBrowser.isTabGroup(prevSibling)) {
