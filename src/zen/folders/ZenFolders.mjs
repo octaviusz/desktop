@@ -663,7 +663,7 @@
           anim.dataset.origValues = '1;0';
         } else if (parentId === 'folder-emoji' && isActive) {
           newValues = '1;0';
-          anim.dataset.origValues = '0;1'
+          anim.dataset.origValues = '0;1';
         } else {
           if (parentId === 'folder-dots' && isOpacity) {
             anim.dataset.origValues = '0;0';

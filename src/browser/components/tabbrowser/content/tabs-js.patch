@@ -528,7 +528,7 @@ index 1fcebe3962398ff1b7cadef657ac8b68a80e720d..7fc22bbeaeeb36702372e45ce5db79c2
 -            } else {
 -              // Dropping right before the first tab in the tab group.
 -              dropElement = dropElementGroup.tabs[0];
-+            } else if(overlapPercent > dragOverFolderThreshold) {
++            } else if(overlapPercent < dragOverFolderThreshold) {
 +              // Dropping right before the first tab or group in the tab group.
 +              dropElement = dropElementGroup.childGroupsAndTabs[0];
 +              gZenFolders.highlightGroupOnDragOver(dropElementGroup, movingTabs);
