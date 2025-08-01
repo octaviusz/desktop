@@ -35,11 +35,12 @@ tab-group[split-view-group] {
     transition: scale 0.1s ease;
 
     :root:not([zen-sidebar-expanded='true']) & {
-      padding: 0 2px;
-      --tab-min-height: 30px;
+      padding: 0;
       --tab-collapsed-width: 38px;
-      margin: 2px 0;
+      overflow: clip;
       --tab-min-width: 34px;
+      outline: 2px solid var(--zen-colors-border-contrast);
+      outline-offset: -2px;
     }
 
     & > .tabbrowser-tab {
@@ -133,7 +134,7 @@ tab-group[split-view-group] {
 }
 
 :root:not([zen-sidebar-expanded='true']) {
-  tab-group {
+  tab-group .tab-group-container {
     flex-direction: column;
   }
 }
@@ -180,13 +181,17 @@ zen-folder {
     background-color: color-mix(in srgb, var(--zen-colors-border) 60%, transparent);
   }
 
-  :root:not([zen-sidebar-expanded]) {
+  :root:not([zen-sidebar-expanded]) & {
     width: var(--tab-min-width) !important;
     margin: var(--tab-block-margin) auto !important;
+
+    & .tab-group-label {
+      display: none !important;
+    }
   }
 
   & > .tab-group-container {
-    & > * {
+    :root[zen-sidebar-expanded] & > * {
       margin-inline-start: var(--zen-folder-indent, 14px);
     }
 
