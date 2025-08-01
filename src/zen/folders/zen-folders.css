@@ -264,6 +264,10 @@ zen-folder {
     & > .tab-group-container {
       overflow-y: hidden;
     }
+
+    &[has-active] {
+      transition: var(--tab-dragover-transition);
+    }
   }
 }
 

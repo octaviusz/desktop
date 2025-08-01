@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/tabs.js b/browser/components/tabbrowser/content/tabs.js
-index 1fcebe3962..8516e9e958 100644
+index 1fcebe3962..5cb0604b9c 100644
 --- a/browser/components/tabbrowser/content/tabs.js
 +++ b/browser/components/tabbrowser/content/tabs.js
 @@ -289,6 +289,7 @@
@@ -555,7 +555,7 @@ index 1fcebe3962..8516e9e958 100644
                dropBefore = true;
              }
            }
-@@ -2769,15 +2854,21 @@
+@@ -2769,15 +2854,24 @@
        // Shift background tabs to leave a gap where the dragged tab
        // would currently be dropped.
        for (let item of tabs) {
@@ -569,6 +569,9 @@ index 1fcebe3962..8516e9e958 100644
 +        if (item.group?.hasAttribute("split-view-group")) {
 +          item = item.group;
 +        }
++        if (item.group?.hasAttribute("has-active")) {
++          item = item.group;
++        }
          if (isTabGroupLabel(item)) {
            // Shift the `.tab-group-label-container` to shift the label element.
            item = item.parentElement;
@@ -578,7 +581,7 @@ index 1fcebe3962..8516e9e958 100644
          }
          item.style.transform = transform;
        }
-@@ -2830,12 +2921,14 @@
+@@ -2830,12 +2924,14 @@
        );
      }
  
@@ -595,10 +598,11 @@ index 1fcebe3962..8516e9e958 100644
  
        for (let item of this.ariaFocusableItems) {
          if (isTabGroupLabel(item)) {
-@@ -2843,6 +2936,12 @@
+@@ -2843,6 +2939,13 @@
            item = item.parentElement;
          }
          item.style.transform = "";
++        if (item.closest("zen-folder")?.hasAttribute("has-active")) item.closest("zen-folder").style.transform = "";
 +        if (item.closest("tab-group")?.hasAttribute("split-view-group")) item.closest("tab-group").style.transform = "";
 +        if (item.closest("tab-group")?.hasAttribute("split-view-group")) {
 +          for (let tab of item.closest("tab-group").tabs) {
@@ -608,7 +612,7 @@ index 1fcebe3962..8516e9e958 100644
          item.removeAttribute("dragover-createGroup");
        }
        this.removeAttribute("movingtab-createGroup");
-@@ -2889,7 +2988,7 @@
+@@ -2889,7 +2992,7 @@
          let postTransitionCleanup = () => {
            movingTab._moveTogetherSelectedTabsData.animate = false;
          };
@@ -617,7 +621,7 @@ index 1fcebe3962..8516e9e958 100644
            postTransitionCleanup();
          } else {
            let onTransitionEnd = transitionendEvent => {
-@@ -3062,7 +3161,7 @@
+@@ -3062,7 +3165,7 @@
      }
  
      _notifyBackgroundTab(aTab) {
@@ -626,7 +630,7 @@ index 1fcebe3962..8516e9e958 100644
          return;
        }
  
-@@ -3188,6 +3287,9 @@
+@@ -3188,6 +3291,9 @@
            return null;
          }
        }
