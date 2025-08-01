@@ -39,6 +39,10 @@
                   class="zen-workspace-creation-name"
                   type="text"
                   data-l10n-id="zen-workspace-creation-name" />
+                <html:input
+                  class="zen-workspace-creation-color"
+                  type="color"
+                  data-l10n-id="zen-workspace-creation-color" />
               </hbox>
               <hbox class="zen-workspace-creation-profile-wrapper">
                 <label class="zen-workspace-creation-profile-label" data-l10n-id="zen-workspace-creation-profile" />
@@ -76,6 +80,7 @@
         this.querySelector('.zen-workspace-creation-title'),
         this.querySelector('.zen-workspace-creation-label').parentElement,
         this.querySelector('.zen-workspace-creation-name-wrapper'),
+        this.querySelector('.zen-workspace-creation-color'),
         this.querySelector('.zen-workspace-creation-profile-wrapper'),
         this.querySelector('.zen-workspace-creation-edit-theme-button'),
         this.createButton.parentNode,
@@ -96,6 +101,7 @@
       this.inputName = this.querySelector('.zen-workspace-creation-name');
       this.inputIcon = this.querySelector('.zen-workspace-creation-icon-label');
       this.inputProfile = this.querySelector('.zen-workspace-creation-profile');
+      this.inputColor = this.querySelector('.zen-workspace-creation-color');
       this.createButton = this.querySelector('.zen-workspace-creation-create-button');
       this.cancelButton = this.querySelector('.zen-workspace-creation-cancel-button');
 
@@ -138,6 +144,9 @@
       });
 
       this.inputIcon.addEventListener('command', this.onIconCommand.bind(this));
+      this.inputColor.addEventListener('input', () => {
+        this.inputIcon.style.backgroundColor = this.inputColor.value;
+      });
 
       this.profilesPopup = this.querySelector('.zen-workspace-creation-profiles-popup');
 
@@ -202,6 +211,7 @@
       const workspace = await gZenWorkspaces.getActiveWorkspace();
       workspace.name = this.inputName.value.trim();
       workspace.icon = this.inputIcon.image || this.inputIcon.label || undefined;
+      workspace.iconColor = this.inputColor.value;
       workspace.containerTabId = this.currentProfile;
       await gZenWorkspaces.saveWorkspace(workspace);
 

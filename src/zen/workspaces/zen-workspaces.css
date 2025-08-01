@@ -43,6 +43,8 @@
 
     & .zen-workspace-icon {
       pointer-events: none;
+      width: 16px;
+      height: 16px;
    
       &[no-icon='true'] {
         width: 6px;

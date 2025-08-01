@@ -108,19 +108,15 @@
       const isSvgIcon = workspace.icon && workspace.icon.endsWith('.svg');
       if (gZenWorkspaces.workspaceHasIcon(workspace)) {
         if (isSvgIcon) {
-          const image = document.createElement('img');
-          image.src = workspace.icon;
-          image.classList.add('zen-workspace-icon');
-          button.appendChild(image);
+          icon.style.webkitMaskImage = `url(${workspace.icon})`;
+          icon.style.backgroundColor = workspace.iconColor || 'currentColor';
         } else {
           icon.textContent = workspace.icon;
         }
       } else {
         icon.setAttribute('no-icon', true);
       }
-      if (!isSvgIcon) {
-        button.appendChild(icon);
-      }
+      button.appendChild(icon);
       button.addEventListener('command', this);
       return button;
     }
