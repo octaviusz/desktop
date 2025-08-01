@@ -68,6 +68,10 @@ zen-workspace-creation {
           padding: 0;
 
           & image {
+            position: absolute;
+          }
+
+          &:not([has-svg-icon='true']) image {
             display: none;
           }
 
@@ -75,6 +79,10 @@ zen-workspace-creation {
             display: flex;
             font-size: 12px;
             justify-content: center;
+          }
+
+          &[has-svg-icon='true'] label {
+            display: none;
           }
 
           &::before {

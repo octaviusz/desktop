@@ -1222,10 +1222,14 @@ var gZenWorkspaces = new (class extends nsZenMultiWindowFeature {
         item.setAttribute('zen-workspace-id', workspace.uuid);
         item.setAttribute('disabled', workspace.uuid === this.activeWorkspace);
         let name = workspace.name;
-        if (workspace.icon && workspace.icon !== '') {
+        const iconIsSvg = workspace.icon && workspace.icon.endsWith('.svg');
+        if (workspace.icon && workspace.icon !== '' && !iconIsSvg) {
           name = `${workspace.icon}  ${name}`;
         }
         item.setAttribute('label', name);
+        if (iconIsSvg) {
+          item.setAttribute('image', workspace.icon);
+        }
         item.addEventListener('command', (e) => {
           this.changeWorkspaceWithID(e.target.closest('menuitem').getAttribute('zen-workspace-id'));
         });
@@ -1308,10 +1312,7 @@ var gZenWorkspaces = new (class extends nsZenMultiWindowFeature {
     if (this.workspaceHasIcon(workspace)) {
       return workspace.icon;
     }
-    if (typeof Intl.Segmenter !== 'undefined') {
-      return new Intl.Segmenter().segment(workspace.name).containing().segment.toUpperCase();
-    }
-    return Array.from(workspace.name)[0].toUpperCase();
+    return null;
   }
 
   get shouldShowContainers() {
@@ -1735,7 +1736,15 @@ var gZenWorkspaces = new (class extends nsZenMultiWindowFeature {
     } else {
       indicatorIcon.setAttribute('no-icon', 'true');
     }
-    indicatorIcon.textContent = this.getWorkspaceIcon(currentWorkspace);
+    const icon = this.getWorkspaceIcon(currentWorkspace);
+    indicatorIcon.innerHTML = '';
+    if (icon?.endsWith('.svg')) {
+      const img = document.createElement('img');
+      img.src = icon;
+      indicatorIcon.appendChild(img);
+    } else {
+      indicatorIcon.textContent = icon;
+    }
     indicatorName.textContent = currentWorkspace.name;
   }
 

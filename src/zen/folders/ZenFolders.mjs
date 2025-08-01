@@ -76,10 +76,14 @@
           item.setAttribute('zen-workspace-id', workspace.uuid);
           item.setAttribute('disabled', workspace.uuid === gZenWorkspaces.activeWorkspace);
           let name = workspace.name;
-          if (workspace.icon && workspace.icon !== '') {
+          const iconIsSvg = workspace.icon && workspace.icon.endsWith('.svg');
+          if (workspace.icon && workspace.icon !== '' && !iconIsSvg) {
             name = `${workspace.icon}  ${name}`;
           }
           item.setAttribute('label', name);
+          if (iconIsSvg) {
+            item.setAttribute('image', workspace.icon);
+          }
           item.addEventListener('command', (event) => {
             if (!this.#lastFolderContextMenu) return;
             this.changeFolderToSpace(
@@ -693,7 +697,7 @@
       if (!group) return;
 
       gZenEmojiPicker
-        .open(group)
+        .open(group, { onlySvgIcons: true })
         .then((icon) => {
           this.setFolderEmojiIcon(group, icon);
         })
