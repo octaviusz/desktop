@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/tabbrowser.js b/browser/components/tabbrowser/content/tabbrowser.js
-index 96fd8acdc09cc4c9649d1ed7503c2a0bde536613..70c3844536ab0b16720c416cbad255f1c0c5f659 100644
+index 96fd8acdc09cc4c9649d1ed7503c2a0bde536613..1661e6f04ca355ea8d4955b4b5817c8fa2dd608c 100644
 --- a/browser/components/tabbrowser/content/tabbrowser.js
 +++ b/browser/components/tabbrowser/content/tabbrowser.js
 @@ -422,15 +422,49 @@
@@ -16,7 +16,7 @@ index 96fd8acdc09cc4c9649d1ed7503c2a0bde536613..70c3844536ab0b16720c416cbad255f1
 +        if (!item.pinned && !item.hasAttribute("zen-glance-tab")) {
 +          break;
 +        }
-+        if (!item.group?.collapsed && !item.hidden) {
++        if (item.visible) {
 +          i += !item.hasAttribute("zen-glance-tab");
 +        }
 +      }

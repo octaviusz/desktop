@@ -164,8 +164,8 @@ tab-group[split-view-group] .tab-group-line {
 }
 
 zen-folder {
-  display: flex !important;
-  flex-direction: column !important;
+  display: flex;
+  flex-direction: column;
   --zen-folder-behind-bgcolor: color-mix(
     in srgb,
     var(--zen-primary-color) 75%,
@@ -262,7 +262,7 @@ zen-folder {
     }
 
     & > .tab-group-container {
-      overflow-y: hidden;
+      overflow-y: clip;
     }
 
     &[has-active] {
