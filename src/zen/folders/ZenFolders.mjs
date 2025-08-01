@@ -728,7 +728,7 @@
       const svgIcon = group.icon.querySelector('svg #folder-icon image');
       if (!svgIcon) return;
       svgIcon.setAttribute('href', icon);
-      svgIcon.setAttribute('transform', 'translate(-52, 2)');
+      svgIcon.setAttribute('transform', 'translate(-52.5, 3)');
     }
 
     collapseVisibleTab(group) {
