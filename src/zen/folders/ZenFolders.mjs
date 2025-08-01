@@ -663,10 +663,17 @@
         const isActive = isCollapsed && hasActive && isOpacity;
 
         if (parentId === 'folder-dots' && isActive) {
-          newValues = state === 'open' ? '0;0' : '0;1';
+          newValues = '0;1';
+          anim.dataset.origValues = '1;0';
         } else if (parentId === 'folder-emoji' && isActive) {
-          newValues = state === 'open' ? '1;1' : '0;0';
+          newValues = '1;0';
+          anim.dataset.origValues = '0;1';
         } else {
+          if (parentId === 'folder-dots' && isOpacity) {
+            anim.dataset.origValues = '0;0';
+          } else if (parentId === 'folder-emoji' && isOpacity) {
+            anim.dataset.origValues = '1;1';
+          }
           const stateValues = {
             open: `${fromValue};${toValue}`,
             close: `${toValue};${fromValue}`,
@@ -705,6 +712,41 @@
       svgText.textContent = icon;
       // Restore animations
       animations.forEach((anim) => svgText.appendChild(anim));
+    }
+
+    collapseVisibleTab(group) {
+      const groupStart = group.querySelector('.zen-tab-group-start');
+      groupStart.setAttribute('old-margin', groupStart.style.marginTop);
+      let itemHeight = 0;
+      for (const item of group.allItems) {
+        itemHeight += item.getBoundingClientRect().height;
+      }
+      const newMargin = -(itemHeight + 4);
+      groupStart.setAttribute('new-margin', newMargin);
+
+      gZenUIManager.motion.animate(
+        groupStart,
+        {
+          marginTop: newMargin,
+        },
+        { duration: 0.15, ease: 'easeInOut' }
+      );
+    }
+
+    expandVisibleTab(group) {
+      const groupStart = group.querySelector('.zen-tab-group-start');
+      let oldMargin = groupStart.getAttribute('old-margin');
+      let newMargin = groupStart.getAttribute('new-margin');
+
+      gZenUIManager.motion.animate(
+        groupStart,
+        {
+          marginTop: [`${newMargin}px`, oldMargin],
+        },
+        { duration: 0.15, ease: 'easeInOut' }
+      );
+      groupStart.removeAttribute('old-margin');
+      groupStart.removeAttribute('new-margin');
     }
 
     #groupInit(group, stateData) {
