@@ -659,10 +659,17 @@
         const isActive = isCollapsed && hasActive && isOpacity;
 
         if (parentId === 'folder-dots' && isActive) {
-          newValues = state === 'open' ? '0;0' : '0;1';
+          newValues = '0;1';
+          anim.dataset.origValues = '1;0';
         } else if (parentId === 'folder-emoji' && isActive) {
-          newValues = state === 'open' ? '1;1' : '0;0';
+          newValues = '1;0';
+          anim.dataset.origValues = '0;1'
         } else {
+          if (parentId === 'folder-dots' && isOpacity) {
+            anim.dataset.origValues = '0;0';
+          } else if (parentId === 'folder-emoji' && isOpacity) {
+            anim.dataset.origValues = '1;1';
+          }
           const stateValues = {
             open: `${fromValue};${toValue}`,
             close: `${toValue};${fromValue}`,
