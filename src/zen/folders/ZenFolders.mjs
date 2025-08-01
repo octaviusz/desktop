@@ -760,7 +760,9 @@
     #groupInit(group, stateData) {
       // Setup zen-folder icon to the correct position
       this.updateFolderIcon(group, 'auto', false);
-      this.setFolderUserIcon(group, stateData.userIcon);
+      if (stateData?.userIcon) {
+        this.setFolderUserIcon(group, stateData.userIcon);
+      }
 
       const tabsContainer = group.querySelector('.tab-group-container');
       const groupStart = group.querySelector('.zen-tab-group-start');
@@ -821,7 +823,7 @@
 
         let prevSiblingInfo = null;
         const prevSibling = folder.previousElementSibling;
-        const userIcon = folder?.icon?.querySelector('svg #folder-icon image') || '';
+        const userIcon = folder?.icon?.querySelector('svg #folder-icon image');
 
         if (prevSibling) {
           if (gBrowser.isTabGroup(prevSibling)) {
@@ -845,7 +847,7 @@
           parentId: parentFolder ? parentFolder.id : null,
           prevSiblingInfo: prevSiblingInfo,
           emptyTabIds: emptyFolderTabs,
-          userIcon: userIcon.getAttribute('href'),
+          userIcon: userIcon?.getAttribute('href'),
         });
       }
       return storedData;
