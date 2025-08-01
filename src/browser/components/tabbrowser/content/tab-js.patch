@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/tab.js b/browser/components/tabbrowser/content/tab.js
-index e5509953509c4da8756e36a0792f76814e24ba0c..676835a992360d2e2f4381ed1de98ed14ddce073 100644
+index e5509953509c4da8756e36a0792f76814e24ba0c..32e21e1295aa508a2b8dc6b8a0ea4d678dd81594 100644
 --- a/browser/components/tabbrowser/content/tab.js
 +++ b/browser/components/tabbrowser/content/tab.js
 @@ -21,6 +21,7 @@
@@ -53,7 +53,7 @@ index e5509953509c4da8756e36a0792f76814e24ba0c..676835a992360d2e2f4381ed1de98ed1
 +
 +      // Recursively check all parent groups
 +      let currentParent = this.group;
-+      while (currentParent && !this.selected) {
++      while (currentParent && !this.hasAttribute("folder-active")) {
 +        if (currentParent.collapsed) {
 +          return false;
 +        }

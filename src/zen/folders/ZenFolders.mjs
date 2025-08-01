@@ -192,6 +192,7 @@
     #onTabUngrouped(event) {
       const tab = event.detail;
       const group = event.target;
+      tab.removeAttribute('folder-active');
       if (group.hasAttribute('split-view-group') && tab.hasAttribute('had-zen-pinned-changed')) {
         tab.setAttribute('zen-pinned-changed', true);
         tab.removeAttribute('had-zen-pinned-changed');
@@ -293,7 +294,10 @@
         if (afterSelected) itemsAfterSelected.push(item);
       }
 
-      if (selectedItem) group.setAttribute('has-active', 'true');
+      if (selectedItem) {
+        group.setAttribute('has-active', 'true');
+        selectedItem.setAttribute('folder-active', 'true');
+      }
 
       animations.push(...this.updateFolderIcon(group));
       animations.push(
@@ -324,6 +328,15 @@
       if (group.hasAttribute('has-active')) {
         group.removeAttribute('has-active');
       }
+
+      // Since the folder is now expanded, we should remove active attribute
+      // to the tab that was previously visible
+      for (const tab of group.tabs) {
+        if (tab.group === group && tab.hasAttribute('folder-active')) {
+          tab.removeAttribute('folder-active');
+        }
+      }
+
       animations.push(...this.updateFolderIcon(group));
       animations.push(
         gZenUIManager.motion.animate(
