@@ -52,7 +52,7 @@
           <animateTransform type="translate" additive="sum" attributeName="transform" values="-5 0;0 0" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
           <animate attributeName="opacity" values="1;1" dur="0.15s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
         </text>
-        <!--End Emoji (text)-->
+      <!--End Emoji (text)-->
         <g id="folder-dots" style="fill-opacity: 1; fill: var(--toolbox-textcolor);">
           <animateTransform type="skewX" additive="sum" attributeName="transform" values="1;-17" dur="0.2s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
           <animateTransform type="translate" additive="sum" attributeName="transform" values="0 0.5;5 -0.5" dur="0.2s" fill="freeze" keyTimes="0; 1" calcMode="spline" keySplines="0.42 0 0.58 1"/>
