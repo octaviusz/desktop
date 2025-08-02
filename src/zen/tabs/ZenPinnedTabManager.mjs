@@ -1034,8 +1034,8 @@
         gZenWorkspaces.activeWorkspaceIndicator?.removeAttribute('open');
       }
 
-      // If there's no valid target tab, nothing to do
-      if (!targetTab) {
+      // If there's no valid target tab or folder, nothing to do
+      if (!targetTab && !folderTarget) {
         return;
       }
 
@@ -1045,10 +1045,19 @@
       // Decide whether we should show a dragover class for the given target
       if (folderTarget && (!draggedTab.pinned || draggedTab.hasAttribute('zen-essential'))) {
         shouldAddDragOverElement = true;
-        const groupElem = folderTarget.childGroupsAndTabs.filter(
-          (tab) => !tab.hasAttribute('zen-empty-tab')
-        );
-        let newTarget = groupElem.at(-1);
+        const isCollapsed = folderTarget.collapsed;
+        let groupElem = isCollapsed
+          ? [folderTarget]
+          : folderTarget.childGroupsAndTabs
+              .filter((tab) => !tab.hasAttribute('zen-empty-tab'))
+              .map((tab) => {
+                if (gBrowser.isTabGroupLabel(tab) || tab.group.hasAttribute('split-view-group')) {
+                  return tab.group;
+                }
+                return tab;
+              });
+
+        let newTarget = isCollapsed ? groupElem[0] : groupElem.at(-1);
         for (const elem of groupElem) {
           const rect = elem.getBoundingClientRect();
           if (event.clientY < rect.top + rect.height / 2) {
