@@ -830,7 +830,7 @@
           else if (essentialTabsTarget) {
             if (
               !draggedTab.hasAttribute('zen-essential') &&
-              !draggedTab?.group?.hasAttribute('split-view-group')
+              !draggedTab?.group
             ) {
               moved = true;
               isVertical = false;
@@ -839,7 +839,7 @@
           }
           // Check for normal tabs container
           else if (tabsTarget || event.target.id === 'zen-tabs-wrapper') {
-            if (draggedTab.pinned && !draggedTab.hasAttribute('zen-essential')) {
+            if (draggedTab.pinned && !draggedTab.hasAttribute('zen-essential') && !draggedTab?.group?.isZenFolder) {
               gBrowser.unpinTab(draggedTab);
               moved = true;
               isRegularTabs = true;
