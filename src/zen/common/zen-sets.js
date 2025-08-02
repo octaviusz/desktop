@@ -111,7 +111,9 @@ document.addEventListener(
             gZenWorkspaces.openWorkspaceCreation(event);
             break;
           case 'cmd_zenOpenFolderCreation':
-            gZenFolders.createFolder();
+            gZenFolders.createFolder([], {
+              renameFolder: true,
+            });
             break;
           default:
             gZenGlanceManager.handleMainCommandSet(event);
