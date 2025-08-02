@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/tabs.js b/browser/components/tabbrowser/content/tabs.js
-index 1fcebe3962..2b2815df9a 100644
+index 1fcebe3962..dd3ad9c748 100644
 --- a/browser/components/tabbrowser/content/tabs.js
 +++ b/browser/components/tabbrowser/content/tabs.js
 @@ -289,6 +289,7 @@
@@ -535,27 +535,36 @@ index 1fcebe3962..2b2815df9a 100644
  
            let lastUnmovingTabInGroup = dropElementGroup?.tabs.findLast(
              t => !movingTabsSet.has(t)
-@@ -2739,13 +2822,15 @@
-               // Dropping right before the tab group.
-               dropElement = dropElementGroup;
-               colorCode = undefined;
+@@ -2735,19 +2818,15 @@
+             dropElement = dropElementGroup;
+             colorCode = undefined;
+           } else if (isTabGroupLabel(dropElement)) {
+-            if (dropBefore) {
+-              // Dropping right before the tab group.
+-              dropElement = dropElementGroup;
+-              colorCode = undefined;
 -            } else if (dropElementGroup.collapsed) {
-+              gZenFolders.highlightGroupOnDragOver(null);
-+            } else if (dropElement?.group?.hasAttribute("split-view-group")) {
-               // Dropping right after the collapsed tab group.
-               dropElement = dropElementGroup;
-               colorCode = undefined;
+-              // Dropping right after the collapsed tab group.
+-              dropElement = dropElementGroup;
+-              colorCode = undefined;
 -            } else {
 -              // Dropping right before the first tab in the tab group.
 -              dropElement = dropElementGroup.tabs[0];
-+            } else if(overlapPercent < dragOverFolderThreshold) {
-+              // Dropping right before the first tab or group in the tab group.
-+              dropElement = dropElementGroup.childGroupsAndTabs[0];
-+              gZenFolders.highlightGroupOnDragOver(dropElementGroup, movingTabs);
-               dropBefore = true;
-             }
+-              dropBefore = true;
+-            }
++            ({ dropElement, colorCode, dropBefore } = gZenFolders.handleDragOverTabGroupLabel(
++              dropElement,
++              draggedTab,
++              overlapPercent,
++              dragOverFolderThreshold,
++              movingTabs,
++              dropBefore,
++              colorCode
++            ));
            }
-@@ -2769,15 +2854,24 @@
+           this.#setDragOverGroupColor(colorCode);
+           this.toggleAttribute("movingtab-ungroup", !colorCode);
+@@ -2769,15 +2848,24 @@
        // Shift background tabs to leave a gap where the dragged tab
        // would currently be dropped.
        for (let item of tabs) {
@@ -581,7 +590,7 @@ index 1fcebe3962..2b2815df9a 100644
          }
          item.style.transform = transform;
        }
-@@ -2830,12 +2924,14 @@
+@@ -2830,12 +2918,14 @@
        );
      }
  
@@ -598,7 +607,7 @@ index 1fcebe3962..2b2815df9a 100644
  
        for (let item of this.ariaFocusableItems) {
          if (isTabGroupLabel(item)) {
-@@ -2843,6 +2939,18 @@
+@@ -2843,6 +2933,18 @@
            item = item.parentElement;
          }
          item.style.transform = "";
@@ -617,7 +626,7 @@ index 1fcebe3962..2b2815df9a 100644
          item.removeAttribute("dragover-createGroup");
        }
        this.removeAttribute("movingtab-createGroup");
-@@ -2889,7 +2997,7 @@
+@@ -2889,7 +2991,7 @@
          let postTransitionCleanup = () => {
            movingTab._moveTogetherSelectedTabsData.animate = false;
          };
@@ -626,7 +635,7 @@ index 1fcebe3962..2b2815df9a 100644
            postTransitionCleanup();
          } else {
            let onTransitionEnd = transitionendEvent => {
-@@ -3062,7 +3170,7 @@
+@@ -3062,7 +3164,7 @@
      }
  
      _notifyBackgroundTab(aTab) {
@@ -635,7 +644,7 @@ index 1fcebe3962..2b2815df9a 100644
          return;
        }
  
-@@ -3188,6 +3296,9 @@
+@@ -3188,6 +3290,9 @@
            return null;
          }
        }

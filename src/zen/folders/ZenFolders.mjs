@@ -985,6 +985,66 @@
         this.#lastHighlightedGroup = folder;
       }
     }
+
+    /**
+     * Handles the dragover logic when dragging a tab or tab group label over another tab group label.
+     * This function determines where the dragged item should be visually dropped (before/after the group, or inside it)
+     * and updates related styling and highlighting.
+     *
+     * @param {MozTabbrowserTabGroupLabel} currentDropElement The tab group label currently being dragged over.
+     * @param {MozTabbrowserTab|MozTabbrowserTabGroupLabel} draggedTab The tab or tab group label being dragged.
+     * @param {number} overlapPercent The percentage of overlap between the dragged item and the drop target.
+     * @param {number} dragOverFolderThreshold The threshold percentage for considering a drop into a folder.
+     * @param {Array<MozTabbrowserTab>} movingTabs An array of tabs that are currently being dragged together.
+     * @param {boolean} currentDropBefore Indicates if the current drop position is before the middle of the drop element.
+     * @param {string|undefined} currentColorCode The current color code for dragover highlighting.
+     * @returns {{dropElement: MozTabbrowserTabGroup|MozTabbrowserTab|MozTabbrowserTabGroupLabel, colorCode: string|undefined, dropBefore: boolean}}
+     *   An object containing the updated drop element, color code for highlighting, and drop position.
+     */
+    handleDragOverTabGroupLabel(
+      currentDropElement,
+      draggedTab,
+      overlapPercent,
+      dragOverFolderThreshold,
+      movingTabs,
+      currentDropBefore,
+      currentColorCode
+    ) {
+      let dropElement = currentDropElement;
+      let dropBefore = currentDropBefore;
+      let colorCode = currentColorCode;
+
+      const dropElementGroup = dropElement.group;
+      let firstGroupElem = dropElementGroup.childGroupsAndTabs[0];
+
+      if (dropBefore) {
+        // Dropping right before the tab group.
+        dropElement = dropElementGroup;
+        colorCode = undefined;
+        this.highlightGroupOnDragOver(null);
+      } else if (!dropBefore && overlapPercent < 0.2) {
+        if (dropElementGroup.level === 0 && !draggedTab?.group?.level) {
+          dropElement = dropElementGroup;
+          colorCode = undefined;
+        } else if (dropElementGroup.level < draggedTab?.group?.level || !draggedTab?.group?.level) {
+          dropElement = firstGroupElem;
+          dropBefore = true;
+        } else if (dropElementGroup.level > draggedTab?.group?.level) {
+          dropElement = firstGroupElem;
+        }
+        this.highlightGroupOnDragOver(null);
+      } else if (dropElement?.group?.hasAttribute('split-view-group')) {
+        // Dropping right after the collapsed tab group.
+        dropElement = dropElementGroup;
+        colorCode = undefined;
+      } else if (overlapPercent < dragOverFolderThreshold) {
+        // Dropping right before the first tab or group in the tab group.
+        dropElement = firstGroupElem;
+        dropBefore = true;
+        this.highlightGroupOnDragOver(dropElementGroup, movingTabs);
+      }
+      return { dropElement, colorCode, dropBefore };
+    }
   }
 
   window.gZenFolders = new nsZenFolders();
