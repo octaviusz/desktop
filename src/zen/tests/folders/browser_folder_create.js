@@ -9,7 +9,6 @@ add_task(async function test_Create_Folder() {
     renameFolder: false,
     label: 'test',
   });
-  debugger;
   ok(folder, 'Folder created successfully');
   Assert.equal(
     folder.tabs.length,

@@ -190,6 +190,7 @@
     justify-content: center;
     align-items: center;
     fill-opacity: 0.6;
+    -moz-context-properties: fill-opacity;
 
     &[zen-emoji-open='true']::before {
       border: 1px dashed light-dark(rgba(0, 0, 0, .5), rgba(255, 255, 255, .5));

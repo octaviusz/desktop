@@ -4,7 +4,7 @@
 
 <panel type="arrow" orient="vertical" id="PanelUI-zen-emojis-picker" position="bottomright topright" side="bottom">
   <hbox id="PanelUI-zen-picker-header">
-    <html:div/>
+    <toolbarbutton class="toolbarbutton-1" />
     <hbox id="PanelUI-zen-emojis-buttons-wrapper">
       <toolbarbutton id="PanelUI-zen-emojis-picker-change-emojis" class="selected" data-l10n-id="zen-icons-picker-emoji" />
       <toolbarbutton id="PanelUI-zen-emojis-picker-change-svg" data-l10n-id="zen-icons-picker-svg" />
