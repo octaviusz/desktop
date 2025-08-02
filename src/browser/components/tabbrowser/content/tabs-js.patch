@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/tabs.js b/browser/components/tabbrowser/content/tabs.js
-index 1fcebe3962..dd3ad9c748 100644
+index 1fcebe3962..3511ee6495 100644
 --- a/browser/components/tabbrowser/content/tabs.js
 +++ b/browser/components/tabbrowser/content/tabs.js
 @@ -289,6 +289,7 @@
@@ -398,8 +398,8 @@ index 1fcebe3962..dd3ad9c748 100644
        let lastMovingTabScreen = endEdge(lastMovingTab);
        let firstMovingTabScreen = firstMovingTab[screenAxis];
        let shiftSize = lastMovingTabScreen - firstMovingTabScreen;
-+      if (firstMovingTab.hasAttribute("split-view-group")) {
-+        shiftSize += 5; // A hack to allow more space for the group
++      if (isTabGroupLabel(firstMovingTab)) {
++        shiftSize += 12; // A hack to allow more space for the group
 +      }
        let translate = screen - dragData[screenAxis];
 -      if (!isPinned) {
@@ -407,7 +407,20 @@ index 1fcebe3962..dd3ad9c748 100644
          translate +=
            this.arrowScrollbox.scrollbox[scrollDirection] - dragData.scrollPos;
        } else if (isPinned && this.verticalMode) {
-@@ -2384,6 +2459,9 @@
+@@ -2377,6 +2452,12 @@
+       // - for unpinned tabs, between the first and last unpinned tab
+       let firstBound = firstTab[screenAxis] - firstMovingTabScreen;
+       let lastBound = endEdge(lastTab) - lastMovingTabScreen;
++      if (isTabGroupLabel(lastTab)) {
++        lastBound += 8; // A hack to allow more space for the group
++      }
++      if (isTabGroupLabel(firstTab)) {
++        firstBound -= 8; // A hack to allow more space for the group
++      }
+       translate = Math.min(Math.max(translate, firstBound), lastBound);
+ 
+       for (let item of movingTabs) {
+@@ -2384,6 +2465,9 @@
            // Shift the `.tab-group-label-container` to shift the label element.
            item = item.parentElement;
          }
@@ -417,7 +430,7 @@ index 1fcebe3962..dd3ad9c748 100644
          item.style.transform = `${translateAxis}(${translate}px)`;
        }
  
-@@ -2521,6 +2599,9 @@
+@@ -2521,6 +2605,9 @@
              break;
            }
            let element = tabs[mid];
@@ -427,7 +440,7 @@ index 1fcebe3962..dd3ad9c748 100644
            let elementForSize = isTabGroupLabel(element)
              ? element.parentElement
              : element;
-@@ -2604,7 +2685,7 @@
+@@ -2604,7 +2691,7 @@
        let shouldCreateGroupOnDrop;
        let dropBefore;
        if (dropElement) {
@@ -436,7 +449,7 @@ index 1fcebe3962..dd3ad9c748 100644
            ? dropElement.parentElement
            : dropElement;
  
-@@ -2624,7 +2705,7 @@
+@@ -2624,7 +2711,7 @@
            ? Services.prefs.getIntPref(
                "browser.tabs.dragDrop.moveOverThresholdPercent"
              ) / 100
@@ -445,7 +458,7 @@ index 1fcebe3962..dd3ad9c748 100644
          moveOverThreshold = Math.min(1, Math.max(0, moveOverThreshold));
          let shouldMoveOver = overlapPercent > moveOverThreshold;
          if (logicalForward && shouldMoveOver) {
-@@ -2656,23 +2737,23 @@
+@@ -2656,23 +2743,23 @@
  
          // If dragging a group over another group, don't make it look like it is
          // possible to drop the dragged group inside the other group.
@@ -486,7 +499,7 @@ index 1fcebe3962..dd3ad9c748 100644
  
          // Constrain drop direction at the boundary between pinned and
          // unpinned tabs so that they don't mix together.
-@@ -2686,14 +2767,13 @@
+@@ -2686,14 +2773,13 @@
          }
        }
  
@@ -506,7 +519,7 @@ index 1fcebe3962..dd3ad9c748 100644
          // When dragging tab(s) over an ungrouped tab, signal to the user
          // that dropping the tab(s) will create a new tab group.
          shouldCreateGroupOnDrop =
-@@ -2703,12 +2783,12 @@
+@@ -2703,12 +2789,12 @@
            overlapPercent > dragOverGroupingThreshold;
  
          if (shouldCreateGroupOnDrop) {
@@ -525,7 +538,7 @@ index 1fcebe3962..dd3ad9c748 100644
          } else {
            this.removeAttribute("movingtab-createGroup");
            document
-@@ -2719,6 +2799,9 @@
+@@ -2719,6 +2805,9 @@
            // Default to dropping into `dropElement`'s tab group, if it exists.
            let dropElementGroup = dropElement?.group;
            let colorCode = dropElementGroup?.color;
@@ -535,7 +548,7 @@ index 1fcebe3962..dd3ad9c748 100644
  
            let lastUnmovingTabInGroup = dropElementGroup?.tabs.findLast(
              t => !movingTabsSet.has(t)
-@@ -2735,19 +2818,15 @@
+@@ -2735,19 +2824,15 @@
              dropElement = dropElementGroup;
              colorCode = undefined;
            } else if (isTabGroupLabel(dropElement)) {
@@ -564,7 +577,7 @@ index 1fcebe3962..dd3ad9c748 100644
            }
            this.#setDragOverGroupColor(colorCode);
            this.toggleAttribute("movingtab-ungroup", !colorCode);
-@@ -2769,15 +2848,24 @@
+@@ -2769,15 +2854,24 @@
        // Shift background tabs to leave a gap where the dragged tab
        // would currently be dropped.
        for (let item of tabs) {
@@ -590,7 +603,7 @@ index 1fcebe3962..dd3ad9c748 100644
          }
          item.style.transform = transform;
        }
-@@ -2830,12 +2918,14 @@
+@@ -2830,12 +2924,14 @@
        );
      }
  
@@ -607,7 +620,7 @@ index 1fcebe3962..dd3ad9c748 100644
  
        for (let item of this.ariaFocusableItems) {
          if (isTabGroupLabel(item)) {
-@@ -2843,6 +2933,18 @@
+@@ -2843,6 +2939,18 @@
            item = item.parentElement;
          }
          item.style.transform = "";
@@ -626,7 +639,7 @@ index 1fcebe3962..dd3ad9c748 100644
          item.removeAttribute("dragover-createGroup");
        }
        this.removeAttribute("movingtab-createGroup");
-@@ -2889,7 +2991,7 @@
+@@ -2889,7 +2997,7 @@
          let postTransitionCleanup = () => {
            movingTab._moveTogetherSelectedTabsData.animate = false;
          };
@@ -635,7 +648,7 @@ index 1fcebe3962..dd3ad9c748 100644
            postTransitionCleanup();
          } else {
            let onTransitionEnd = transitionendEvent => {
-@@ -3062,7 +3164,7 @@
+@@ -3062,7 +3170,7 @@
      }
  
      _notifyBackgroundTab(aTab) {
@@ -644,7 +657,7 @@ index 1fcebe3962..dd3ad9c748 100644
          return;
        }
  
-@@ -3188,6 +3290,9 @@
+@@ -3188,6 +3296,9 @@
            return null;
          }
        }

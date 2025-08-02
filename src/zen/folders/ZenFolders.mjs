@@ -247,50 +247,31 @@
       const tabsContainer = group.querySelector('.tab-group-container');
       const animations = [];
       const groupStart = group.querySelector('.zen-tab-group-start');
-      let heightUntilSelected = 0;
       let selectedItem = null;
       let selectedGroupId = null;
       let itemsAfterSelected = [];
 
-      const splitViewGroups = new Set();
-
       const items = group.childGroupsAndTabs.map((item) => {
-        if (gBrowser.isTabGroupLabel(item)) item = item.parentNode;
-
         const isSplitView = item.group?.hasAttribute?.('split-view-group');
         const splitGroupId = isSplitView ? item.group.id : null;
+        if (gBrowser.isTabGroupLabel(item) && !isSplitView) item = item.parentNode;
 
         if (item.hasAttribute('visuallyselected')) {
           selectedItem = item;
           selectedGroupId = splitGroupId;
         }
 
-        return { item, isSplitView, splitGroupId };
+        return { item, splitGroupId };
       });
 
-      for (const { item, isSplitView, splitGroupId } of items) {
-        if (item === selectedItem || (selectedGroupId && splitGroupId === selectedGroupId)) break;
-
-        let itemHeight = 0;
-        if (!splitViewGroups.has(splitGroupId) && isSplitView) {
-          // FIX: split-view-group have a completely different margin and height
-          itemHeight = window.windowUtils.getBoundsWithoutFlushing(item).height;
-          splitViewGroups.add(splitGroupId);
-        } else if (!isSplitView) {
-          // We shoudnt be adding the height of hidden tabs.
-          if (
-            gBrowser.isTab(item) &&
-            item.group?.collapsed &&
-            item.group !== group &&
-            !item.hasAttribute('folder-active')
-          ) {
-            continue;
-          }
-          itemHeight = window.windowUtils.getBoundsWithoutFlushing(item).height;
-        }
-
-        heightUntilSelected += itemHeight;
-        if (gBrowser.isTabGroupLabel(item.lastChild)) heightUntilSelected += 2;
+      // Calculate the height we need to hide until we reach the selected item.
+      let heightUntilSelected;
+      if (selectedItem) {
+        heightUntilSelected =
+          window.windowUtils.getBoundsWithoutFlushing(selectedItem).top -
+          window.windowUtils.getBoundsWithoutFlushing(groupStart).bottom;
+      } else {
+        heightUntilSelected = window.windowUtils.getBoundsWithoutFlushing(tabsContainer).height;
       }
 
       let afterSelected = false;
