@@ -354,6 +354,7 @@
       tabs.push(triggerTab, ...gBrowser.selectedTabs);
 
       const group = this.createFolder(tabs, { insertBefore: triggerTab });
+      if (!group) return;
       this.#groupInit(group);
     }
 
@@ -421,6 +422,9 @@
 
     createFolder(tabs = [], options = {}) {
       for (const tab of tabs) {
+        if (tab.hasAttribute('zen-essential')) return;
+        if (tab.group?.hasAttribute('split-view-group')) return;
+
         gBrowser.pinTab(tab);
       }
       const insertBefore =
