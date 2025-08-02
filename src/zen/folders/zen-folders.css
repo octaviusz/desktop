@@ -4,12 +4,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-tab-group {
-  & .tabbrowser-tab {
-    margin-inline-start: 0 !important;
-  }
-}
-
 tab-group[split-view-group] {
   display: block;
   transition: var(--tab-dragover-transition);
@@ -164,6 +158,14 @@ tab-group[split-view-group] .tab-group-line {
   display: none !important;
 }
 
+#tabbrowser-tabs[orient='vertical'][expanded] {
+  tab-group > :is(.tab-group-label-container, .tabbrowser-tab),
+  &[movingtab][movingtab-addToGroup]:not([movingtab-createGroup], [movingtab-ungroup])
+    .tabbrowser-tab:is(:active, [multiselected]) {
+    margin-inline-start: 0;
+  }
+}
+
 zen-folder {
   display: flex;
   flex-direction: column;
@@ -192,7 +194,7 @@ zen-folder {
 
   & > .tab-group-container {
     :root[zen-sidebar-expanded] & > * {
-      margin-inline-start: var(--zen-folder-indent, 14px);
+      margin-inline-start: var(--zen-folder-indent, 14px) !important;
     }
 
     & > zen-folder {
@@ -208,7 +210,7 @@ zen-folder {
     margin-inline-start: 0 !important;
   }
 
-  margin: var(--tab-block-margin);
+  margin: 0 var(--tab-block-margin);
 
   & > .tab-group-label-container {
     flex: 0 0 auto !important;
