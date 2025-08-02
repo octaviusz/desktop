@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/tabs.js b/browser/components/tabbrowser/content/tabs.js
-index 1fcebe3962398ff1b7cadef657ac8b68a80e720d..4a179f479c19e6eecc689266b84fbfcccb7653b1 100644
+index 1fcebe3962..86bd9975ff 100644
 --- a/browser/components/tabbrowser/content/tabs.js
 +++ b/browser/components/tabbrowser/content/tabs.js
 @@ -289,6 +289,7 @@
@@ -547,27 +547,36 @@ index 1fcebe3962398ff1b7cadef657ac8b68a80e720d..4a179f479c19e6eecc689266b84fbfcc
  
            let lastUnmovingTabInGroup = dropElementGroup?.tabs.findLast(
              t => !movingTabsSet.has(t)
-@@ -2739,13 +2829,15 @@
-               // Dropping right before the tab group.
-               dropElement = dropElementGroup;
-               colorCode = undefined;
+@@ -2735,19 +2825,15 @@
+             dropElement = dropElementGroup;
+             colorCode = undefined;
+           } else if (isTabGroupLabel(dropElement)) {
+-            if (dropBefore) {
+-              // Dropping right before the tab group.
+-              dropElement = dropElementGroup;
+-              colorCode = undefined;
 -            } else if (dropElementGroup.collapsed) {
-+              gZenFolders.highlightGroupOnDragOver(null);
-+            } else if (dropElement?.group?.hasAttribute("split-view-group")) {
-               // Dropping right after the collapsed tab group.
-               dropElement = dropElementGroup;
-               colorCode = undefined;
+-              // Dropping right after the collapsed tab group.
+-              dropElement = dropElementGroup;
+-              colorCode = undefined;
 -            } else {
 -              // Dropping right before the first tab in the tab group.
 -              dropElement = dropElementGroup.tabs[0];
-+            } else if (overlapPercent < dragOverFolderThreshold) {
-+              // Dropping right before the first tab or group in the tab group.
-+              dropElement = dropElementGroup.childGroupsAndTabs[0];
-+              gZenFolders.highlightGroupOnDragOver(dropElementGroup, movingTabs);
-               dropBefore = true;
-             }
+-              dropBefore = true;
+-            }
++            ({ dropElement, colorCode, dropBefore } = gZenFolders.handleDragOverTabGroupLabel(
++              dropElement,
++              draggedTab,
++              overlapPercent,
++              dragOverFolderThreshold,
++              movingTabs,
++              dropBefore,
++              colorCode
++            ));
            }
-@@ -2769,15 +2861,24 @@
+           this.#setDragOverGroupColor(colorCode);
+           this.toggleAttribute("movingtab-ungroup", !colorCode);
+@@ -2769,15 +2855,24 @@
        // Shift background tabs to leave a gap where the dragged tab
        // would currently be dropped.
        for (let item of tabs) {
@@ -593,7 +602,7 @@ index 1fcebe3962398ff1b7cadef657ac8b68a80e720d..4a179f479c19e6eecc689266b84fbfcc
          }
          item.style.transform = transform;
        }
-@@ -2830,12 +2931,14 @@
+@@ -2830,12 +2925,14 @@
        );
      }
  
@@ -610,7 +619,7 @@ index 1fcebe3962398ff1b7cadef657ac8b68a80e720d..4a179f479c19e6eecc689266b84fbfcc
  
        for (let item of this.ariaFocusableItems) {
          if (isTabGroupLabel(item)) {
-@@ -2843,6 +2946,18 @@
+@@ -2843,6 +2940,18 @@
            item = item.parentElement;
          }
          item.style.transform = "";
@@ -629,7 +638,7 @@ index 1fcebe3962398ff1b7cadef657ac8b68a80e720d..4a179f479c19e6eecc689266b84fbfcc
          item.removeAttribute("dragover-createGroup");
        }
        this.removeAttribute("movingtab-createGroup");
-@@ -2889,7 +3004,7 @@
+@@ -2889,7 +2998,7 @@
          let postTransitionCleanup = () => {
            movingTab._moveTogetherSelectedTabsData.animate = false;
          };
@@ -638,7 +647,7 @@ index 1fcebe3962398ff1b7cadef657ac8b68a80e720d..4a179f479c19e6eecc689266b84fbfcc
            postTransitionCleanup();
          } else {
            let onTransitionEnd = transitionendEvent => {
-@@ -3062,7 +3177,7 @@
+@@ -3062,7 +3171,7 @@
      }
  
      _notifyBackgroundTab(aTab) {
@@ -647,7 +656,7 @@ index 1fcebe3962398ff1b7cadef657ac8b68a80e720d..4a179f479c19e6eecc689266b84fbfcc
          return;
        }
  
-@@ -3188,6 +3303,9 @@
+@@ -3188,6 +3297,9 @@
            return null;
          }
        }
