@@ -828,10 +828,7 @@
           }
           // Check for essentials container
           else if (essentialTabsTarget) {
-            if (
-              !draggedTab.hasAttribute('zen-essential') &&
-              !draggedTab?.group
-            ) {
+            if (!draggedTab.hasAttribute('zen-essential') && !draggedTab?.group) {
               moved = true;
               isVertical = false;
               hasActuallyMoved = this.addToEssentials(draggedTab);
@@ -839,7 +836,11 @@
           }
           // Check for normal tabs container
           else if (tabsTarget || event.target.id === 'zen-tabs-wrapper') {
-            if (draggedTab.pinned && !draggedTab.hasAttribute('zen-essential') && !draggedTab?.group?.isZenFolder) {
+            if (
+              draggedTab.pinned &&
+              !draggedTab.hasAttribute('zen-essential') &&
+              !draggedTab?.group?.isZenFolder
+            ) {
               gBrowser.unpinTab(draggedTab);
               moved = true;
               isRegularTabs = true;
