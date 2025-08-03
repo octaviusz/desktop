@@ -1062,7 +1062,7 @@
           shouldAddDragOverElement = true;
         } else if (draggedTab.pinned) {
           if (draggedTab._dragData?.screenY) {
-            draggedTab._dragData['screenY'] = event.screenY + 5;
+            draggedTab._dragData['screenY'] = event.screenY + 10;
             gBrowser.unpinTab(draggedTab);
             Services.zen.playHapticFeedback();
           } else {
