@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/tabs.js b/browser/components/tabbrowser/content/tabs.js
-index 1fcebe3962..238b4a0add 100644
+index 1fcebe3962..c0c712a3fd 100644
 --- a/browser/components/tabbrowser/content/tabs.js
 +++ b/browser/components/tabbrowser/content/tabs.js
 @@ -289,6 +289,7 @@
@@ -439,15 +439,7 @@ index 1fcebe3962..238b4a0add 100644
            let elementForSize = isTabGroupLabel(element)
              ? element.parentElement
              : element;
-@@ -2528,6 +2616,7 @@
-             elementForSize[screenAxis] +
-             getTabShift(element, oldDropElementIndex);
- 
-+
-           if (screen > point) {
-             high = mid - 1;
-           } else if (screen + bounds(elementForSize)[size] < point) {
-@@ -2540,6 +2629,7 @@
+@@ -2540,6 +2628,7 @@
        };
  
        let dropElement = getOverlappedElement();
@@ -455,7 +447,7 @@ index 1fcebe3962..238b4a0add 100644
  
        let newDropElementIndex;
        if (dropElement) {
-@@ -2604,7 +2694,7 @@
+@@ -2604,7 +2693,7 @@
        let shouldCreateGroupOnDrop;
        let dropBefore;
        if (dropElement) {
@@ -464,7 +456,7 @@ index 1fcebe3962..238b4a0add 100644
            ? dropElement.parentElement
            : dropElement;
  
-@@ -2624,7 +2714,7 @@
+@@ -2624,7 +2713,7 @@
            ? Services.prefs.getIntPref(
                "browser.tabs.dragDrop.moveOverThresholdPercent"
              ) / 100
@@ -473,7 +465,7 @@ index 1fcebe3962..238b4a0add 100644
          moveOverThreshold = Math.min(1, Math.max(0, moveOverThreshold));
          let shouldMoveOver = overlapPercent > moveOverThreshold;
          if (logicalForward && shouldMoveOver) {
-@@ -2656,23 +2746,23 @@
+@@ -2656,23 +2745,23 @@
  
          // If dragging a group over another group, don't make it look like it is
          // possible to drop the dragged group inside the other group.
@@ -514,7 +506,7 @@ index 1fcebe3962..238b4a0add 100644
  
          // Constrain drop direction at the boundary between pinned and
          // unpinned tabs so that they don't mix together.
-@@ -2686,14 +2776,13 @@
+@@ -2686,14 +2775,13 @@
          }
        }
  
@@ -534,7 +526,7 @@ index 1fcebe3962..238b4a0add 100644
          // When dragging tab(s) over an ungrouped tab, signal to the user
          // that dropping the tab(s) will create a new tab group.
          shouldCreateGroupOnDrop =
-@@ -2703,12 +2792,12 @@
+@@ -2703,12 +2791,12 @@
            overlapPercent > dragOverGroupingThreshold;
  
          if (shouldCreateGroupOnDrop) {
@@ -553,7 +545,7 @@ index 1fcebe3962..238b4a0add 100644
          } else {
            this.removeAttribute("movingtab-createGroup");
            document
-@@ -2735,19 +2824,14 @@
+@@ -2735,19 +2823,14 @@
              dropElement = dropElementGroup;
              colorCode = undefined;
            } else if (isTabGroupLabel(dropElement)) {
@@ -581,7 +573,7 @@ index 1fcebe3962..238b4a0add 100644
            }
            this.#setDragOverGroupColor(colorCode);
            this.toggleAttribute("movingtab-ungroup", !colorCode);
-@@ -2769,15 +2853,24 @@
+@@ -2769,15 +2852,24 @@
        // Shift background tabs to leave a gap where the dragged tab
        // would currently be dropped.
        for (let item of tabs) {
@@ -607,7 +599,7 @@ index 1fcebe3962..238b4a0add 100644
          }
          item.style.transform = transform;
        }
-@@ -2830,12 +2923,14 @@
+@@ -2830,12 +2922,14 @@
        );
      }
  
@@ -624,7 +616,7 @@ index 1fcebe3962..238b4a0add 100644
  
        for (let item of this.ariaFocusableItems) {
          if (isTabGroupLabel(item)) {
-@@ -2843,6 +2938,18 @@
+@@ -2843,6 +2937,18 @@
            item = item.parentElement;
          }
          item.style.transform = "";
@@ -643,7 +635,7 @@ index 1fcebe3962..238b4a0add 100644
          item.removeAttribute("dragover-createGroup");
        }
        this.removeAttribute("movingtab-createGroup");
-@@ -2889,7 +2996,7 @@
+@@ -2889,7 +2995,7 @@
          let postTransitionCleanup = () => {
            movingTab._moveTogetherSelectedTabsData.animate = false;
          };
@@ -652,7 +644,7 @@ index 1fcebe3962..238b4a0add 100644
            postTransitionCleanup();
          } else {
            let onTransitionEnd = transitionendEvent => {
-@@ -3062,7 +3169,7 @@
+@@ -3062,7 +3168,7 @@
      }
  
      _notifyBackgroundTab(aTab) {
@@ -661,7 +653,7 @@ index 1fcebe3962..238b4a0add 100644
          return;
        }
  
-@@ -3188,6 +3295,9 @@
+@@ -3188,6 +3294,9 @@
            return null;
          }
        }
