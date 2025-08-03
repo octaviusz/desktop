@@ -1036,41 +1036,17 @@
         gZenWorkspaces.activeWorkspaceIndicator?.removeAttribute('open');
       }
 
-      // If there's no valid target tab or folder, nothing to do
-      if (!targetTab && !folderTarget) {
-        return;
-      }
-
       let shouldAddDragOverElement = false;
       let isVertical = this.expandedSidebarMode;
 
       // Decide whether we should show a dragover class for the given target
-      if (folderTarget && (!draggedTab.pinned || draggedTab.hasAttribute('zen-essential'))) {
-        shouldAddDragOverElement = true;
-        const isCollapsed = folderTarget.collapsed;
-        let groupElem = isCollapsed
-          ? [folderTarget]
-          : folderTarget.childGroupsAndTabs
-              .filter((tab) => !tab.hasAttribute('zen-empty-tab'))
-              .map((tab) => {
-                if (gBrowser.isTabGroupLabel(tab) || tab.group.hasAttribute('split-view-group')) {
-                  return tab.group;
-                }
-                return tab;
-              });
-
-        let newTarget = isCollapsed ? groupElem[0] : groupElem.at(-1);
-        for (const elem of groupElem) {
-          const rect = elem.getBoundingClientRect();
-          if (event.clientY < rect.top + rect.height / 2) {
-            newTarget = elem;
-            break;
-          }
-        }
-        targetTab = newTarget;
-      } else if (pinnedTabsTarget) {
-        if (!draggedTab.pinned || draggedTab.hasAttribute('zen-essential')) {
+      if (pinnedTabsTarget) {
+        if (draggedTab.hasAttribute('zen-essential')) {
           shouldAddDragOverElement = true;
+        } else if (!draggedTab.pinned) {
+          draggedTab._dragData['screenY'] = event.screenY + 10;
+          gBrowser.pinTab(draggedTab);
+          Services.zen.playHapticFeedback();
         }
       } else if (essentialTabsTarget) {
         if (!draggedTab.hasAttribute('zen-essential') && this.canEssentialBeAdded(draggedTab)) {
@@ -1078,12 +1054,16 @@
           isVertical = false;
         }
       } else if (tabsTarget) {
-        if (draggedTab.pinned || draggedTab.hasAttribute('zen-essential')) {
+        if (draggedTab.hasAttribute('zen-essential')) {
           shouldAddDragOverElement = true;
+        } else if (draggedTab.pinned) {
+          draggedTab._dragData['screenY'] = event.screenY + 5;
+          gBrowser.unpinTab(draggedTab);
+          Services.zen.playHapticFeedback();
         }
       }
 
-      if (!shouldAddDragOverElement) {
+      if (!shouldAddDragOverElement || (!targetTab && !folderTarget)) {
         this.removeTabContainersDragoverClass();
         return;
       }

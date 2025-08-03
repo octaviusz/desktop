@@ -290,7 +290,8 @@ zen-folder {
     height: 100%;
     align-items: center;
     text-align: center;
-    padding: 2rem 0;
+    justify-content: center;
+    margin-left: -8px;
   }
 }
 
