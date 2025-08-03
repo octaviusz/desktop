@@ -1044,9 +1044,13 @@
         if (draggedTab.hasAttribute('zen-essential')) {
           shouldAddDragOverElement = true;
         } else if (!draggedTab.pinned) {
-          draggedTab._dragData['screenY'] = event.screenY + 10;
-          gBrowser.pinTab(draggedTab);
-          Services.zen.playHapticFeedback();
+          if (draggedTab._dragData?.screenY) {
+            draggedTab._dragData['screenY'] = event.screenY + 10;
+            gBrowser.pinTab(draggedTab);
+            Services.zen.playHapticFeedback();
+          } else {
+            shouldAddDragOverElement = true;
+          }
         }
       } else if (essentialTabsTarget) {
         if (!draggedTab.hasAttribute('zen-essential') && this.canEssentialBeAdded(draggedTab)) {
@@ -1057,9 +1061,13 @@
         if (draggedTab.hasAttribute('zen-essential')) {
           shouldAddDragOverElement = true;
         } else if (draggedTab.pinned) {
-          draggedTab._dragData['screenY'] = event.screenY + 5;
-          gBrowser.unpinTab(draggedTab);
-          Services.zen.playHapticFeedback();
+          if (draggedTab._dragData?.screenY) {
+            draggedTab._dragData['screenY'] = event.screenY + 5;
+            gBrowser.unpinTab(draggedTab);
+            Services.zen.playHapticFeedback();
+          } else {
+            shouldAddDragOverElement = true;
+          }
         }
       }
 

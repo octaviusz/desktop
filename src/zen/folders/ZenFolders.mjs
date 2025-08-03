@@ -531,6 +531,10 @@
       event.stopPropagation();
 
       const activeGroup = event.target.parentElement;
+      if (activeGroup.tabs.length === 0) {
+        // If the group has no tabs, we don't show the popup
+        return;
+      }
 
       this.#populateTabsList(activeGroup);
 
@@ -540,7 +544,7 @@
       });
       const tabsList = this.#popup.querySelector('#zen-folder-tabs-list');
 
-      search.addEventListener('input', () => {
+      const onSearchInput = () => {
         const query = search.value.toLowerCase();
         let foundTabs = 0;
         for (const item of tabsList.children) {
@@ -551,7 +555,8 @@
           }
         }
         document.getElementById('zen-folder-tabs-search-no-results').hidden = foundTabs > 0;
-      });
+      };
+      search.addEventListener('input', onSearchInput);
 
       const target = event.target;
       target.setAttribute('open', true);
@@ -560,6 +565,7 @@
         if (event.target !== this.#popup) return;
         search.value = '';
         target.removeAttribute('open');
+        search.removeEventListener('input', onSearchInput);
       };
 
       this.#popup.addEventListener(
@@ -580,8 +586,8 @@
       const position = isRightSide ? 'topleft topright' : 'topright topleft';
       return {
         position: position,
-        x: 0,
-        y: 3,
+        x: 5,
+        y: -25,
       };
     }
 
@@ -593,13 +599,13 @@
         if (tab.hidden || tab.hasAttribute('zen-empty-tab')) continue;
 
         const item = document.createElement('div');
-        item.className = 'tabs-list-item';
+        item.className = 'folders-tabs-list-item';
 
         const content = document.createElement('div');
-        content.className = 'tabs-list-item-content';
+        content.className = 'folders-tabs-list-item-content';
 
         const icon = document.createElement('img');
-        icon.className = 'tabs-list-item-icon';
+        icon.className = 'folders-tabs-list-item-icon';
 
         let tabURL = tab.linkedBrowser?.currentURI?.spec || '';
         let tabLabel = tab.label || '';
@@ -610,10 +616,10 @@
         icon.src = iconURL;
 
         const labelsContainer = document.createElement('div');
-        labelsContainer.className = 'tabs-list-item-labels';
+        labelsContainer.className = 'folders-tabs-list-item-labels';
 
         const mainLabel = document.createElement('div');
-        mainLabel.className = 'tabs-list-item-label';
+        mainLabel.className = 'folders-tabs-list-item-label';
         mainLabel.textContent = tabLabel;
 
         const secondaryLabel = document.createElement('div');
@@ -713,7 +719,7 @@
       const svgIcon = group.icon.querySelector('svg #folder-icon image');
       if (!svgIcon) return;
       svgIcon.setAttribute('href', icon);
-      svgIcon.setAttribute('transform', 'translate(-52.5, 3)');
+      svgIcon.setAttribute('transform', 'translate(-52.5, 2.5)');
     }
 
     collapseVisibleTab(group) {
