@@ -219,7 +219,7 @@ zen-folder {
     --tab-group-color: transparent !important;
     padding-block-end: 0 !important;
     margin: 0 !important;
-    height: 40px !important;
+    height: 40px;
     padding-inline: var(--tab-group-label-padding);
     align-items: center;
 

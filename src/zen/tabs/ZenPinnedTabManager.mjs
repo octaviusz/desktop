@@ -1039,6 +1039,10 @@
         gZenWorkspaces.activeWorkspaceIndicator?.removeAttribute('open');
       }
 
+      if (draggedTab) {
+        gZenFolders.ungroupTabFromActiveGroups(draggedTab);
+      }
+
       let shouldAddDragOverElement = false;
       let isVertical = this.expandedSidebarMode;
 

@@ -72,6 +72,7 @@
 
     connectedCallback() {
       super.connectedCallback();
+      this.labelElement.pinned = true;
       if (this.#initialized) {
         return;
       }
@@ -87,7 +88,6 @@
 
       this.labelElement.setAttribute('context', 'zenFolderActions');
 
-      this.labelElement.pinned = true;
       this.labelElement.onRenameFinished = (newLabel) => {
         this.name = newLabel;
       };
@@ -174,6 +174,13 @@
         (child) => !child.classList.contains('zen-tab-group-start')
       );
     }
+
+    get pinned() {
+      return this.isZenFolder;
+    }
+
+    /* Ignore pinned state changes */
+    set pinned(value) {}
   }
 
   customElements.define('zen-folder', ZenFolder);

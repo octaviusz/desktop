@@ -310,6 +310,19 @@
         selectedItem.setAttribute('folder-active', 'true');
       }
 
+      for (const item of itemsAfterSelected) {
+        animations.push(
+          gZenUIManager.motion.animate(
+            item,
+            {
+              opacity: 0,
+              height: 0,
+            },
+            { duration: 0.1, ease: 'easeInOut' }
+          )
+        );
+      }
+
       animations.push(...this.updateFolderIcon(group));
       animations.push(
         gZenUIManager.motion.animate(
@@ -320,7 +333,6 @@
           { duration: 0.15, ease: 'easeInOut' }
         )
       );
-
       await Promise.all(animations);
       if (!selectedItem) tabsContainer.setAttribute('hidden', true);
     }
@@ -349,6 +361,27 @@
         }
       }
 
+      const groupItems = [];
+      group.childGroupsAndTabs.forEach((item) => {
+        if (gBrowser.isTabGroupLabel(item)) {
+          item = item.parentNode;
+        }
+        groupItems.push(item);
+      });
+
+      groupItems.map((item) => {
+        animations.push(
+          gZenUIManager.motion.animate(
+            item,
+            {
+              opacity: 1,
+              height: 'auto',
+            },
+            { duration: 0.1, ease: 'easeInOut' }
+          )
+        );
+      });
+
       animations.push(...this.updateFolderIcon(group));
       animations.push(
         gZenUIManager.motion.animate(
@@ -364,6 +397,11 @@
       );
       await Promise.all(animations);
       tabsContainer.style.overflow = '';
+      groupItems.map((item) => {
+        // Cleanup just in case
+        item.style.opacity = '';
+        item.style.height = '';
+      });
     }
 
     #onNewFolder(event) {
@@ -499,7 +537,6 @@
       folder.id = id;
       folder.label = options.label || 'New Folder';
       folder.collapsed = !!options.collapsed;
-      folder.pinned = options.pinned ?? true;
       folder.saveOnWindowClose = !!options.saveOnWindowClose;
       folder.color = 'zen-workspace-color';
 
@@ -987,6 +1024,14 @@
         }
         this.#lastHighlightedGroup = folder;
       }
+    }
+
+    /**
+     * Ungroup a tab from all the active groups it belongs to.
+     * @param {MozTabbrowserTab} tab The tab to ungroup.
+     */
+    ungroupTabFromActiveGroups(tab) {
+      gBrowser.ungroupTabsUntilNoActive(tab);
     }
 
     /**

@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/tabs.js b/browser/components/tabbrowser/content/tabs.js
-index 1fcebe3962..c0c712a3fd 100644
+index 1fcebe3962398ff1b7cadef657ac8b68a80e720d..16a9ac8d47e413fdccead14491542cdbd38dabba 100644
 --- a/browser/components/tabbrowser/content/tabs.js
 +++ b/browser/components/tabbrowser/content/tabs.js
 @@ -289,6 +289,7 @@
@@ -410,10 +410,10 @@ index 1fcebe3962..c0c712a3fd 100644
        // - for unpinned tabs, between the first and last unpinned tab
        let firstBound = firstTab[screenAxis] - firstMovingTabScreen;
        let lastBound = endEdge(lastTab) - lastMovingTabScreen;
-+      if (isTabGroupLabel(lastTab)) {
++      if (isTabGroupLabel(lastTab) && isTab(lastMovingTab)) {
 +        lastBound += 8; // A hack to allow more space for the group
 +      }
-+      if (isTabGroupLabel(firstTab)) {
++      if (isTabGroupLabel(firstTab) && isTab(firstMovingTab)) {
 +        firstBound -= 8; // A hack to allow more space for the group
 +      }
        translate = Math.min(Math.max(translate, firstBound), lastBound);
