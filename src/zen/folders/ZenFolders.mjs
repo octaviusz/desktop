@@ -426,9 +426,11 @@
     async #convertFolderToSpace(folder) {
       const currentWorkspace = gZenWorkspaces.getActiveWorkspaceFromCache();
       let selectedTab = folder.tabs.find((tab) => tab.selected);
+      const icon = folder.icon?.querySelector('svg #folder-icon image');
+
       const newSpace = await gZenWorkspaces.createAndSaveWorkspace(
         folder.label,
-        /* icon= */ undefined,
+        /* icon= */ icon?.getAttribute('href'),
         /* dontChange= */ false,
         currentWorkspace.containerTabId,
         {
