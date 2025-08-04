@@ -738,7 +738,6 @@
 
         const isActiveState = isCollapsed && hasActive && isOpacity;
 
-
         if (!play && !isActiveState) {
           if (isOpacity && OPACITY[parentId]) {
             const staticValue = OPACITY[parentId].baseOrig;
@@ -862,7 +861,6 @@
           )
         );
       });
-
 
       const items = group.childGroupsAndTabs.map((item) => {
         const isSplitView = item.group?.hasAttribute?.('split-view-group');
