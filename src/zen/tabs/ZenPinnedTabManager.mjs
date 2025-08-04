@@ -1076,9 +1076,6 @@
             for (const tab of tabs) {
               gBrowser.pinTab(tab);
             }
-            for (const tab of gBrowser.tabs) {
-              tab.style.transform = '';
-            }
             Services.zen.playHapticFeedback();
           } else {
             shouldAddDragOverElement = true;
@@ -1098,9 +1095,6 @@
             const tabs = draggedTab._dragData.movingTabs || [draggedTab];
             for (const tab of tabs) {
               gBrowser.unpinTab(tab);
-            }
-            for (const tab of gBrowser.tabs) {
-              tab.style.transform = '';
             }
             Services.zen.playHapticFeedback();
           } else {
