@@ -794,6 +794,11 @@
       const svgIcon = group.icon.querySelector('svg #folder-icon image');
       if (!svgIcon) return;
       svgIcon.setAttribute('href', icon ?? '');
+      if (svgIcon.getAttribute('href') !== icon) {
+        svgIcon.style.opacity = '0';
+      } else {
+        svgIcon.style.opacity = '1';
+      }
       svgIcon.setAttribute('transform', 'translate(-52.5, 2.5)');
     }
 
