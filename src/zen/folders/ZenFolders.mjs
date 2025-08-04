@@ -536,10 +536,15 @@
       }
       folder.id = id;
       folder.label = options.label || 'New Folder';
-      folder.collapsed = !!options.collapsed;
       folder.saveOnWindowClose = !!options.saveOnWindowClose;
       folder.color = 'zen-workspace-color';
 
+      // note: We set if the folder is collapsed some time after creation.
+      //   we do this to ensure marginBottom is set correctly in the case
+      //   that we want it to initially be collapsed.
+      requestAnimationFrame(() => {
+        folder.collapsed = !!options.collapsed;
+      });
       return folder;
     }
 
