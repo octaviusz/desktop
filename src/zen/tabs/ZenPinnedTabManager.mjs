@@ -940,13 +940,15 @@
       tab.style.setProperty('--zen-original-tab-icon', `url(${pin.iconUrl.spec})`);
     }
 
-    removeTabContainersDragoverClass() {
+    removeTabContainersDragoverClass(hideIndicator = true) {
       if (this._dragIndicator) {
         Services.zen.playHapticFeedback();
       }
       this.dragIndicator.remove();
       this._dragIndicator = null;
-      gZenWorkspaces.activeWorkspaceIndicator?.removeAttribute('open');
+      if (hideIndicator) {
+        gZenWorkspaces.activeWorkspaceIndicator?.removeAttribute('open');
+      }
     }
 
     get dragIndicator() {
@@ -1029,8 +1031,9 @@
       draggedTab = draggedTab?.group?.hasAttribute('split-view-group')
         ? draggedTab.group
         : draggedTab;
-      if (event.target.closest('.zen-current-workspace-indicator')) {
-        this.removeTabContainersDragoverClass();
+      const isHoveringIndicator = !!event.target.closest('.zen-current-workspace-indicator');
+      if (isHoveringIndicator) {
+        this.removeTabContainersDragoverClass(false);
         gZenWorkspaces.activeWorkspaceIndicator?.setAttribute('open', true);
       } else {
         gZenWorkspaces.activeWorkspaceIndicator?.removeAttribute('open');
@@ -1047,6 +1050,9 @@
           if (draggedTab._dragData?.screenY) {
             draggedTab._dragData['screenY'] = event.screenY + 10;
             gBrowser.pinTab(draggedTab);
+            for (const tab of gBrowser.tabs) {
+              tab.style.transform = '';
+            }
             Services.zen.playHapticFeedback();
           } else {
             shouldAddDragOverElement = true;
@@ -1064,6 +1070,9 @@
           if (draggedTab._dragData?.screenY) {
             draggedTab._dragData['screenY'] = event.screenY + 10;
             gBrowser.unpinTab(draggedTab);
+            for (const tab of gBrowser.tabs) {
+              tab.style.transform = '';
+            }
             Services.zen.playHapticFeedback();
           } else {
             shouldAddDragOverElement = true;
@@ -1072,7 +1081,7 @@
       }
 
       if (!shouldAddDragOverElement || (!targetTab && !folderTarget)) {
-        this.removeTabContainersDragoverClass();
+        this.removeTabContainersDragoverClass(!isHoveringIndicator);
         return;
       }
 
