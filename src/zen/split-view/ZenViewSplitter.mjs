@@ -1110,6 +1110,11 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
         }
       }
     }
+
+    if (this._sessionRestoring) {
+      return;
+    }
+    this.activateSplitView(splitData);
   }
 
   addTabToSplit(tab, splitNode, prepend = true) {
