@@ -162,6 +162,7 @@
       window.addEventListener('TabGroupExpand', this.#onTabGroupExpand.bind(this));
       window.addEventListener('TabGroupCollapse', this.#onTabGroupCollapse.bind(this));
       window.addEventListener('FolderGrouped', this.#onFolderGrouped.bind(this));
+      window.addEventListener('TabSelect', this.#onTabSelected.bind(this));
       document
         .getElementById('zen-context-menu-new-folder')
         .addEventListener('command', this.#onNewFolder.bind(this));
@@ -185,8 +186,19 @@
     }
 
     #onFolderGrouped(event) {
+      if (this._sessionRestoring) return;
       const folder = event.detail;
       folder.group.collapsed = false;
+    }
+
+    #onTabSelected(event) {
+      const tab = event.target;
+      const prevTab = event.detail.previousTab;
+      const group = tab?.group;
+      const isActive = group?.activeGroups?.length > 0;
+      if (isActive) tab.setAttribute('folder-active', true);
+      if (prevTab.hasAttribute('folder-active')) prevTab.removeAttribute('folder-active');
+      gBrowser.tabContainer._invalidateCachedTabs();
     }
 
     #onTabUngrouped(event) {
@@ -196,6 +208,14 @@
       if (group.hasAttribute('split-view-group') && tab.hasAttribute('had-zen-pinned-changed')) {
         tab.setAttribute('zen-pinned-changed', true);
         tab.removeAttribute('had-zen-pinned-changed');
+      }
+      const activeGroup = group.activeGroups;
+      if (activeGroup?.length > 0) {
+        for (const folder of activeGroup) {
+          folder.removeAttribute('has-active');
+          this.collapseVisibleTab(folder);
+          this.updateFolderIcon(folder, 'close', false);
+        }
       }
     }
 
@@ -241,6 +261,7 @@
 
     async #onTabGroupCollapse(event) {
       const group = event.target;
+      if (group.tagName !== 'zen-folder') return;
 
       this.#cancelPopupTimer();
 
@@ -306,6 +327,7 @@
 
     async #onTabGroupExpand(event) {
       const group = event.target;
+      if (group.tagName !== 'zen-folder') return;
 
       this.#cancelPopupTimer();
 
@@ -646,58 +668,59 @@
     }
 
     updateFolderIcon(group, state = 'auto', play = true) {
-      if (!gBrowser.isTabGroup(group)) return [];
       const svg = group.querySelector('svg');
       if (!svg) return [];
 
+      const animations = svg.querySelectorAll('animate, animateTransform, animateMotion');
+
       const isCollapsed = group.collapsed;
       const hasActive = group.hasAttribute('has-active');
-      const animStates = {
-        open: 0.3,
-        close: 0,
-        auto: isCollapsed ? 0 : 0.3,
+
+      const OPACITY = {
+        'folder-dots': { active: '0;1', baseOrig: '0;0' },
+        'folder-icon': { active: '1;0', baseOrig: '1;1' },
       };
 
-      svg.unpauseAnimations();
-      if (!play) {
-        svg.pauseAnimations();
-        svg.setCurrentTime(animStates[state]);
-        return [];
-      }
-
-      const animations = svg.querySelectorAll('animate, animateTransform, animateMotion');
-      animations.forEach((anim) => {
-        const origValues = anim.dataset.origValues;
+      animations.forEach((animation) => {
+        const parentId = animation.parentElement.id;
+        const isOpacity = animation.getAttribute('attributeName') === 'opacity';
+        const origValues = animation.dataset.origValues;
         const [fromValue, toValue] = origValues.split(';');
-        let newValues;
 
-        const parentId = anim.parentElement.id;
-        const isOpacity = anim.getAttribute('attributeName') === 'opacity';
-        const isActive = isCollapsed && hasActive && isOpacity;
-
-        if (parentId === 'folder-dots' && isActive) {
-          newValues = '0;1';
-          anim.dataset.origValues = '1;0';
-        } else if (parentId === 'folder-icon' && isActive) {
-          newValues = '1;0';
-          anim.dataset.origValues = '0;1';
-        } else {
-          if (parentId === 'folder-dots' && isOpacity) {
-            anim.dataset.origValues = '0;0';
-          } else if (parentId === 'folder-icon' && isOpacity) {
-            anim.dataset.origValues = '1;1';
+        if (!play) {
+          if (isOpacity && OPACITY[parentId]) {
+            const staticValue = OPACITY[parentId].baseOrig;
+            animation.dataset.origValues = staticValue;
+            animation.setAttribute('values', staticValue);
+            animation.beginElement();
           }
+          return;
+        }
+
+        if (isOpacity && OPACITY[parentId]) {
+          animation.dataset.origValues = OPACITY[parentId].baseOrig;
+        }
+
+        let newValues;
+        const isActiveState = isCollapsed && hasActive && isOpacity;
+
+        if (isActiveState && OPACITY[parentId]) {
+          newValues = OPACITY[parentId].active;
+          const [activeFrom, activeTo] = newValues.split(';');
+          animation.dataset.origValues = `${activeTo};${activeFrom}`;
+        } else {
           const stateValues = {
             open: `${fromValue};${toValue}`,
             close: `${toValue};${fromValue}`,
             auto: isCollapsed ? `${toValue};${fromValue}` : `${fromValue};${toValue}`,
           };
-          newValues = stateValues[state];
+          newValues = stateValues[state] || stateValues.auto;
         }
 
-        anim.setAttribute('values', newValues);
-        anim.beginElement();
+        animation.setAttribute('values', newValues);
+        animation.beginElement();
       });
+
       return [];
     }
 
@@ -718,7 +741,7 @@
     setFolderUserIcon(group, icon) {
       const svgIcon = group.icon.querySelector('svg #folder-icon image');
       if (!svgIcon) return;
-      svgIcon.setAttribute('href', icon);
+      svgIcon.setAttribute('href', icon ?? '');
       svgIcon.setAttribute('transform', 'translate(-52.5, 2.5)');
     }
 
@@ -764,15 +787,8 @@
         this.setFolderUserIcon(group, stateData.userIcon);
       }
 
-      const tabsContainer = group.querySelector('.tab-group-container');
-      const groupStart = group.querySelector('.zen-tab-group-start');
-      let containerMargin = 0;
-      for (const item of tabsContainer.children) {
-        const rect = item.getBoundingClientRect();
-        containerMargin += rect.height;
-      }
       if (group.collapsed) {
-        groupStart.style.marginTop = `-${containerMargin}px`;
+        this.#onTabGroupCollapse({ target: group });
       }
 
       const labelContainer = group.querySelector('.tab-group-label-container');
@@ -981,7 +997,6 @@
      * @param {MozTabbrowserTabGroupLabel} currentDropElement The tab group label currently being dragged over.
      * @param {MozTabbrowserTab|MozTabbrowserTabGroupLabel} draggedTab The tab or tab group label being dragged.
      * @param {number} overlapPercent The percentage of overlap between the dragged item and the drop target.
-     * @param {number} dragOverFolderThreshold The threshold percentage for considering a drop into a folder.
      * @param {Array<MozTabbrowserTab>} movingTabs An array of tabs that are currently being dragged together.
      * @param {boolean} currentDropBefore Indicates if the current drop position is before the middle of the drop element.
      * @param {string|undefined} currentColorCode The current color code for dragover highlighting.
@@ -992,7 +1007,6 @@
       currentDropElement,
       draggedTab,
       overlapPercent,
-      dragOverFolderThreshold,
       movingTabs,
       currentDropBefore,
       currentColorCode
@@ -1000,36 +1014,44 @@
       let dropElement = currentDropElement;
       let dropBefore = currentDropBefore;
       let colorCode = currentColorCode;
+      let dragUpThreshold =
+        Services.prefs.getIntPref('zen.view.drag-and-drop.drop-inside-upper-threshold') / 100;
+      let dragDownThreshold =
+        Services.prefs.getIntPref('zen.view.drag-and-drop.drop-inside-lower-threshold') / 100;
 
-      const dropElementGroup = dropElement.group;
+      let dropElementGroup = dropElement.group;
+      const isSplitGroup = dropElement?.group?.hasAttribute('split-view-group');
       let firstGroupElem = dropElementGroup.childGroupsAndTabs[0];
+      // let lastGroupElem = dropElementGroup?.group?.allItems?.filter(tab => tab.visible)?.at(-1);
 
-      if (dropBefore) {
-        // Dropping right before the tab group.
-        dropElement = dropElementGroup;
-        colorCode = undefined;
-        this.highlightGroupOnDragOver(null);
-      } else if (!dropBefore && overlapPercent < 0.2) {
-        if (dropElementGroup.level === 0 && !draggedTab?.group?.level) {
-          dropElement = dropElementGroup;
-          colorCode = undefined;
-        } else if (dropElementGroup.level < draggedTab?.group?.level || !draggedTab?.group?.level) {
-          dropElement = firstGroupElem;
-          dropBefore = true;
-        } else if (dropElementGroup.level > draggedTab?.group?.level) {
-          dropElement = firstGroupElem;
-        }
-        this.highlightGroupOnDragOver(null);
-      } else if (dropElement?.group?.hasAttribute('split-view-group')) {
-        // Dropping right after the collapsed tab group.
-        dropElement = dropElementGroup;
-        colorCode = undefined;
-      } else if (overlapPercent < dragOverFolderThreshold) {
-        // Dropping right before the first tab or group in the tab group.
+      const isRestrictedGroup = isSplitGroup || dropElementGroup.collapsed;
+
+      const shouldDropInside =
+        !dropBefore &&
+        overlapPercent >= dragDownThreshold &&
+        overlapPercent <= dragUpThreshold &&
+        !isSplitGroup;
+      const shouldDropNear = overlapPercent < dragUpThreshold || overlapPercent > dragDownThreshold;
+
+      if (shouldDropInside) {
         dropElement = firstGroupElem;
         dropBefore = true;
         this.highlightGroupOnDragOver(dropElementGroup, movingTabs);
+      } else if (shouldDropNear) {
+        if (dropBefore) {
+          dropElement = dropElementGroup;
+          colorCode = undefined;
+        } else {
+          if (isRestrictedGroup) {
+            dropElement = dropElementGroup;
+          } else {
+            dropElement = firstGroupElem;
+            dropBefore = true;
+          }
+        }
+        this.highlightGroupOnDragOver(null);
       }
+
       return { dropElement, colorCode, dropBefore };
     }
   }

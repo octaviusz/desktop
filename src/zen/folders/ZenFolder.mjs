@@ -116,6 +116,19 @@
       return true;
     }
 
+    get activeGroups() {
+      let activeGroups = [];
+      let currentGroup = this;
+      if (currentGroup?.hasAttribute('has-active')) activeGroups.push(currentGroup);
+      while (currentGroup?.group) {
+        currentGroup = currentGroup?.group;
+        if (currentGroup?.hasAttribute('has-active')) {
+          activeGroups.push(currentGroup);
+        }
+      }
+      return activeGroups;
+    }
+
     // Dont expand the folder when the user selects a tab in it
     on_TabSelect() {
       this.collapsed = this.hasAttribute('has-active');
