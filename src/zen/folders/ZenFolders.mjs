@@ -296,12 +296,13 @@
       }
 
       let afterSelected = false;
-      for (const { item, groupId } of items) {
+      for (let { item, splitGroupId } of items) {
         if (item === selectedItem) {
           afterSelected = true;
           continue;
         }
-        if (selectedGroupId && groupId === selectedGroupId) continue;
+        if (selectedGroupId && splitGroupId === selectedGroupId) continue;
+        if (afterSelected && splitGroupId) item = item.group;
         if (afterSelected) itemsAfterSelected.push(item);
       }
 
@@ -364,7 +365,11 @@
       const groupItems = [];
       group.childGroupsAndTabs.forEach((item) => {
         if (gBrowser.isTabGroupLabel(item)) {
-          item = item.parentNode;
+          if (item?.group?.hasAttribute('split-view-group')) {
+            item = item.group;
+          } else {
+            item = item.parentNode;
+          }
         }
         groupItems.push(item);
       });
@@ -701,8 +706,10 @@
         item.setAttribute('data-label', `${tabLabel.toLowerCase()} ${tabURL.toLowerCase()}`);
 
         item.addEventListener('click', () => {
+          group.setAttribute('has-active', 'true');
           gBrowser.selectedTab = tab;
           this.#popup.hidePopup();
+          this.expandToSelected(group);
         });
 
         tabsList.appendChild(item);
@@ -729,7 +736,10 @@
         const origValues = animation.dataset.origValues;
         const [fromValue, toValue] = origValues.split(';');
 
-        if (!play) {
+        const isActiveState = isCollapsed && hasActive && isOpacity;
+
+
+        if (!play && !isActiveState) {
           if (isOpacity && OPACITY[parentId]) {
             const staticValue = OPACITY[parentId].baseOrig;
             animation.dataset.origValues = staticValue;
@@ -744,7 +754,6 @@
         }
 
         let newValues;
-        const isActiveState = isCollapsed && hasActive && isOpacity;
 
         if (isActiveState && OPACITY[parentId]) {
           newValues = OPACITY[parentId].active;
@@ -814,12 +823,98 @@
       gZenUIManager.motion.animate(
         groupStart,
         {
-          marginTop: [`${newMargin}px`, oldMargin],
+          marginTop: [newMargin, oldMargin],
         },
         { duration: 0.15, ease: 'easeInOut' }
       );
       groupStart.removeAttribute('old-margin');
       groupStart.removeAttribute('new-margin');
+    }
+
+    expandToSelected(group) {
+      const tabsContainer = group.querySelector('.tab-group-container');
+      const animations = [];
+      const groupStart = group.querySelector('.zen-tab-group-start');
+      let selectedItem = null;
+      let selectedGroupId = null;
+
+      const groupItems = [];
+      group.childGroupsAndTabs.forEach((item) => {
+        if (gBrowser.isTabGroupLabel(item)) {
+          if (item?.group?.hasAttribute('split-view-group')) {
+            item = item.group;
+          } else {
+            item = item.parentNode;
+          }
+        }
+        groupItems.push(item);
+      });
+
+      groupItems.map((item) => {
+        animations.push(
+          gZenUIManager.motion.animate(
+            item,
+            {
+              opacity: 1,
+              height: 'auto',
+            },
+            { duration: 0.1, ease: 'easeInOut' }
+          )
+        );
+      });
+
+
+      const items = group.childGroupsAndTabs.map((item) => {
+        const isSplitView = item.group?.hasAttribute?.('split-view-group');
+        const splitGroupId = isSplitView ? item.group.id : null;
+        if (gBrowser.isTabGroupLabel(item) && !isSplitView) item = item.parentNode;
+        if (item.selected) {
+          selectedItem = item;
+          selectedGroupId = splitGroupId;
+        }
+        return { item, splitGroupId };
+      });
+
+      if (tabsContainer.hasAttribute('hidden')) {
+        tabsContainer.removeAttribute('hidden');
+      }
+
+      const curMarginTop = parseInt(groupStart.style.marginTop) || 0;
+
+      animations.push(
+        gZenUIManager.motion.animate(
+          groupStart,
+          {
+            marginTop: [curMarginTop, 0],
+          },
+          { duration: 0.15, ease: 'easeInOut' }
+        )
+      );
+
+      for (let { item, splitGroupId } of items) {
+        if (item === selectedItem || (selectedGroupId && splitGroupId === selectedGroupId)) {
+          continue;
+        }
+
+        if (item && splitGroupId) item = item.group;
+
+        animations.push(
+          gZenUIManager.motion.animate(
+            item,
+            {
+              opacity: 0,
+              height: 0,
+            },
+            { duration: 0.1, ease: 'easeInOut' }
+          )
+        );
+      }
+
+      selectedItem.setAttribute('folder-active', 'true');
+
+      animations.push(...this.updateFolderIcon(group, 'close', false));
+
+      return Promise.all(animations);
     }
 
     #groupInit(group, stateData) {
