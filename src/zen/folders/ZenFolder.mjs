@@ -179,7 +179,13 @@
       return this.isZenFolder;
     }
 
-    /* Ignore pinned state changes */
+    /**
+     * Intentionally ignore attempts to change the pinned state.
+     * ZenFolder instances determine their "pinned" status based on their type (isZenFolder)
+     * and do not support being pinned or unpinned via this setter.
+     * This no-op setter ensures compatibility with interfaces expecting a pinned property,
+     * while preserving the invariant that ZenFolders cannot have their pinned state changed externally.
+     */
     set pinned(value) {}
   }
 
