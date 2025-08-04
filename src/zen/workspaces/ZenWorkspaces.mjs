@@ -1314,7 +1314,7 @@ var gZenWorkspaces = new (class extends nsZenMultiWindowFeature {
     if (this.workspaceHasIcon(workspace)) {
       return workspace.icon;
     }
-    return "";
+    return '';
   }
 
   get shouldShowContainers() {
