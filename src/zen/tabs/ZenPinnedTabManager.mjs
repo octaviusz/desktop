@@ -1010,6 +1010,15 @@
       );
     }
 
+    #getNewDragData(event, tab) {
+      tab._dragData = {
+        scrollPos: gBrowser.tabContainer.arrowScrollbox.scrollPosition,
+        screenX: event.screenX,
+        screenY: event.screenY + 10,
+        ...tab._dragData,
+      };
+    }
+
     applyDragoverClass(event, draggedTab) {
       if (!this.enabled) {
         return;
@@ -1071,8 +1080,11 @@
           shouldAddDragOverElement = true;
         } else if (!draggedTab.pinned) {
           if (draggedTab._dragData?.screenY) {
-            draggedTab._dragData['screenY'] = event.screenY + 10;
-            gBrowser.pinTab(draggedTab);
+            this.#getNewDragData(event, draggedTab);
+            const tabs = draggedTab._dragData.movingTabs || [draggedTab];
+            for (const tab of tabs) {
+              gBrowser.pinTab(tab);
+            }
             for (const tab of gBrowser.tabs) {
               tab.style.transform = '';
             }
@@ -1090,9 +1102,11 @@
         if (draggedTab.hasAttribute('zen-essential')) {
           shouldAddDragOverElement = true;
         } else if (draggedTab.pinned) {
-          if (draggedTab._dragData?.screenY) {
-            draggedTab._dragData['screenY'] = event.screenY + 10;
-            gBrowser.unpinTab(draggedTab);
+            this.#getNewDragData(event, draggedTab);
+            const tabs = draggedTab._dragData.movingTabs || [draggedTab];
+            for (const tab of tabs) {
+              gBrowser.unpinTab(tab);
+            }
             for (const tab of gBrowser.tabs) {
               tab.style.transform = '';
             }
