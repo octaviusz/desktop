@@ -808,6 +808,10 @@
       let itemHeight = 0;
       for (const item of group.allItems) {
         itemHeight += item.getBoundingClientRect().height;
+        if (item.hasAttribute('folder-active')) {
+          item.removeAttribute('folder-active');
+          item.setAttribute('was-folder-active', 'true');
+        }
       }
       const newMargin = -(itemHeight + 4);
       groupStart.setAttribute('new-margin', newMargin);
@@ -825,6 +829,13 @@
       const groupStart = group.querySelector('.zen-tab-group-start');
       let oldMargin = groupStart.getAttribute('old-margin');
       let newMargin = groupStart.getAttribute('new-margin');
+
+      for (const item of group.allItems) {
+        if (item.hasAttribute('was-folder-active')) {
+          item.setAttribute('folder-active', 'true');
+          item.removeAttribute('was-folder-active');
+        }
+      }
 
       gZenUIManager.motion.animate(
         groupStart,

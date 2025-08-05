@@ -44,7 +44,7 @@
   value: 2
 
 - name: zen.view.drag-and-drop.move-over-threshold
-  value: 80
+  value: 70
 
 - name: zen.view.drag-and-drop.drop-inside-upper-threshold
   value: 80
