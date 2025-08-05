@@ -823,9 +823,8 @@
     }
 
     collapseVisibleTab(group) {
-      if (group.hasAttribute('split-view-group')) {
-        return;
-      }
+      if (!group?.isZenFolder) return;
+
       const groupStart = group.querySelector('.zen-tab-group-start');
       groupStart.setAttribute('old-margin', groupStart.style.marginTop);
       let itemHeight = 0;
@@ -849,9 +848,8 @@
     }
 
     expandVisibleTab(group) {
-      if (group.hasAttribute('split-view-group')) {
-        return;
-      }
+      if (!group?.isZenFolder) return;
+
       const groupStart = group.querySelector('.zen-tab-group-start');
       let oldMargin = groupStart.getAttribute('old-margin');
       let newMargin = groupStart.getAttribute('new-margin');
