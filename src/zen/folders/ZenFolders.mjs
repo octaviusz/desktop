@@ -166,6 +166,9 @@
       document
         .getElementById('zen-context-menu-new-folder')
         .addEventListener('command', this.#onNewFolder.bind(this));
+      SessionStore.promiseInitialized.then(() => {
+        gBrowser.tabContainer.addEventListener('dragstart', this.#cancelPopupTimer.bind(this));
+      });
     }
 
     #onTabGrouped(event) {
@@ -418,7 +421,7 @@
 
       tabs.push(triggerTab, ...gBrowser.selectedTabs);
 
-      const group = this.createFolder(tabs, { insertBefore: triggerTab });
+      const group = this.createFolder(tabs, { insertBefore: triggerTab, renameFolder: true });
       if (!group) return;
       this.#groupInit(group);
     }
@@ -602,11 +605,11 @@
       event.stopPropagation();
 
       const activeGroup = event.target.parentElement;
-      if (activeGroup.tabs.length === 0) {
+      if (activeGroup.tabs.filter((tab) => !tab.hasAttribute('zen-empty-tab')).length === 0) {
         // If the group has no tabs, we don't show the popup
         return;
       }
-
+      document.getElementById('zen-folder-tabs-search-no-results').hidden = true;
       this.#populateTabsList(activeGroup);
 
       const search = this.#popup.querySelector('#zen-folder-tabs-list-search');
@@ -679,6 +682,13 @@
         icon.className = 'folders-tabs-list-item-icon';
 
         let tabURL = tab.linkedBrowser?.currentURI?.spec || '';
+        try {
+          // Get the hostname from the URL
+          const url = new URL(tabURL);
+          tabURL = url.hostname || tabURL;
+        } catch {
+          // We don't need to do anything if the URL is invalid. e.g. about:blank
+        }
         let tabLabel = tab.label || '';
         let iconURL =
           gBrowser.getIcon(tab) ||
