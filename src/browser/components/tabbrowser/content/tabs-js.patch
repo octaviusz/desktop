@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/tabs.js b/browser/components/tabbrowser/content/tabs.js
-index 1fcebe3962398ff1b7cadef657ac8b68a80e720d..9f14a4db8be0376f8bc92d246712cef917efeb86 100644
+index 1fcebe3962..b5fecfe3ba 100644
 --- a/browser/components/tabbrowser/content/tabs.js
 +++ b/browser/components/tabbrowser/content/tabs.js
 @@ -289,6 +289,7 @@
@@ -39,7 +39,7 @@ index 1fcebe3962398ff1b7cadef657ac8b68a80e720d..9f14a4db8be0376f8bc92d246712cef9
 -          tab.group.collapsed = true;
 -          expandGroupOnDrop = true;
 +          tab.group.collapsed = !tab.group.hasAttribute("split-view-group");
-+          expandGroupOnDrop = !tab.group.collapsed;
++          expandGroupOnDrop = !tab.group.collapsed || tab.group.hasAttribute("has-active");
 +          gZenFolders.collapseVisibleTab(tab.group);
          }
        }
