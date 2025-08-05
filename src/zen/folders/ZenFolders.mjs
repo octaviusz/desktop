@@ -38,6 +38,7 @@
     #lastFolderContextMenu = null;
 
     #foldersEnabled = false;
+    #folderAnimCache = new Map();
 
     init() {
       this.#foldersEnabled = !gZenWorkspaces.privateWindowOrDisabled;
@@ -730,7 +731,11 @@
       const svg = group.querySelector('svg');
       if (!svg) return [];
 
-      const animations = svg.querySelectorAll('animate, animateTransform, animateMotion');
+      let animations = this.#folderAnimCache.get(group);
+      if (!animations) {
+        animations = svg.querySelectorAll('animate, animateTransform, animateMotion');
+        this.#folderAnimCache.set(group, animations);
+      }
 
       const isCollapsed = group.collapsed;
       const hasActive = group.hasAttribute('has-active');
@@ -743,6 +748,11 @@
       animations.forEach((animation) => {
         const parentId = animation.parentElement.id;
         const isOpacity = animation.getAttribute('attributeName') === 'opacity';
+
+        if (!animation.dataset.origValues) {
+          animation.dataset.origValues = animation.getAttribute('values');
+        }
+
         const origValues = animation.dataset.origValues;
         const [fromValue, toValue] = origValues.split(';');
 
@@ -777,8 +787,10 @@
           newValues = stateValues[state] || stateValues.auto;
         }
 
-        animation.setAttribute('values', newValues);
-        animation.beginElement();
+        if (animation.getAttribute('values') !== newValues) {
+          animation.setAttribute('values', newValues);
+          animation.beginElement();
+        }
       });
 
       return [];
@@ -1196,7 +1208,8 @@
 
       let dropElementGroup = dropElement.group;
       const isSplitGroup = dropElement?.group?.hasAttribute('split-view-group');
-      let firstGroupElem = dropElementGroup.childGroupsAndTabs[0];
+      let firstGroupElem =
+        dropElementGroup.querySelector('.zen-tab-group-start').nextElementSibling;
       // let lastGroupElem = dropElementGroup?.group?.allItems?.filter(tab => tab.visible)?.at(-1);
 
       const isRestrictedGroup = isSplitGroup || dropElementGroup.collapsed;
