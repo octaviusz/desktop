@@ -919,7 +919,7 @@ var gZenWorkspaces = new (class extends nsZenMultiWindowFeature {
     this._initializeEmptyTab();
     await gZenPinnedTabManager.refreshPinnedTabs({ init: true });
     await this.changeWorkspace(activeWorkspace, { onInit: true });
-    this._fixTabPositions();
+    this.#fixTabPositions();
     this.onWindowResize();
     this._resolveInitialized();
     this._clearAnyZombieTabs(); // Dont call with await
@@ -1595,14 +1595,20 @@ var gZenWorkspaces = new (class extends nsZenMultiWindowFeature {
         container.insertBefore(emptyTab, container.firstChild);
       }
     }
-    this._fixTabPositions();
+    this.#fixTabPositions();
   }
 
-  _fixTabPositions() {
+  #fixTabPositions() {
     // Fix tabs _tPos values relative to the actual order
     const tabs = gBrowser.tabs;
-    for (let i = 0; i < tabs.length; i++) {
-      tabs[i]._tPos = i;
+    const usedGroups = new Set();
+    let i = 0;
+    for (const tab of tabs) {
+      if (tab.group && !usedGroups.has(tab.group.id)) {
+        usedGroups.add(tab.group.id);
+        tab.group._tPos = i++;
+      }
+      tab._tPos = i++;
     }
   }
 

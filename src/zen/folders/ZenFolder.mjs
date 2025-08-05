@@ -86,10 +86,14 @@
         }
       });
 
-      this.labelElement.setAttribute('context', 'zenFolderActions');
+      this.labelElement.parentElement.setAttribute('context', 'zenFolderActions');
 
       this.labelElement.onRenameFinished = (newLabel) => {
         this.name = newLabel;
+        const event = new CustomEvent('ZenFolderRenamed', {
+          bubbles: true,
+        });
+        this.dispatchEvent(event);
       };
 
       if (this.collapsed) {
@@ -187,6 +191,10 @@
      * while preserving the invariant that ZenFolders cannot have their pinned state changed externally.
      */
     set pinned(value) {}
+
+    get iconURL() {
+      return this.icon.querySelector('image')?.getAttribute('href') || '';
+    }
   }
 
   customElements.define('zen-folder', ZenFolder);

@@ -5,7 +5,20 @@
   const lazy = {};
 
   class ZenPinnedTabsObserver {
-    static ALL_EVENTS = ['TabPinned', 'TabUnpinned', 'TabMove'];
+    static ALL_EVENTS = [
+      'TabPinned',
+      'TabUnpinned',
+      'TabMove',
+      'TabGroupCreate',
+      'TabGroupRemoved',
+      'TabGroupMoved',
+      'ZenFolderRenamed',
+      'ZenFolderIconChanged',
+      'TabGroupCollapse',
+      'TabGroupExpand',
+      'TabGrouped',
+      'TabUngrouped',
+    ];
 
     #listeners = [];
 
@@ -93,16 +106,6 @@
           tab.style.setProperty('--zen-essential-tab-icon', `url(${iconUrl})`);
         }
       }
-      // TODO: work on this
-      //if (tab.hasAttribute('zen-pinned-changed') || !this._pinsCache) {
-      //  return;
-      //}
-      // Save if the url is the same as the pinned tab
-      //const pin = this._pinsCache.find((pin) => pin.uuid === tab.getAttribute('zen-pin-id'));
-      //if (pin) {
-      //  pin.iconUrl = iconUrl;
-      //  this.savePin(pin);
-      //}
     }
 
     _onTabResetPinButton(event, tab) {
@@ -135,19 +138,19 @@
       }
       await ZenPinnedTabsStorage.promiseInitialized;
       await gZenWorkspaces.promiseSectionsInitialized;
-      await this._initializePinsCache();
+      await this.#initializePinsCache();
       (async () => {
         // Execute in a separate task to avoid blocking the main thread
         await SessionStore.promiseAllWindowsRestored;
         await gZenWorkspaces.promiseInitialized;
-        await this._initializePinnedTabs(init);
+        await this.#initializePinnedTabs(init);
         if (init) {
           this._hasFinishedLoading = true;
         }
       })();
     }
 
-    async _initializePinsCache() {
+    async #initializePinsCache() {
       try {
         // Get pin data
         const pins = await ZenPinnedTabsStorage.getPins();
@@ -156,6 +159,9 @@
         const enhancedPins = await Promise.all(
           pins.map(async (pin) => {
             try {
+              if (pin.isGroup) {
+                return pin; // Skip groups for now
+              }
               const image = await this.getFaviconAsBase64(Services.io.newURI(pin.url));
               return {
                 ...pin,
@@ -185,7 +191,7 @@
       return this._pinsCache;
     }
 
-    async _initializePinnedTabs(init = false) {
+    async #initializePinnedTabs(init = false) {
       const pins = this._pinsCache;
       if (!pins?.length || !init) {
         return;
@@ -215,6 +221,17 @@
         }
       }
 
+      for (const group of gZenWorkspaces.allTabGroups) {
+        const pinId = group.getAttribute('zen-pin-id');
+        if (!pinId) {
+          continue;
+        }
+        if (pinsToCreate.has(pinId)) {
+          // This is a valid pinned group that matches a pin
+          pinsToCreate.delete(pinId);
+        }
+      }
+
       // Second pass: For every existing tab, update its label
       // and set 'zen-has-static-label' attribute if it's been edited
       for (let pin of pins) {
@@ -230,11 +247,30 @@
         }
       }
 
+      const groups = new Map();
+
       // Third pass: create new tabs for pins that don't have tabs
       for (let pin of pins) {
         try {
           if (!pinsToCreate.has(pin.uuid)) {
             continue; // Skip pins that already have tabs
+          }
+
+          if (pin.isGroup) {
+            const group = gZenFolders.createFolder([], {
+              label: pin.title,
+              collapsed: pin.isFolderCollapsed,
+              initialPinId: pin.uuid,
+            });
+            gZenFolders.setFolderUserIcon(group, pin.folderIcon);
+            groups.set(pin.uuid, group);
+            if (pin.parentUuid) {
+              const parentGroup = groups.get(pin.parentUuid);
+              if (parentGroup) {
+                parentGroup.querySelector('.tab-group-container').appendChild(group);
+              }
+            }
+            continue;
           }
 
           let params = {
@@ -306,6 +342,13 @@
           }
           gBrowser.tabContainer._invalidateCachedTabs();
           newTab.initialize();
+
+          if (pin.parentUuid) {
+            const parentGroup = groups.get(pin.parentUuid);
+            if (parentGroup) {
+              parentGroup.querySelector('.tab-group-container').appendChild(newTab);
+            }
+          }
         } catch (ex) {
           console.error('Failed to initialize pinned tabs:', ex);
         }
@@ -332,7 +375,28 @@
           }
           break;
         case 'TabMove':
-          this._onTabMove(tab);
+          this.#onTabMove(tab);
+          break;
+        case 'TabGroupCreate':
+          this.#onTabGroupCreate(event);
+          break;
+        case 'TabGroupRemoved':
+          this.#onTabGroupRemoved(event);
+          break;
+        case 'TabGroupMoved':
+          this.#onTabGroupMoved(event);
+          break;
+        case 'ZenFolderRenamed':
+        case 'ZenFolderIconChanged':
+        case 'TabGroupCollapse':
+        case 'TabGroupExpand':
+          this.#updateGroupInfo(event.originalTarget);
+          break;
+        case 'TabGrouped':
+          this.#onTabGrouped(event);
+          break;
+        case 'TabUngrouped':
+          this.#onTabUngrouped(event);
           break;
         default:
           console.warn('ZenPinnedTabManager: Unhandled tab event', action);
@@ -340,7 +404,117 @@
       }
     }
 
-    async _onTabMove(tab) {
+    async #onTabGroupCreate(event) {
+      const group = event.originalTarget;
+      if (!group.isZenFolder) {
+        return;
+      }
+      if (group.hasAttribute('zen-pin-id')) {
+        return; // Group already exists in storage
+      }
+      const workspaceId = group.tabs[0]?.getAttribute('zen-workspace-id');
+      let id = await ZenPinnedTabsStorage.createGroup(
+        group.name,
+        group.iconURL,
+        group.collapsed,
+        workspaceId,
+        group.getAttribute('zen-pin-id'),
+        group.labelElement.elementIndex
+      );
+      group.setAttribute('zen-pin-id', id);
+      await this.refreshPinnedTabs();
+    }
+
+    async #onTabGrouped(event) {
+      const tab = event.detail;
+      const group = tab.group;
+      if (!group.isZenFolder) {
+        return;
+      }
+      const pinId = group.getAttribute('zen-pin-id');
+      const tabPinId = tab.getAttribute('zen-pin-id');
+      const tabPin = this._pinsCache?.find((p) => p.uuid === tabPinId);
+      if (!tabPin) {
+        return;
+      }
+      ZenPinnedTabsStorage.addTabToGroup(tabPinId, pinId, /* position */ tab._tPos);
+    }
+
+    async #onTabUngrouped(event) {
+      const tab = event.detail;
+      const group = tab.group;
+      if (!group?.isZenFolder) {
+        return;
+      }
+      const tabPinId = tab.getAttribute('zen-pin-id');
+      const tabPin = this._pinsCache?.find((p) => p.uuid === tabPinId);
+      if (!tabPin) {
+        return;
+      }
+      ZenPinnedTabsStorage.removeTabFromGroup(tabPinId, /* position */ tab._tPos);
+    }
+
+    async #updateGroupInfo(group) {
+      if (!group?.isZenFolder) {
+        return;
+      }
+      const pinId = group.getAttribute('zen-pin-id');
+      const groupPin = this._pinsCache?.find((p) => p.uuid === pinId);
+      if (groupPin) {
+        groupPin.title = group.name;
+        groupPin.folderIcon = group.iconURL;
+        groupPin.isFolderCollapsed = group.collapsed;
+        groupPin.position = group.labelElement.elementIndex;
+        groupPin.parentUuid = group.group?.getAttribute('zen-pin-id') || null;
+        await this.savePin(groupPin);
+        for (const item of group.allItems) {
+          if (gBrowser.isTabGroup(item)) {
+            await this.#updateGroupInfo(item);
+          } else {
+            await this.#onTabMove(item);
+          }
+        }
+      }
+    }
+
+    async #onTabGroupRemoved(event) {
+      const group = event.originalTarget;
+      if (!group.isZenFolder) {
+        return;
+      }
+      await ZenPinnedTabsStorage.removePin(group.getAttribute('zen-pin-id'));
+      group.removeAttribute('zen-pin-id');
+    }
+
+    async #onTabGroupMoved(event) {
+      const group = event.originalTarget;
+      if (!group.isZenFolder) {
+        return;
+      }
+      const newIndex = group.labelElement.elementIndex;
+      const pinId = group.getAttribute('zen-pin-id');
+      if (!pinId) {
+        return;
+      }
+      for (const tab of group.tabs) {
+        if (tab.pinned && tab.getAttribute('zen-pin-id') === pinId) {
+          const pin = this._pinsCache.find((p) => p.uuid === pinId);
+          if (pin) {
+            pin.position = tab._tPos;
+            await this.savePin(pin, false);
+          }
+          break;
+        }
+      }
+      const groupPin = this._pinsCache?.find((p) => p.uuid === pinId);
+      if (groupPin) {
+        groupPin.position = newIndex;
+        groupPin.parentUuid = group.group?.getAttribute('zen-pin-id');
+        await this.savePin(groupPin);
+      }
+    }
+
+    async #onTabMove(tab) {
       if (!tab.pinned || !this._pinsCache) {
         return;
       }
@@ -348,7 +522,7 @@
       // Recollect pinned tabs and essentials after a tab move
       tab.position = tab._tPos;
 
-      for (let otherTab of gBrowser.tabs) {
+      for (let otherTab of [...gBrowser.tabs, ...gBrowser.tabGroups]) {
         if (
           otherTab.pinned &&
           otherTab.getAttribute('zen-pin-id') !== tab.getAttribute('zen-pin-id')
@@ -360,6 +534,7 @@
             continue;
           }
           actualPin.position = otherTab._tPos;
+          actualPin.parentUuid = otherTab.group?.getAttribute('zen-pin-id') || null;
           await this.savePin(actualPin, false);
         }
       }
@@ -371,6 +546,7 @@
       }
       actualPin.position = tab.position;
       actualPin.isEssential = tab.hasAttribute('zen-essential');
+      actualPin.parentUuid = tab.group?.getAttribute('zen-pin-id') || null;
 
       // There was a bug where the title and hasStaticLabel attribute were not being set
       // This is a workaround to fix that
@@ -433,7 +609,11 @@
     }
 
     async _setPinnedAttributes(tab) {
-      if (tab.hasAttribute('zen-pin-id') || !this._hasFinishedLoading) {
+      if (
+        tab.hasAttribute('zen-pin-id') ||
+        !this._hasFinishedLoading ||
+        tab.hasAttribute('zen-empty-tab')
+      ) {
         return;
       }
 
@@ -456,6 +636,7 @@
         containerTabId: userContextId ? parseInt(userContextId, 10) : 0,
         workspaceUuid: tab.getAttribute('zen-workspace-id'),
         isEssential: tab.getAttribute('zen-essential') === 'true',
+        parentUuid: tab.group?.getAttribute('zen-pin-id') || null,
       });
 
       tab.setAttribute('zen-pin-id', uuid);
@@ -514,12 +695,11 @@
     }
 
     async savePin(pin, notifyObservers = true) {
-      await ZenPinnedTabsStorage.savePin(pin, notifyObservers);
-      // Update the cache
       const existingPin = this._pinsCache.find((p) => p.uuid === pin.uuid);
       if (existingPin) {
         Object.assign(existingPin, pin);
       }
+      await ZenPinnedTabsStorage.savePin(pin, notifyObservers);
     }
 
     async _onCloseTabShortcut(
@@ -683,7 +863,7 @@
         if (tab.selected) {
           gZenWorkspaces.switchTabIfNeeded(tab);
         }
-        this._onTabMove(tab);
+        this.#onTabMove(tab);
         this.onTabIconChanged(tab);
 
         // Dispatch the event to update the UI
@@ -714,7 +894,7 @@
           const pinContainer = gZenWorkspaces.pinnedTabsContainer;
           pinContainer.prepend(tab);
           gBrowser.tabContainer._invalidateCachedTabs();
-          this._onTabMove(tab);
+          this.#onTabMove(tab);
         }
 
         // Dispatch the event to update the UI

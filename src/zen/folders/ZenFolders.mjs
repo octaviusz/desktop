@@ -508,6 +508,9 @@
       tabs = [...tabs, emptyTab];
 
       const folder = this._createFolderNode(options);
+      if (options.initialPinId) {
+        folder.setAttribute('zen-pin-id', options.initialPinId);
+      }
 
       insertBefore.before(folder);
       gZenVerticalTabsManager.animateItemOpen(folder);
@@ -791,6 +794,7 @@
         .open(group, { onlySvgIcons: true })
         .then((icon) => {
           this.setFolderUserIcon(group, icon);
+          group.dispatchEvent(new CustomEvent('ZenFolderIconChanged', { bubbles: true }));
         })
         .catch((err) => {
           console.error(err);
@@ -1031,6 +1035,7 @@
           prevSiblingInfo: prevSiblingInfo,
           emptyTabIds: emptyFolderTabs,
           userIcon: userIcon?.getAttribute('href'),
+          pinId: folder.getAttribute('zen-pin-id'),
         });
       }
       return storedData;
@@ -1068,6 +1073,7 @@
               pinned: folderData.pinned,
               saveOnWindowClose: folderData.saveOnWindowClose,
             });
+            folder.setAttribute('zen-pin-id', folderData.pinId);
             workingData.node = folder;
             oldGroup.before(folder);
           } else {
