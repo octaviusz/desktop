@@ -197,9 +197,11 @@
 
     #onTabSelected(event) {
       const tab = event.target;
+      const prevTab = event.detail.previousTab;
       const group = tab?.group;
       const isActive = group?.activeGroups?.length > 0;
       if (isActive) tab.setAttribute('folder-active', true);
+      if (prevTab.hasAttribute('folder-active')) prevTab.removeAttribute('folder-active');
       gBrowser.tabContainer._invalidateCachedTabs();
     }
 

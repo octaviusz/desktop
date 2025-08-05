@@ -861,7 +861,11 @@
           if (hasActuallyMoved) {
             const targetTab = event.target.closest('.tabbrowser-tab');
             const targetFolder = event.target.closest('zen-folder');
-            const targetElem = targetTab || targetFolder?.labelElement;
+            let targetElem = targetTab || targetFolder?.labelElement;
+            if (targetElem?.group?.activeGroups?.length > 0) {
+              const activeGroup = targetElem.group.activeGroups.at(-1);
+              targetElem = activeGroup.labelElement;
+            }
             if (targetElem) {
               const rect = targetElem.getBoundingClientRect();
               let elementIndex = targetElem.elementIndex;
