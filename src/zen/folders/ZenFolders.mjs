@@ -62,7 +62,7 @@
         const folder =
           event.explicitOriginalTarget?.group || event.explicitOriginalTarget.parentElement?.group;
         // We only want to rename zen-folders as firefox groups don't work well with this
-        if (!folder || folder.tagName.toLowerCase() !== 'zen-folder') {
+        if (!folder?.isZenFolder) {
           return;
         }
         this.#lastFolderContextMenu = folder;
@@ -196,11 +196,9 @@
 
     #onTabSelected(event) {
       const tab = event.target;
-      const prevTab = event.detail.previousTab;
       const group = tab?.group;
       const isActive = group?.activeGroups?.length > 0;
       if (isActive) tab.setAttribute('folder-active', true);
-      if (prevTab.hasAttribute('folder-active')) prevTab.removeAttribute('folder-active');
       gBrowser.tabContainer._invalidateCachedTabs();
     }
 
@@ -264,7 +262,7 @@
 
     async #onTabGroupCollapse(event) {
       const group = event.target;
-      if (group.tagName !== 'zen-folder') return;
+      if (!group.isZenFolder) return;
 
       this.#cancelPopupTimer();
 
@@ -343,7 +341,7 @@
 
     async #onTabGroupExpand(event) {
       const group = event.target;
-      if (group.tagName !== 'zen-folder') return;
+      if (!group.isZenFolder) return;
 
       this.#cancelPopupTimer();
 
@@ -813,6 +811,9 @@
     }
 
     collapseVisibleTab(group) {
+      if (group.hasAttribute('split-view-group')) {
+        return;
+      }
       const groupStart = group.querySelector('.zen-tab-group-start');
       groupStart.setAttribute('old-margin', groupStart.style.marginTop);
       let itemHeight = 0;
@@ -836,6 +837,9 @@
     }
 
     expandVisibleTab(group) {
+      if (group.hasAttribute('split-view-group')) {
+        return;
+      }
       const groupStart = group.querySelector('.zen-tab-group-start');
       let oldMargin = groupStart.getAttribute('old-margin');
       let newMargin = groupStart.getAttribute('new-margin');
