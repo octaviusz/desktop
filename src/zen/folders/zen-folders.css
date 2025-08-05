@@ -47,7 +47,6 @@ tab-group[split-view-group] {
       --tab-selected-shadow: none;
       --border-radius-medium: var(--tab-border-radius);
       --zen-active-tab-scale: 1;
-      transition: none;
 
       :root[zen-sidebar-expanded='true'] & {
         --tab-min-height: 28px;
