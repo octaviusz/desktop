@@ -450,6 +450,7 @@
                 gBrowser.tabContainer._invalidateCachedTabs();
                 if (selectedTab) {
                   selectedTab.setAttribute('zen-workspace-id', newWorkspace.uuid);
+                  selectedTab?.removeAttribute('folder-active');
                   gZenWorkspaces._lastSelectedWorkspaceTabs[newWorkspace.uuid] = selectedTab;
                 }
                 resolve();
@@ -462,6 +463,8 @@
       for (const tab of gBrowser.tabs) {
         if (!tab.hasAttribute('zen-essential')) {
           tab.setAttribute('zen-workspace-id', newSpace.uuid);
+          tab.style.opacity = '';
+          tab.style.height = '';
         }
         gBrowser.TabStateFlusher.flush(tab.linkedBrowser);
         if (gZenWorkspaces._lastSelectedWorkspaceTabs[currentWorkspace.uuid] === tab) {
