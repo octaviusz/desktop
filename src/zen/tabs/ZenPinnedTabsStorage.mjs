@@ -153,7 +153,7 @@ var ZenPinnedTabsStorage = {
     const db = await PlacesUtils.promiseDBConnection();
     const rows = await db.executeCached(`
       SELECT * FROM zen_pins
-      ORDER BY folder_parent_uuid NULLS FIRST, position ASC
+      ORDER BY position ASC
     `);
     return rows.map((row) => ({
       uuid: row.getResultByName('uuid'),
@@ -405,9 +405,6 @@ var ZenPinnedTabsStorage = {
         for (const child of children) {
           changedUUIDs.push(child.getResultByName('uuid'));
         }
-
-        // Delete all children in a single statement
-        await db.execute(`DELETE FROM zen_pins WHERE folder_parent_uuid = :uuid`, { uuid });
 
         // Delete the pin/group itself
         await db.execute(`DELETE FROM zen_pins WHERE uuid = :uuid`, { uuid });

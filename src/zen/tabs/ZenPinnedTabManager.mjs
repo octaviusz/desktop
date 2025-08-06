@@ -18,6 +18,7 @@
       'TabGroupExpand',
       'TabGrouped',
       'TabUngrouped',
+      'ZenFolderChangedWorkspace',
     ];
 
     #listeners = [];
@@ -156,7 +157,7 @@
         const pins = await ZenPinnedTabsStorage.getPins();
 
         // Enhance pins with favicons
-        const enhancedPins = await Promise.all(
+        this._pinsCache = await Promise.all(
           pins.map(async (pin) => {
             try {
               if (pin.isGroup) {
@@ -176,12 +177,6 @@
             }
           })
         );
-
-        this._pinsCache = enhancedPins.sort((a, b) => {
-          if (!a.workspaceUuid && b.workspaceUuid) return -1;
-          if (a.workspaceUuid && !b.workspaceUuid) return 1;
-          return 0;
-        });
       } catch (ex) {
         console.error('Failed to initialize pins cache:', ex);
         this._pinsCache = [];
@@ -261,15 +256,13 @@
               label: pin.title,
               collapsed: pin.isFolderCollapsed,
               initialPinId: pin.uuid,
+              workspaceId: pin.workspaceUuid,
+              insertBefore:
+                groups.get(pin.parentUuid)?.querySelector('.tab-group-container')?.lastChild ||
+                null,
             });
             gZenFolders.setFolderUserIcon(group, pin.folderIcon);
             groups.set(pin.uuid, group);
-            if (pin.parentUuid) {
-              const parentGroup = groups.get(pin.parentUuid);
-              if (parentGroup) {
-                parentGroup.querySelector('.tab-group-container').appendChild(group);
-              }
-            }
             continue;
           }
 
@@ -330,16 +323,6 @@
 
           this.log(`Created new pinned tab for pin ${pin.uuid} (isEssential: ${pin.isEssential})`);
           gBrowser.pinTab(newTab);
-          if (!pin.isEssential) {
-            const container = gZenWorkspaces.workspaceElement(
-              pin.workspaceUuid
-            )?.pinnedTabsContainer;
-            if (container) {
-              container.insertBefore(newTab, container.lastChild);
-            }
-          } else {
-            gZenWorkspaces.getEssentialsSection(pin.containerTabId).appendChild(newTab);
-          }
           gBrowser.tabContainer._invalidateCachedTabs();
           newTab.initialize();
 
@@ -347,6 +330,17 @@
             const parentGroup = groups.get(pin.parentUuid);
             if (parentGroup) {
               parentGroup.querySelector('.tab-group-container').appendChild(newTab);
+            }
+          } else {
+            if (!pin.isEssential) {
+              const container = gZenWorkspaces.workspaceElement(
+                pin.workspaceUuid
+              )?.pinnedTabsContainer;
+              if (container) {
+                container.insertBefore(newTab, container.lastChild);
+              }
+            } else {
+              gZenWorkspaces.getEssentialsSection(pin.containerTabId).appendChild(newTab);
             }
           }
         } catch (ex) {
@@ -390,6 +384,7 @@
         case 'ZenFolderIconChanged':
         case 'TabGroupCollapse':
         case 'TabGroupExpand':
+        case 'ZenFolderChangedWorkspace':
           this.#updateGroupInfo(event.originalTarget);
           break;
         case 'TabGrouped':
@@ -412,7 +407,7 @@
       if (group.hasAttribute('zen-pin-id')) {
         return; // Group already exists in storage
       }
-      const workspaceId = group.tabs[0]?.getAttribute('zen-workspace-id');
+      const workspaceId = group.getAttribute('zen-workspace-id');
       let id = await ZenPinnedTabsStorage.createGroup(
         group.name,
         group.iconURL,
@@ -466,6 +461,7 @@
         groupPin.isFolderCollapsed = group.collapsed;
         groupPin.position = group.labelElement.elementIndex;
         groupPin.parentUuid = group.group?.getAttribute('zen-pin-id') || null;
+        groupPin.workspaceUuid = group.getAttribute('zen-workspace-id') || null;
         await this.savePin(groupPin);
         for (const item of group.allItems) {
           if (gBrowser.isTabGroup(item)) {
@@ -519,9 +515,6 @@
         return;
       }
 
-      // Recollect pinned tabs and essentials after a tab move
-      tab.position = tab._tPos;
-
       for (let otherTab of [...gBrowser.tabs, ...gBrowser.tabGroups]) {
         if (
           otherTab.pinned &&
@@ -534,6 +527,7 @@
             continue;
           }
           actualPin.position = otherTab._tPos;
+          actualPin.workspaceUuid = otherTab.getAttribute('zen-workspace-id');
           actualPin.parentUuid = otherTab.group?.getAttribute('zen-pin-id') || null;
           await this.savePin(actualPin, false);
         }
@@ -544,9 +538,10 @@
       if (!actualPin) {
         return;
       }
-      actualPin.position = tab.position;
+      actualPin.position = tab._tPos;
       actualPin.isEssential = tab.hasAttribute('zen-essential');
       actualPin.parentUuid = tab.group?.getAttribute('zen-pin-id') || null;
+      actualPin.workspaceUuid = tab.getAttribute('zen-workspace-id') || null;
 
       // There was a bug where the title and hasStaticLabel attribute were not being set
       // This is a workaround to fix that

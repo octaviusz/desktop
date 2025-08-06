@@ -1603,11 +1603,17 @@ var gZenWorkspaces = new (class extends nsZenMultiWindowFeature {
     const tabs = gBrowser.tabs;
     const usedGroups = new Set();
     let i = 0;
-    for (const tab of tabs) {
-      if (tab.group && !usedGroups.has(tab.group.id)) {
-        usedGroups.add(tab.group.id);
-        tab.group._tPos = i++;
+    const recurseFolder = (tab) => {
+      if (tab.group) {
+        recurseFolder(tab.group);
+        if (!usedGroups.has(tab.group.id)) {
+          usedGroups.add(tab.group.id);
+          tab.group._tPos = i++;
+        }
       }
+    };
+    for (const tab of tabs) {
+      recurseFolder(tab);
       tab._tPos = i++;
     }
   }

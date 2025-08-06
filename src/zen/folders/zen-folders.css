@@ -248,6 +248,11 @@ zen-folder {
       align-content: center;
       pointer-events: none;
       flex-shrink: 0;
+
+      & svg image {
+        fill-opacity: 0.6;
+        -moz-context-properties: fill-opacity;
+      }
     }
 
     &::before {

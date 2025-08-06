@@ -480,6 +480,7 @@
       const workspaceElement = gZenWorkspaces.workspaceElement(workspaceId);
       const pinnedTabsContainer = workspaceElement.pinnedTabsContainer;
       pinnedTabsContainer.insertBefore(folder, pinnedTabsContainer.lastChild);
+      folder.setAttribute('zen-workspace-id', workspaceId);
       for (const tab of folder.tabs) {
         tab.setAttribute('zen-workspace-id', workspaceId);
         gBrowser.TabStateFlusher.flush(tab.linkedBrowser);
@@ -488,6 +489,7 @@
           delete gZenWorkspaces._lastSelectedWorkspaceTabs[workspaceId];
         }
       }
+      folder.dispatchEvent(new CustomEvent('ZenFolderChangedWorkspace', { bubbles: true }));
       gZenWorkspaces.changeWorkspaceWithID(workspaceId);
     }
 
@@ -498,9 +500,11 @@
 
         gBrowser.pinTab(tab);
       }
+      const pinnedContainer = options.workspaceId
+        ? gZenWorkspaces.workspaceElement(options.workspaceId).pinnedTabsContainer
+        : gZenWorkspaces.pinnedTabsContainer;
       const insertBefore =
-        options.insertBefore ||
-        gZenWorkspaces.pinnedTabsContainer.querySelector('.pinned-tabs-container-separator');
+        options.insertBefore || pinnedContainer.querySelector('.pinned-tabs-container-separator');
       const emptyTab = gBrowser.addTab('about:blank', {
         skipAnimation: true,
         pinned: true,
@@ -552,6 +556,11 @@
       folder.label = options.label || 'New Folder';
       folder.saveOnWindowClose = !!options.saveOnWindowClose;
       folder.color = 'zen-workspace-color';
+
+      folder.setAttribute(
+        'zen-workspace-id',
+        options.workspaceId || gZenWorkspaces.activeWorkspace
+      );
 
       // note: We set if the folder is collapsed some time after creation.
       //   we do this to ensure marginBottom is set correctly in the case
@@ -1048,6 +1057,9 @@
           emptyTabIds: emptyFolderTabs,
           userIcon: userIcon?.getAttribute('href'),
           pinId: folder.getAttribute('zen-pin-id'),
+          // note: We shouldn't be using the workspace-id anywhere, we are just
+          //  remembering it for the pinned tabs manager to use it later.
+          workspaceId: folder.getAttribute('zen-workspace-id'),
         });
       }
       return storedData;
@@ -1084,6 +1096,7 @@
               collapsed: folderData.collapsed,
               pinned: folderData.pinned,
               saveOnWindowClose: folderData.saveOnWindowClose,
+              workspaceId: folderData.workspaceId,
             });
             folder.setAttribute('zen-pin-id', folderData.pinId);
             workingData.node = folder;
