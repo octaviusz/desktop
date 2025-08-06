@@ -180,10 +180,10 @@ zen-folder {
     light-dark(black, white)
   );
   --zen-folder-front-bgcolor: light-dark(
-    var(--zen-colors-primary-foreground),
-    color-mix(in srgb, var(--zen-primary-color), #000 40%)
+    color-mix(in srgb, var(--zen-primary-color), white 75%),
+    color-mix(in srgb, var(--zen-primary-color), black 40%)
   );
-  --zen-folder-stroke: light-dark(var(--zen-colors-border), var(--toolbox-textcolor));
+  --zen-folder-stroke: color-mix(in srgb, var(--zen-colors-primary) 10%, var(--toolbox-textcolor));
 
   &[selected] > .tab-group-label-container::before {
     background-color: color-mix(in srgb, var(--zen-colors-border) 60%, transparent);
@@ -250,8 +250,9 @@ zen-folder {
       flex-shrink: 0;
 
       & svg image {
-        fill-opacity: 0.6;
-        -moz-context-properties: fill-opacity;
+        fill-opacity: 0.9;
+        -moz-context-properties: fill, fill-opacity;
+        fill: var(--zen-folder-stroke);
       }
     }
 
