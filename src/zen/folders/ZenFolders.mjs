@@ -450,7 +450,7 @@
                 gBrowser.tabContainer._invalidateCachedTabs();
                 if (selectedTab) {
                   selectedTab.setAttribute('zen-workspace-id', newWorkspace.uuid);
-                  selectedTab?.removeAttribute('folder-active');
+                  selectedTab.removeAttribute('folder-active');
                   gZenWorkspaces._lastSelectedWorkspaceTabs[newWorkspace.uuid] = selectedTab;
                 }
                 resolve();
