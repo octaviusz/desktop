@@ -70,6 +70,8 @@ zen-workspace-creation {
 
           & image {
             position: absolute;
+            -moz-context-properties: fill-opacity, fill;
+            fill: currentColor;
           }
 
           &:not([has-svg-icon='true']) image {
