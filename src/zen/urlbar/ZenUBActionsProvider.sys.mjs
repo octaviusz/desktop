@@ -6,6 +6,12 @@ import { XPCOMUtils } from 'resource://gre/modules/XPCOMUtils.sys.mjs';
 import { UrlbarProvider, UrlbarUtils } from 'resource:///modules/UrlbarUtils.sys.mjs';
 import { globalActions } from 'resource:///modules/ZenUBGlobalActions.sys.mjs';
 
+// TODO: Maybe add SVGs as button icons?
+// {"ctrl", ":icons/chevron-up.svg"},
+// {"shift", ":icons/keyboard-shift.svg"},
+// {"return", ":icons/enter-key.svg"},
+// {"cmd", ":icons/command-symbol.svg"}
+
 const lazy = {};
 
 const DYNAMIC_TYPE_NAME = 'zen-actions';
@@ -22,6 +28,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   QueryScorer: 'resource:///modules/UrlbarProviderInterventions.sys.mjs',
   BrowserWindowTracker: 'resource:///modules/BrowserWindowTracker.sys.mjs',
   AddonManager: 'resource://gre/modules/AddonManager.sys.mjs',
+  ExtensionParent: 'resource://gre/modules/ExtensionParent.sys.mjs',
 });
 
 XPCOMUtils.defineLazyPreferenceGetter(
@@ -35,6 +42,7 @@ XPCOMUtils.defineLazyPreferenceGetter(
  * A provider that lets the user view all available global actions for a query.
  */
 export class ZenUrlbarProviderGlobalActions extends UrlbarProvider {
+  _commandContext = null;
   constructor() {
     super();
     lazy.UrlbarResult.addDynamicResultType(DYNAMIC_TYPE_NAME);
@@ -59,6 +67,9 @@ export class ZenUrlbarProviderGlobalActions extends UrlbarProvider {
    * @param {UrlbarQueryContext} queryContext The query context object
    */
   async isActive(queryContext) {
+    if (this._commandContext) {
+      return true;
+    }
     return (
       lazy.enabledPref &&
       queryContext.searchString &&
@@ -216,6 +227,12 @@ export class ZenUrlbarProviderGlobalActions extends UrlbarProvider {
   }
 
   async startQuery(queryContext, addCallback) {
+    if (this._commandContext) {
+      await this.#showExtensionCommands(queryContext, this._commandContext.extensionId, addCallback);
+      // FIXME: Figure out how to clean up `_commandContext` after closing urlbar
+      return;
+    }
+
     const query = queryContext.trimmedLowerCaseSearchString;
     if (!query) {
       return;
@@ -262,6 +279,10 @@ export class ZenUrlbarProviderGlobalActions extends UrlbarProvider {
    * @returns {number} The provider's priority for the given query.
    */
   getPriority() {
+    // Show only the extension commands if the user is in command mode.
+    if (this._commandContext) {
+      return 1000;
+    }
     return 0;
   }
 
@@ -376,13 +397,38 @@ export class ZenUrlbarProviderGlobalActions extends UrlbarProvider {
       ownerGlobal.gZenWorkspaces.changeWorkspaceWithID(payload.workspaceId);
       return;
     }
+
+    // Extension actions.
     if (payload.extensionId) {
-      const action = ownerGlobal.gUnifiedExtensions.browserActionFor(
-        ownerGlobal.WebExtensionPolicy.getByID(payload.extensionId)
-      );
-      if (action) {
-        action.openPopup(ownerGlobal, /* without user interaction = */ true);
+      // Execute a specific extension command.
+      if (payload.extensionCmd) {
+        const policy = ownerGlobal.WebExtensionPolicy.getByID(payload.extensionId);
+        if (policy) {
+          this.#executeExtensionCommand(payload.extensionCmd, policy.extension, ownerGlobal);
+        }
+        this._commandContext = null;
+        return;
       }
+      // Open the extension popup/sidebar/page action.
+      if (payload.extensionOpen) {
+        const policy = ownerGlobal.WebExtensionPolicy.getByID(payload.extensionId);
+        if (policy) {
+          // FIXME: We need to think of a better option T_T
+          this.#executeExtensionCommand('_execute_browser_action', policy.extension, ownerGlobal);
+          this.#executeExtensionCommand('_execute_sidebar_action', policy.extension, ownerGlobal);
+          this.#executeExtensionCommand('_execute_page_action', policy.extension, ownerGlobal);
+        }
+        this._commandContext = null;
+        return;
+      }
+
+      this._commandContext = {
+        extensionId: payload.extensionId,
+      };
+
+      ownerGlobal.setTimeout(() => {
+        ownerGlobal.gURLBar.search('');
+      }, 0);
       return;
     }
     if (!command) {
@@ -392,6 +438,102 @@ export class ZenUrlbarProviderGlobalActions extends UrlbarProvider {
     if (commandToRun) {
       ownerGlobal.gBrowser.selectedBrowser.focus();
       commandToRun.doCommand();
+    }
+  }
+
+  #executeExtensionCommand(command, extension, ownerGlobal) {
+    const global = lazy.ExtensionParent.apiManager.global;
+    if (!global) return;
+
+    switch (command) {
+      case '_execute_browser_action':
+      case '_execute_action': {
+        const action = ownerGlobal.gUnifiedExtensions.browserActionFor(
+          ownerGlobal.WebExtensionPolicy.getByID(extension.id)
+        );
+        if (action) {
+          action.openPopup(ownerGlobal, true);
+        }
+        break;
+      }
+      case '_execute_page_action': {
+        const action = global.pageActionFor(extension);
+        if (action) {
+          action.triggerAction(ownerGlobal);
+        }
+        break;
+      }
+      case '_execute_sidebar_action': {
+        const action = global.sidebarActionFor(extension);
+        if (action) {
+          action.triggerAction(ownerGlobal);
+        }
+        break;
+      }
+      default:
+        extension.shortcuts.onCommand(command);
+        break;
+    }
+  }
+
+  async #showExtensionCommands(queryContext, extensionId, addCallback) {
+    const ownerGlobal = lazy.BrowserWindowTracker.getTopWindow();
+    const policy = ownerGlobal.WebExtensionPolicy.getByID(extensionId);
+    if (!policy) {
+      return;
+    }
+
+    const currentQuery = queryContext.trimmedLowerCaseSearchString;
+    let searchContext = currentQuery.trim();
+
+    // FIXME: Tree Style Tabs icon missing
+    const icon =
+      policy.extension.manifest.icons?.['48'] || 'chrome://browser/skin/zen-icons/extension.svg';
+
+    // Add a result to perform the original action: open the extension popup/sidebar/page action.
+    const [openPayload] = lazy.UrlbarResult.payloadAndSimpleHighlights([], {
+      suggestion: `Open ${policy.extension.name}`,
+      title: `Open ${policy.extension.name}`,
+      query: queryContext.searchString,
+      extensionOpen: true, // Special flag for the "open" action
+      extensionId: policy.id,
+      dynamicType: DYNAMIC_TYPE_NAME,
+      icon,
+    });
+    addCallback(
+      this,
+      new lazy.UrlbarResult(
+        UrlbarUtils.RESULT_TYPE.DYNAMIC,
+        UrlbarUtils.RESULT_SOURCE.OTHER_LOCAL,
+        openPayload
+      )
+    );
+
+    const commands = await policy.extension.shortcuts.commands;
+    for (const [name, command] of commands) {
+      if (!command.description) {
+        continue;
+      }
+      // Apply the filter.
+      if (searchContext && !command.description.toLowerCase().includes(searchContext)) {
+        continue;
+      }
+      const [payload] = lazy.UrlbarResult.payloadAndSimpleHighlights([], {
+        suggestion: command.description,
+        title: command.description,
+        query: queryContext.searchString,
+        extensionCmd: name, // Shortcut cmd for the "onCommand" action
+        extensionId: policy.id,
+        dynamicType: DYNAMIC_TYPE_NAME,
+        shortcutContent: command.shortcut || 'No shortcut',
+        icon,
+      });
+      const result = new lazy.UrlbarResult(
+        UrlbarUtils.RESULT_TYPE.DYNAMIC,
+        UrlbarUtils.RESULT_SOURCE.OTHER_LOCAL,
+        payload
+      );
+      addCallback(this, result);
     }
   }
 }
