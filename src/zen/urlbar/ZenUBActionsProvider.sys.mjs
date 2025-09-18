@@ -228,7 +228,11 @@ export class ZenUrlbarProviderGlobalActions extends UrlbarProvider {
 
   async startQuery(queryContext, addCallback) {
     if (this._commandContext) {
-      await this.#showExtensionCommands(queryContext, this._commandContext.extensionId, addCallback);
+      await this.#showExtensionCommands(
+        queryContext,
+        this._commandContext.extensionId,
+        addCallback
+      );
       // FIXME: Figure out how to clean up `_commandContext` after closing urlbar
       return;
     }
@@ -448,11 +452,9 @@ export class ZenUrlbarProviderGlobalActions extends UrlbarProvider {
     switch (command) {
       case '_execute_browser_action':
       case '_execute_action': {
-        const action = ownerGlobal.gUnifiedExtensions.browserActionFor(
-          ownerGlobal.WebExtensionPolicy.getByID(extension.id)
-        );
+        const action = global.browserActionFor(extension);
         if (action) {
-          action.openPopup(ownerGlobal, true);
+          action.openPopup(ownerGlobal, /* without user interaction = */ true);
         }
         break;
       }
