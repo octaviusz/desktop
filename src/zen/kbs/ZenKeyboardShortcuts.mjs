@@ -2,6 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import { nsZenMultiWindowFeature } from 'chrome://browser/content/zen-components/ZenCommonUtils.mjs';
+
 const KEYCODE_MAP = {
   F1: 'VK_F1',
   F2: 'VK_F2',
@@ -49,6 +51,7 @@ const defaultKeyboardGroups = {
     'zen-key-enter-full-screen',
     'zen-key-exit-full-screen',
     'zen-quit-app-shortcut',
+    'zen-close-all-unpinned-tabs-shortcut',
     'zen-close-tab-shortcut',
     'zen-close-shortcut',
     'id:key_selectTab1',
@@ -122,23 +125,23 @@ const fixedL10nIds = {
 
 const ZEN_MAIN_KEYSET_ID = 'mainKeyset';
 const ZEN_DEVTOOLS_KEYSET_ID = 'devtoolsKeyset';
-const ZEN_KEYSET_ID = 'zenKeyset';
+window.ZEN_KEYSET_ID = 'zenKeyset';
 
 const ZEN_COMPACT_MODE_SHORTCUTS_GROUP = 'zen-compact-mode';
 const ZEN_WORKSPACE_SHORTCUTS_GROUP = 'zen-workspace';
 const ZEN_OTHER_SHORTCUTS_GROUP = 'zen-other';
 const ZEN_SPLIT_VIEW_SHORTCUTS_GROUP = 'zen-split-view';
 const FIREFOX_SHORTCUTS_GROUP = 'zen-kbs-invalid';
-const VALID_SHORTCUT_GROUPS = [
+window.VALID_SHORTCUT_GROUPS = [
   ZEN_COMPACT_MODE_SHORTCUTS_GROUP,
   ZEN_WORKSPACE_SHORTCUTS_GROUP,
   ZEN_SPLIT_VIEW_SHORTCUTS_GROUP,
-  ...Object.keys(defaultKeyboardGroups),
   ZEN_OTHER_SHORTCUTS_GROUP,
+  ...Object.keys(defaultKeyboardGroups),
   'other',
 ];
 
-class nsKeyShortcutModifiers {
+export class nsKeyShortcutModifiers {
   #control = false;
   #alt = false;
   #shift = false;
@@ -192,22 +195,28 @@ class nsKeyShortcutModifiers {
     return new nsKeyShortcutModifiers(ctrl, alt, shift, meta, accel);
   }
 
-  toUserString() {
+  toDisplayString() {
     let str = '';
+    const separation = AppConstants.platform == 'macosx' ? ' ' : '+';
     if (this.#control && !this.#accel) {
-      str += 'Ctrl+';
-    }
-    if (this.#alt) {
-      str += AppConstants.platform == 'macosx' ? 'Option+' : 'Alt+';
-    }
-    if (this.#shift) {
-      str += 'Shift+';
+      str += AppConstants.platform == 'macosx' ? '⌃' : 'Ctrl';
+      str += separation;
     }
     if (this.#meta) {
-      str += AppConstants.platform == 'macosx' ? 'Cmd+' : 'Win+';
+      str += AppConstants.platform == 'macosx' ? '⌘' : 'Win';
+      str += separation;
     }
     if (this.#accel) {
-      str += AppConstants.platform == 'macosx' ? 'Cmd+' : 'Ctrl+';
+      str += AppConstants.platform == 'macosx' ? '⌘' : 'Ctrl';
+      str += separation;
+    }
+    if (this.#alt) {
+      str += AppConstants.platform == 'macosx' ? '⌥' : 'Alt';
+      str += separation;
+    }
+    if (this.#shift) {
+      str += '⇧';
+      str += separation;
     }
     return str;
   }
@@ -313,7 +322,7 @@ class KeyShortcut {
     this.#key = key?.toLowerCase();
     this.#keycode = keycode;
 
-    if (!VALID_SHORTCUT_GROUPS.includes(group)) {
+    if (!window.VALID_SHORTCUT_GROUPS.includes(group)) {
       throw new Error('Illegal group value: ' + group);
     }
 
@@ -394,6 +403,12 @@ class KeyShortcut {
       return fixedL10nIds[action];
     }
     return `zen-${id}`;
+  }
+
+  set shouldBeEmpty(value) {
+    if (value) {
+      this.clearKeybind();
+    }
   }
 
   toXHTMLElement(window) {
@@ -525,8 +540,8 @@ class KeyShortcut {
     };
   }
 
-  toUserString() {
-    let str = this.#modifiers.toUserString();
+  toDisplayString() {
+    let str = this.#modifiers.toDisplayString();
 
     if (this.#key) {
       str += this.#key.toUpperCase();
@@ -534,7 +549,32 @@ class KeyShortcut {
       // Get the key from the value
       for (let [key, value] of Object.entries(KEYCODE_MAP)) {
         if (value == this.#keycode) {
-          str += key.toLowerCase();
+          const normalizedKey = key.toLowerCase();
+          switch (normalizedKey) {
+            case 'arrowleft':
+              str += '←';
+              break;
+            case 'arrowright':
+              str += '→';
+              break;
+            case 'arrowup':
+              str += '↑';
+              break;
+            case 'arrowdown':
+              str += '↓';
+              break;
+            case 'escape':
+              str += AppConstants.platform == 'macosx' ? '⎋' : 'Esc';
+              break;
+            case 'enter':
+              str += AppConstants.platform == 'macosx' ? '↩' : 'Enter';
+              break;
+            case 'space':
+              str += AppConstants.platform == 'macosx' ? '␣' : 'Space';
+              break;
+            default:
+              str += normalizedKey;
+          }
           break;
         }
       }
@@ -609,10 +649,19 @@ class nsZenKeyboardShortcutsLoader {
     let keySet = document.getElementById(ZEN_MAIN_KEYSET_ID);
     let newShortcutList = [];
 
+    const correctDefaultShortcut = (shortcut) => {
+      if (shortcut.getID() === 'key_savePage') {
+        shortcut.setModifiers(
+          nsKeyShortcutModifiers.fromObject({ accel: true, alt: true, shift: true })
+        );
+      }
+    };
+
     // Firefox's standard keyset. Reverse order to keep the order of the keys
     for (let i = keySet.children.length - 1; i >= 0; i--) {
       let key = keySet.children[i];
       let parsed = KeyShortcut.parseFromXHTML(key);
+      correctDefaultShortcut(parsed);
       newShortcutList.push(parsed);
     }
 
@@ -620,10 +669,10 @@ class nsZenKeyboardShortcutsLoader {
     newShortcutList.push(
       new KeyShortcut(
         'zen-compact-mode-toggle',
-        'C',
+        'S',
         '',
         ZEN_COMPACT_MODE_SHORTCUTS_GROUP,
-        nsKeyShortcutModifiers.fromObject({ accel: true, alt: true }),
+        nsKeyShortcutModifiers.fromObject({ accel: true }),
         'cmd_zenCompactModeToggle',
         'zen-compact-mode-shortcut-toggle'
       )
@@ -637,17 +686,6 @@ class nsZenKeyboardShortcutsLoader {
         nsKeyShortcutModifiers.fromObject({ accel: true, alt: true }),
         'cmd_zenCompactModeShowSidebar',
         'zen-compact-mode-shortcut-show-sidebar'
-      )
-    );
-    newShortcutList.push(
-      new KeyShortcut(
-        'zen-compact-mode-show-toolbar',
-        'T',
-        '',
-        ZEN_COMPACT_MODE_SHORTCUTS_GROUP,
-        nsKeyShortcutModifiers.fromObject({ accel: true, alt: true }),
-        'cmd_zenCompactModeShowToolbar',
-        'zen-compact-mode-shortcut-show-toolbar'
       )
     );
 
@@ -668,10 +706,10 @@ class nsZenKeyboardShortcutsLoader {
     newShortcutList.push(
       new KeyShortcut(
         'zen-workspace-forward',
-        'E',
         '',
+        'VK_RIGHT',
         ZEN_WORKSPACE_SHORTCUTS_GROUP,
-        nsKeyShortcutModifiers.fromObject({ accel: true, alt: true }),
+        nsKeyShortcutModifiers.fromObject({ alt: true, accel: true }),
         'cmd_zenWorkspaceForward',
         'zen-workspace-shortcut-forward'
       )
@@ -679,10 +717,10 @@ class nsZenKeyboardShortcutsLoader {
     newShortcutList.push(
       new KeyShortcut(
         'zen-workspace-backward',
-        'Q',
         '',
+        'VK_LEFT',
         ZEN_WORKSPACE_SHORTCUTS_GROUP,
-        nsKeyShortcutModifiers.fromObject({ accel: true, alt: true }),
+        nsKeyShortcutModifiers.fromObject({ alt: true, accel: true }),
         'cmd_zenWorkspaceBackward',
         'zen-workspace-shortcut-backward'
       )
@@ -764,7 +802,7 @@ class nsZenKeyboardShortcutsLoader {
 }
 
 class nsZenKeyboardShortcutsVersioner {
-  static LATEST_KBS_VERSION = 9;
+  static LATEST_KBS_VERSION = 13;
 
   constructor() {}
 
@@ -813,7 +851,7 @@ class nsZenKeyboardShortcutsVersioner {
       return newData;
     }
 
-    console.error('Unknown keyboar shortcuts version');
+    console.error('Unknown keyboard shortcuts version');
     this.version = 0;
     return this.migrateIfNeeded(data);
   }
@@ -829,7 +867,10 @@ class nsZenKeyboardShortcutsVersioner {
   }
 
   fixedKeyboardShortcuts(data) {
-    return this.fillDefaultIfNotPresent(this.migrateIfNeeded(data));
+    // Apply migrations and ensure defaults exist
+    let out = this.fillDefaultIfNotPresent(this.migrateIfNeeded(data));
+
+    return out;
   }
 
   migrate(data, version) {
@@ -889,10 +930,10 @@ class nsZenKeyboardShortcutsVersioner {
       data.push(
         new KeyShortcut(
           'zen-toggle-sidebar',
-          'B',
+          '',
           '',
           ZEN_OTHER_SHORTCUTS_GROUP,
-          nsKeyShortcutModifiers.fromObject({ alt: true }),
+          nsKeyShortcutModifiers.fromObject({}),
           'cmd_zenToggleSidebar',
           'zen-sidebar-shortcut-toggle'
         )
@@ -958,7 +999,6 @@ class nsZenKeyboardShortcutsVersioner {
           const commandMap = {
             'zen-compact-mode-toggle': 'cmd_zenCompactModeToggle',
             'zen-compact-mode-show-sidebar': 'cmd_zenCompactModeShowSidebar',
-            'zen-compact-mode-show-toolbar': 'cmd_zenCompactModeShowToolbar',
             'zen-workspace-forward': 'cmd_zenWorkspaceForward',
             'zen-workspace-backward': 'cmd_zenWorkspaceBackward',
             'zen-split-view-grid': 'cmd_zenSplitViewGrid',
@@ -984,11 +1024,85 @@ class nsZenKeyboardShortcutsVersioner {
         }
       }
     }
+    if (version < 10) {
+      // Migrate from version 9 to 10
+      // 1) Add the new pin/unpin tab toggle shortcut with Ctrl+Shift+D
+      data.push(
+        new KeyShortcut(
+          'zen-toggle-pin-tab',
+          'D',
+          '',
+          ZEN_OTHER_SHORTCUTS_GROUP,
+          nsKeyShortcutModifiers.fromObject({ accel: true, shift: true }),
+          'cmd_zenTogglePinTab',
+          'zen-toggle-pin-tab-shortcut'
+        )
+      );
+
+      // 2) Add shortcut to expand Glance into a full tab: Default Accel+O
+      data.push(
+        new KeyShortcut(
+          'zen-glance-expand',
+          'O',
+          '',
+          ZEN_OTHER_SHORTCUTS_GROUP,
+          nsKeyShortcutModifiers.fromObject({ accel: true }),
+          'cmd_zenGlanceExpand',
+          ''
+        )
+      );
+    }
+
+    if (version < 11) {
+      // Migrate from version 10 to 11
+      data.push(
+        new KeyShortcut(
+          'zen-new-empty-split-view',
+          AppConstants.platform == 'macosx' ? '+' : '*',
+          '',
+          ZEN_SPLIT_VIEW_SHORTCUTS_GROUP,
+          nsKeyShortcutModifiers.fromObject({ accel: true, shift: true }),
+          'cmd_zenNewEmptySplit',
+          'zen-new-empty-split-view-shortcut'
+        )
+      );
+    }
+
+    if (version < 12) {
+      // Hard-remove deprecated or conflicting defaults regardless of version
+      // - Remove the built-in "Open File" keybinding; menu item remains available
+      // - Remove default "Bookmark All Tabs" keybinding (Ctrl+Shift+D) to avoid conflict
+      // - Remove "Stop" keybinding to avoid conflict with Firefox's built-in binding
+      const shouldBeEmptyShortcuts = ['openFileKb', 'bookmarkAllTabsKb', 'key_stop'];
+      for (let shortcut of data) {
+        if (shouldBeEmptyShortcuts.includes(shortcut.getID?.())) {
+          shortcut.shouldBeEmpty = true;
+        }
+      }
+
+      // Also remove zen-compact-mode-show-toolbar
+      data = data.filter((shortcut) => shortcut.getID() != 'zen-compact-mode-show-toolbar');
+    }
+
+    if (version < 13) {
+      data.push(
+        new KeyShortcut(
+          'zen-close-all-unpinned-tabs',
+          'K',
+          '',
+          ZEN_WORKSPACE_SHORTCUTS_GROUP,
+          nsKeyShortcutModifiers.fromObject({ accel: true, shift: true }),
+          'cmd_zenCloseUnpinnedTabs',
+          'zen-close-all-unpinned-tabs-shortcut'
+        )
+      );
+    }
+
     return data;
   }
 }
 
-var gZenKeyboardShortcutsManager = {
+window.gZenKeyboardShortcutsManager = {
   loader: new nsZenKeyboardShortcutsLoader(),
   _hasToLoadDevtools: false,
   _inlineCommands: [],
@@ -1123,7 +1237,7 @@ var gZenKeyboardShortcutsManager = {
   },
 
   _applyShortcuts() {
-    for (const browser of ZenMultiWindowFeature.browsers) {
+    for (const browser of nsZenMultiWindowFeature.browsers) {
       let mainKeyset = browser.document.getElementById(ZEN_MAIN_KEYSET_ID);
       if (!mainKeyset) {
         throw new Error('Main keyset not found');
@@ -1186,7 +1300,7 @@ var gZenKeyboardShortcutsManager = {
 
   async _saveShortcuts() {
     let json = [];
-    for (shortcut of this._currentShortcutList) {
+    for (const shortcut of this._currentShortcutList) {
       json.push(shortcut.toJSONForm());
     }
 
@@ -1246,11 +1360,41 @@ var gZenKeyboardShortcutsManager = {
         targetShortcut.getModifiers().equals(modifiers) &&
         targetShortcut.getKeyNameOrCode()?.toLowerCase() == realShortcut
       ) {
-        return true;
+        return {
+          hasConflicts: true,
+          conflictShortcut: targetShortcut,
+        };
       }
     }
 
-    return false;
+    return {
+      hasConflicts: false,
+    };
+  },
+
+  getShortcutFromCommand(command) {
+    for (let targetShortcut of this._currentShortcutList) {
+      if (targetShortcut.getAction() == command) {
+        return targetShortcut;
+      }
+    }
+    return null;
+  },
+
+  /**
+   * Get the shortcut as a display format for a given action/command.
+   * @param {string} command The action/command to search for
+   * @returns {string|null} The shortcut as a string or null if not found
+   */
+  getShortcutDisplayFromCommand(command) {
+    if (!command) {
+      return null;
+    }
+    const shortcut = this.getShortcutFromCommand(command);
+    if (shortcut) {
+      return shortcut.toDisplayString();
+    }
+    return null;
   },
 };
 
@@ -1258,7 +1402,7 @@ document.addEventListener(
   'MozBeforeInitialXULLayout',
   () => {
     if (Services.prefs.getBoolPref('zen.keyboard.shortcuts.enabled', false)) {
-      gZenKeyboardShortcutsManager.beforeInit();
+      window.gZenKeyboardShortcutsManager.beforeInit();
     }
   },
   { once: true }

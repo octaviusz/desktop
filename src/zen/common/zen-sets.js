@@ -8,7 +8,7 @@ document.addEventListener(
     // <commandset id="mainCommandSet"> defined in browser-sets.inc
     document
       .getElementById('zenCommandSet')
-      // eslint-disable-next-line complexity
+
       .addEventListener('command', (event) => {
         switch (event.target.id) {
           case 'cmd_zenCompactModeToggle':
@@ -17,17 +17,8 @@ document.addEventListener(
           case 'cmd_zenCompactModeShowSidebar':
             gZenCompactModeManager.toggleSidebar();
             break;
-          case 'cmd_zenCompactModeHideSidebar':
-            gZenCompactModeManager.hideSidebar();
-            break;
-          case 'cmd_zenCompactModeHideToolbar':
-            gZenCompactModeManager.hideToolbar();
-            break;
-          case 'cmd_zenCompactModeHideBoth':
-            gZenCompactModeManager.hideBoth();
-            break;
-          case 'cmd_zenCompactModeShowToolbar':
-            gZenCompactModeManager.toggleToolbar();
+          case 'cmd_toggleCompactModeIgnoreHover':
+            gZenCompactModeManager.toggle(true);
             break;
           case 'cmd_zenWorkspaceForward':
             gZenWorkspaces.changeWorkspaceShortcut();
@@ -79,6 +70,11 @@ document.addEventListener(
           case 'cmd_zenSplitViewLinkInNewTab':
             gZenViewSplitter.splitLinkInNewTab();
             break;
+          case 'cmd_zenNewEmptySplit':
+            setTimeout(() => {
+              gZenViewSplitter.createEmptySplit();
+            }, 0);
+            break;
           case 'cmd_zenReplacePinnedUrlWithCurrent':
             gZenPinnedTabManager.replacePinnedUrlWithCurrent();
             break;
@@ -110,7 +106,31 @@ document.addEventListener(
           case 'cmd_zenOpenWorkspaceCreation':
             gZenWorkspaces.openWorkspaceCreation(event);
             break;
+          case 'cmd_zenOpenFolderCreation':
+            gZenFolders.createFolder([], {
+              renameFolder: true,
+            });
+            break;
+          case 'cmd_zenTogglePinTab': {
+            const currentTab = gBrowser.selectedTab;
+            if (currentTab && !currentTab.hasAttribute('zen-empty-tab')) {
+              if (currentTab.pinned) {
+                gBrowser.unpinTab(currentTab);
+              } else {
+                gBrowser.pinTab(currentTab);
+              }
+            }
+            break;
+          }
+          case 'cmd_zenCloseUnpinnedTabs':
+            gZenWorkspaces.closeAllUnpinnedTabs();
+            break;
+          case 'cmd_zenUnloadWorkspace': {
+            gZenWorkspaces.unloadWorkspace();
+            break;
+          }
           default:
+            gZenGlanceManager.handleMainCommandSet(event);
             if (event.target.id.startsWith('cmd_zenWorkspaceSwitch')) {
               const index = parseInt(event.target.id.replace('cmd_zenWorkspaceSwitch', ''), 10) - 1;
               gZenWorkspaces.shortcutSwitchTo(index);

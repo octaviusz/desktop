@@ -1,5 +1,5 @@
 diff --git a/browser/installer/windows/nsis/defines.nsi.in b/browser/installer/windows/nsis/defines.nsi.in
-index eb9e403c36510bfda09eb84b8a35dff731279f5d..939d34dff255122947bf3eeabc9087685f101568 100644
+index c6bb41695d70d17e5691e0d1856b79f7111d5026..8a9393a79a60aca23f80fc989fe2ae333ba54e39 100644
 --- a/browser/installer/windows/nsis/defines.nsi.in
 +++ b/browser/installer/windows/nsis/defines.nsi.in
 @@ -90,7 +90,7 @@
@@ -11,7 +11,7 @@ index eb9e403c36510bfda09eb84b8a35dff731279f5d..939d34dff255122947bf3eeabc908768
  
  # ARCH is used when it is necessary to differentiate the x64 registry keys from
  # the x86 registry keys (e.g. the uninstall registry key).
-@@ -148,7 +148,7 @@ VIAddVersionKey "ProductVersion"  "${AppVersion}"
+@@ -152,7 +152,7 @@ VIAddVersionKey "ProductVersion"  "${AppVersion}"
  !define APPROXIMATE_REQUIRED_SPACE_MB "145"
  
  # Constants for parts of the telemetry submission URL

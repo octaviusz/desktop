@@ -1,8 +1,8 @@
 diff --git a/browser/base/content/navigator-toolbox.js b/browser/base/content/navigator-toolbox.js
-index 31d0ee325847834e7c58c1079225adf43d738bcd..4d2c69d4dd7e313bdb085530b3289dc9d93530a5 100644
+index 7b776b15d52367a008ce6bf53dcfcbbe007b7453..da23f716c753f5a43f17bb5ed7a3d335891168c2 100644
 --- a/browser/base/content/navigator-toolbox.js
 +++ b/browser/base/content/navigator-toolbox.js
-@@ -8,7 +8,7 @@
+@@ -6,7 +6,7 @@
  document.addEventListener(
    "DOMContentLoaded",
    () => {
@@ -11,7 +11,7 @@ index 31d0ee325847834e7c58c1079225adf43d738bcd..4d2c69d4dd7e313bdb085530b3289dc9
      const widgetOverflow = document.getElementById("widget-overflow");
  
      function onPopupShowing(event) {
-@@ -187,6 +187,7 @@ document.addEventListener(
+@@ -185,6 +185,7 @@ document.addEventListener(
          #reload-button ,
          #urlbar-go-button,
          #reader-mode-button,
@@ -19,7 +19,7 @@ index 31d0ee325847834e7c58c1079225adf43d738bcd..4d2c69d4dd7e313bdb085530b3289dc9
          #picture-in-picture-button,
          #urlbar-zoom-button,
          #star-button-box,
-@@ -208,6 +209,7 @@ document.addEventListener(
+@@ -206,6 +207,7 @@ document.addEventListener(
          case "vertical-tabs-newtab-button":
          case "tabs-newtab-button":
          case "new-tab-button":
@@ -27,3 +27,28 @@ index 31d0ee325847834e7c58c1079225adf43d738bcd..4d2c69d4dd7e313bdb085530b3289dc9
            gBrowser.handleNewTabMiddleClick(element, event);
            break;
  
+@@ -316,6 +318,7 @@ document.addEventListener(
+         #downloads-button,
+         #fxa-toolbar-menu-button,
+         #unified-extensions-button,
++        #zen-site-data-icon-button,
+         #library-button
+       `);
+       if (!element) {
+@@ -398,6 +401,16 @@ document.addEventListener(
+           gUnifiedExtensions.togglePanel(event);
+           break;
+ 
++        case "zen-site-data-icon-button":
++          gUnifiedExtensions.togglePanel(
++            event,
++            null,
++            window.gZenSiteDataPanel.unifiedPanel,
++            window.gZenSiteDataPanel.unifiedPanelView,
++            window.gZenSiteDataPanel.anchor,
++          );
++          break;
++
+         case "library-button":
+           PanelUI.showSubView("appMenu-libraryView", element, event);
+           break;

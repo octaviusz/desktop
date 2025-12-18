@@ -1,8 +1,8 @@
 diff --git a/browser/components/sessionstore/TabState.sys.mjs b/browser/components/sessionstore/TabState.sys.mjs
-index 8f7ed557e6aa61e7e16ed4a8d785ad5fe651b3d8..76f4cf5aef30cb580ef0295fe6928b5a6a362f4b 100644
+index 82721356d191055bec0d4b0ca49e481221988801..1ea5c394c704da295149443d7794961a12f2060b 100644
 --- a/browser/components/sessionstore/TabState.sys.mjs
 +++ b/browser/components/sessionstore/TabState.sys.mjs
-@@ -84,6 +84,18 @@ class _TabState {
+@@ -85,7 +85,22 @@ class _TabState {
        tabData.groupId = tab.group.id;
      }
  
@@ -19,5 +19,9 @@ index 8f7ed557e6aa61e7e16ed4a8d785ad5fe651b3d8..76f4cf5aef30cb580ef0295fe6928b5a
 +    tabData.zenIsGlance = tab.hasAttribute("zen-glance-tab");
 +
      tabData.searchMode = tab.ownerGlobal.gURLBar.getSearchMode(browser, true);
++    if (tabData.searchMode?.source === tab.ownerGlobal.UrlbarUtils.RESULT_SOURCE.ZEN_ACTIONS) {
++      delete tabData.searchMode;
++    }
  
      tabData.userContextId = tab.userContextId || 0;
+ 

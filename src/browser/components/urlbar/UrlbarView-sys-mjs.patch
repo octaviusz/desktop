@@ -1,8 +1,8 @@
 diff --git a/browser/components/urlbar/UrlbarView.sys.mjs b/browser/components/urlbar/UrlbarView.sys.mjs
-index e17f3d34367d6567c89f632b6d1ce537608a6829..7528dfb0abc8ea8d9315591cd529a341b4c3962a 100644
+index c58bc4871fbfb5ca924df822a09d783f21db616a..68fd73055d30ec4f4128fb8639369f07b167955a 100644
 --- a/browser/components/urlbar/UrlbarView.sys.mjs
 +++ b/browser/components/urlbar/UrlbarView.sys.mjs
-@@ -609,7 +609,7 @@ export class UrlbarView {
+@@ -620,7 +620,7 @@ export class UrlbarView {
        !this.input.value ||
        this.input.getAttribute("pageproxystate") == "valid"
      ) {
@@ -11,21 +11,21 @@ index e17f3d34367d6567c89f632b6d1ce537608a6829..7528dfb0abc8ea8d9315591cd529a341
          // Try to reuse the cached top-sites context. If it's not cached, then
          // there will be a gap of time between when the input is focused and
          // when the view opens that can be perceived as flicker.
-@@ -1325,7 +1325,7 @@ export class UrlbarView {
-           includeHiddenExposures: true,
-         });
-       let canBeVisible =
--        newSpanCount <= this.#queryContext.maxResults && !seenMisplacedResult;
-+        newSpanCount < this.#queryContext.maxResults && !seenMisplacedResult;
-       if (result.isHiddenExposure) {
-         if (canBeVisible) {
-           this.controller.engagementEvent.addExposure(
-@@ -2975,7 +2975,7 @@ export class UrlbarView {
+@@ -2855,6 +2855,8 @@ export class UrlbarView {
+       if (row?.hasAttribute("row-selectable")) {
+         row?.toggleAttribute("selected", true);
+       }
++      // only scroll if its not already fully visible
++      element.scrollIntoView({ behavior: "smooth", block: "nearest" });
+       if (element != row) {
+         row?.toggleAttribute("descendant-selected", true);
+       }
+@@ -3336,7 +3338,7 @@ export class UrlbarView {
    }
  
    #enableOrDisableRowWrap() {
 -    let wrap = getBoundsWithoutFlushing(this.input.textbox).width < 650;
 +    let wrap = false;
      this.#rows.toggleAttribute("wrap", wrap);
-     this.oneOffSearchButtons.container.toggleAttribute("wrap", wrap);
+     this.oneOffSearchButtons?.container.toggleAttribute("wrap", wrap);
    }

@@ -1,3 +1,7 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 param(
     [string][Parameter(Mandatory=$true)]$SignIdentity,
     [string][Parameter(Mandatory=$true)]$GithubRunId
@@ -31,7 +35,9 @@ Start-Job -Name "SurferInit" -ScriptBlock {
     param($PWD)
     cd $PWD
     npm run import -- --verbose
-    npm run surfer -- ci --brand release
+    $surferJson = Get-Content surfer.json | ConvertFrom-Json
+    $version = $surferJson.brands.release.release.displayVersion
+    npm run ci -- $version
 } -Verbose -ArgumentList $PWD -Debug
 
 echo "Downloading artifacts info"

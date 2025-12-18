@@ -22,7 +22,6 @@
     display: none !important;
   }
 
-  --toolbarbutton-hover-background: transparent !important;
   border-radius: var(--zen-button-border-radius) !important;
   background: transparent;
   appearance: unset !important;
@@ -34,16 +33,22 @@
 
   & toolbarbutton {
     margin: 0;
-    max-width: 26px;
-    height: 26px;
+    max-width: 28px;
+    height: 28px;
     display: flex;
     justify-content: center;
     padding: 0 !important;
     align-items: center;
     position: relative;
+    fill-opacity: 0.6;
 
     & .zen-workspace-icon {
       pointer-events: none;
+      line-height: 0;
+
+      &:is(img) {
+        width: 14px;
+      }
    
       &[no-icon='true'] {
         width: 6px;
@@ -58,7 +63,8 @@
     transition:
       filter 0.2s,
       opacity 0.2s,
-      width 0.1s;
+      width 0.1s,
+      transform 0.2s;
 
     &[active='true'],
     &:hover,
@@ -75,6 +81,10 @@
     & label {
       margin: 0 !important;
     }
+
+    :root:not([zen-sidebar-expanded='true']) & {
+      min-width: 36px;
+    }
   }
 
   &[reorder-mode='true'] toolbarbutton:not([dragged='true']) {
@@ -84,11 +94,11 @@
 
   &[icons-overflow] {
     gap: 0 !important;
-    justify-content: space-between;
+    justify-content: center;
 
     & toolbarbutton {
       margin: 0;
-  background: transparent;
+      background: transparent;
     }
 
     /* Inlcude separately since ther'es a bug in the 
@@ -98,7 +108,7 @@
     }
 
     &:has(toolbarbutton:hover) toolbarbutton[active='true']:not([dragged='true']) {
-%include overflow-icons.inc.css 
+%include overflow-icons.inc.css
     }
   }
 }
@@ -143,6 +153,7 @@
 
 /* Mark workspaces indicator */
 .zen-current-workspace-indicator {
+  margin-top: 1px;
   padding: calc(2px + var(--tab-inline-padding) + var(--zen-toolbox-padding));
   font-weight: 500;
   position: relative;
@@ -154,7 +165,7 @@
   max-width: 100%;
   width: 100%;
   font-size: small;
-  padding-right: 10px;
+  padding-right: 12px;
   -moz-window-dragging: no-drag;
 
   &::before {
@@ -185,6 +196,9 @@
     height: 16px;
     justify-content: center;
     align-items: center;
+    fill-opacity: 0.6;
+    -moz-context-properties: fill-opacity, fill;
+    fill: currentColor;
 
     &[zen-emoji-open='true']::before {
       border: 1px dashed light-dark(rgba(0, 0, 0, .5), rgba(255, 255, 255, .5));
@@ -197,15 +211,23 @@
       left: -4px;
       pointer-events: none;
     }
+
+    @media (-moz-platform: windows) {
+      & img {
+        margin-bottom: -4px;
+      }
+    }
   }
 
   .zen-current-workspace-indicator-name {
-    display: block;
+    display: flex;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     cursor: auto;
     font-weight: 600;
+    align-items: center;
+    margin: 0;
   }
 
   .zen-workspaces-actions {
@@ -214,8 +236,14 @@
     visibility: collapse;
     transition: opacity 0.1s;
     order: 5;
-    --toolbarbutton-inner-padding: 6px;
-    --tab-border-radius: 6px;
+    --toolbarbutton-inner-padding: 6px !important;
+
+    & image {
+      border-radius: max(calc(var(--border-radius-medium) - 4px), 4px) !important;
+      width: 26px;
+      height: 26px;
+      margin-right: -1px;
+    }
 
     :root[zen-renaming-tab='true'] & {
       display: none;
@@ -232,11 +260,13 @@
 
 /* mark: workspace element */
 zen-workspace {
+  will-change: transform;
   flex-direction: column;
   width: calc(100% + var(--zen-toolbox-padding) * 2);
   position: absolute;
   height: 100%;
   overflow: hidden;
+  color: var(--toolbox-textcolor);
 
   :root:not([zen-sidebar-expanded='true']) & {
     width: 100%;
@@ -252,7 +282,7 @@ zen-workspace {
       display: none;
     }
 
-    &::part(scrollbox) {
+    &[overflowing]::part(scrollbox) {
       scrollbar-width: auto;
       scrollbar-color: color-mix(in srgb, currentColor 35%, transparent 65%) transparent; /* Custom scrollbar */
       overflow-y: auto;
@@ -298,15 +328,16 @@ zen-workspace {
         opacity: 1;
       }
     }
+  }
 
-    &,
-    & .zen-workspace-normal-tabs-section {
-      height: 100%;
+  @media -moz-pref('zen.view.draggable-sidebar') {
+    &[active] .zen-workspace-empty-space {
+      -moz-window-dragging: drag;
     }
   }
 }
 
-/** Customiable UI, this is an auto generated ID */
+/** Customizable UI, this is an auto generated ID */
 #wrapper-zen-workspaces-button {
   width: 100%;
 }

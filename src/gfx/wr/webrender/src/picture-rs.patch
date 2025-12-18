@@ -1,8 +1,8 @@
 diff --git a/gfx/wr/webrender/src/picture.rs b/gfx/wr/webrender/src/picture.rs
-index 3b0671ec8ffb8cbd0843e18569a948203c2b9cfe..77d4953cc9bf07d38efd26f4fe95e465b244598c 100644
+index 79e062a40ed097fa6614abc6b5201f868c447733..91c10d17f0dca55eafec522ddc94b91bf4cd2cfb 100644
 --- a/gfx/wr/webrender/src/picture.rs
 +++ b/gfx/wr/webrender/src/picture.rs
-@@ -8027,7 +8027,12 @@ fn get_relative_scale_offset(
+@@ -8121,7 +8121,12 @@ fn get_relative_scale_offset(
          CoordinateSpaceMapping::Local => ScaleOffset::identity(),
          CoordinateSpaceMapping::ScaleOffset(scale_offset) => scale_offset,
          CoordinateSpaceMapping::Transform(m) => {

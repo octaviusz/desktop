@@ -3,9 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-panel[type='arrow'][animate='open'] {
+panel[type='arrow'] {
   @media (-moz-platform: macos) and (-moz-panel-animations) {
-    animation: zen-jello-animation-macos 0.4s ease-out;
     &[side='bottom'] {
       /* Animate from the bottom */
       -zen-window-transform-origin: 0 100%;
@@ -19,33 +18,34 @@ panel[type='arrow'][animate='open'] {
         -zen-window-transform-origin: 100% 100%;
       }
     }
-  }
-  @media (-moz-platform: linux) or ((-moz-platform: windows) and (not (-moz-windows-mica-popups))) and (-moz-panel-animations) {
-    /* Mica popups have a weird background while the animation is running */
-    &::part(content) {
-      animation: zen-jello-animation 0.35s ease;
+    -moz-window-opacity: 0;
+    &[animate='open'] {
+      animation: zen-jello-animation-macos 0.2s ease-in-out forwards !important;
     }
   }
 }
 
-panel[type='arrow'][animate]:not([animate='open']) {
-  animation: zen-jello-out-animation 0.3s ease-in-out;
-}
-
 menupopup,
-panel[type='arrow'] {
+panel[type='arrow']:not(#feature-callout) {
   @media (-moz-windows-mica-popups) {
     appearance: auto !important;
     -moz-default-appearance: menupopup;
     /* The blur behind doesn't blur all that much, add a semi-transparent
      * background to improve contrast */
     --panel-background: light-dark(rgba(255, 255, 255, 0.5), rgba(0, 0, 0, 0.5)) !important;
-    --panel-border-color: transparent !important;
+
+    /* The mica rendering already adds a shadow and a border, so we
+     * remove the one we add via CSS */
     --panel-shadow-margin: 0px !important;
+    --panel-border-color: transparent !important;
+    border: none !important;
 
     transition-duration: 0s !important;
 
     &::part(content) {
+      /* Refrain from animating for now as we haven't found a 
+       * way to properly animate the popup without having the mica
+       * backdrop staying still while the popup animates */
       animation: none !important;
     }
   }
@@ -60,10 +60,16 @@ panel[type='arrow'] {
     --panel-shadow-margin: 0px !important;
     --panel-background: transparent !important;
     --panel-border-color: transparent;
-    /* This should be kept in sync with GetMenuMaskImage() */
-    --panel-border-radius: 6px;
+
+    /* Remove the shadow for the native panels, as macos already
+     * adds the shadows to the window. This is specially important
+     * on Tahoe, where we *dont* apply an image mask, meaning that 
+     * trying to render a shadow would end up in having weird borders
+     * around the panel */
+    --panel-shadow: none;
 
     &::part(content) {
+      /* This shoudn't really be needed, but just in case */
       background-color: transparent !important;
     }
   }

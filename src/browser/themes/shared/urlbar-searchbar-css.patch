@@ -1,24 +1,33 @@
 diff --git a/browser/themes/shared/urlbar-searchbar.css b/browser/themes/shared/urlbar-searchbar.css
-index 23661cf489d97cdbd6d4c66de199fd9dc0c8475f..2677dc60a92cebe014c817414a6067be9543cf98 100644
+index 45a87b96db14f64e0d8a3a3aae07f76c8f7e765f..d75f61cb2d27205aa2c47cf902d38e26098fbf2c 100644
 --- a/browser/themes/shared/urlbar-searchbar.css
 +++ b/browser/themes/shared/urlbar-searchbar.css
-@@ -5,7 +5,7 @@
- @namespace html url("http://www.w3.org/1999/xhtml");
+@@ -6,7 +6,7 @@
  
  :root {
+   --urlbar-container-min-width: 310px;
 -  --urlbar-container-padding: 1px;
 +  --urlbar-container-padding: 2px;
    --urlbar-margin-inline: 5px;
    --urlbar-padding-block: 4px;
- }
-@@ -303,10 +303,14 @@
  
- #urlbar[breakout][breakout-extend] {
+@@ -48,7 +48,7 @@
+ #urlbar[usertyping] > .urlbar-input-container > #page-action-buttons > #urlbar-zoom-button,
+ .urlbar:is(:not([usertyping]), :not([focused])) > .urlbar-input-container > .urlbar-go-button,
+ .urlbar-revert-button-container {
+-  display: none;
++  display: none !important;
+ }
+ 
+ /* When rich suggestions are enabled the urlbar identity icon is given extra padding to
+@@ -320,10 +320,14 @@
+ 
+ .urlbar[breakout][breakout-extend] {
    height: auto;
++  align-items: center;
 +  :root:not([zen-single-toolbar='true']) {
    margin-left: calc(-1 * var(--urlbar-margin-inline));
 +  }
-+  align-items: center;
    width: calc(var(--urlbar-width) + 2 * var(--urlbar-margin-inline));
  
    > .urlbar-input-container {

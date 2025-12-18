@@ -374,6 +374,9 @@ interface nsIXPCComponents_Results {
   /** User attempted basic HTTP authentication when it is disabled */
   NS_ERROR_BASIC_HTTP_AUTH_DISABLED: 0x804b005c;
 
+  /** The access to local network is denied */
+  NS_ERROR_LOCAL_NETWORK_ACCESS_DENIED: 0x804b005d;
+
   // Error codes return from the proxy
 
   /** The connection to the proxy server was refused */
@@ -508,6 +511,12 @@ interface nsIXPCComponents_Results {
   /** Can't access a wrapped JS object from a different thread */
   NS_ERROR_NOT_SAME_THREAD: 0x80460004;
 
+  /** Access to restricted URI denied */
+  NS_ERROR_DOM_BAD_URI: 0x805303f4;
+
+  /** Opening the Websocket failed */
+  NS_ERROR_WEBSOCKET_CONNECTION_REFUSED: 0x804b0057;
+
   // storage related codes (from mozStorage.h)
 
   /** SQLite database connection is busy */
@@ -560,6 +569,20 @@ interface nsIXPCComponents_Results {
 
   /** The PKCS#7 information is not signed. */
   NS_ERROR_CMS_VERIFY_NOT_SIGNED: 0x805a0400;
+
+  // Codes related to pdf signature verification
+
+  /** The PKCS#7 parsing has failed. */
+  NS_ERROR_CMS_VERIFY_ERROR_PROCESSING: 0x805a0408;
+
+  /** The PKCS#7 certificate verification was cancelled. */
+  NS_ERROR_CMS_VERIFY_NOT_YET_ATTEMPTED: 0x805a040f;
+
+  /** Invalid signature. */
+  NS_ERROR_CMS_VERIFY_BAD_SIGNATURE: 0x805a0409;
+
+  /** No certificate was found. */
+  NS_ERROR_CMS_VERIFY_NOCERT: 0x805a0404;
 
   // Codes related to signed manifests
 
@@ -675,6 +698,11 @@ interface nsIXPCComponents_Results {
 
   /** The existing UserChoice Hash was verified, but we're on an older, unsupported Windows build, so do not attempt to update the UserChoice hash. */
   NS_ERROR_WDBA_BUILD: 0x80720004;
+
+  // Codes related to QuotaManager
+
+  /** Client initialization attempted before origin has been initialized. */
+  NS_ERROR_DOM_QM_CLIENT_INIT_ORIGIN_UNINITIALIZED: 0x80730001;
 }
 
 type nsIXPCComponents_Values = nsIXPCComponents_Results[keyof nsIXPCComponents_Results];

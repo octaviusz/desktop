@@ -82,7 +82,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          npm install
+          npm ci
 
       - name: Load Surfer CI setup
         run: npm run surfer -- ci --brand ${{ inputs.release-branch }} --display-version ${{ inputs.build-version }}
@@ -105,7 +105,9 @@ jobs:
       - name: Import
         env:
           SURFER_COMPAT: ${{ matrix.arch }}
-        run: npm run import
+        run: |
+          . "$HOME/.cargo/env"
+          npm run import
 
       - name: Build language packs
         run: sh scripts/download-language-packs.sh

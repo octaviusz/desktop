@@ -91,8 +91,8 @@ groupbox button {
 
 groupbox button,
 groupbox menulist {
-  background-color: light-dark(#f1f1f1, #363636) !important;
-  color: light-dark(black, white) !important;
+  background-color: light-dark(#f1f1f1, #363636);
+  color: light-dark(black, white);
 }
 
 groupbox h2 {
@@ -136,16 +136,6 @@ groupbox h2 {
   left: 0;
 }
 
-#searchInput {
-  width: 100% !important;
-  border: none;
-  outline: none;
-  min-height: 40px;
-  border-radius: 10px;
-  background: light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.1));
-  padding-inline: 15px;
-}
-
 .textbox-search-sign {
   margin-right: 15px;
 }
@@ -164,38 +154,6 @@ groupbox h2 {
 
 #webAppearanceSettings {
   margin-bottom: 15px;
-}
-
-#zen-compact-mode-styles-form {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-large);
-  margin-top: 5px;
-
-  & .web-appearance-choice-image-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
-    padding: 20px 0;
-
-    background: color-mix(in srgb, var(--zen-colors-tertiary) 50%, transparent 50%);
-  }
-}
-
-@media -moz-pref('zen.view.use-single-toolbar') {
-  #zen-compact-mode-styles-form {
-    display: none;
-  }
-}
-
-#zen-expand-tabbar-strat {
-  display: flex;
-  flex-direction: column;
-}
-
-#zen-expand-tabbar-strat > hbox {
-  margin-top: 10px;
 }
 
 #category-zen-looks > .category-icon {
@@ -586,18 +544,39 @@ groupbox h2 {
   }
 }
 
+@media (max-width: 1320px) {
+  #zenLayoutList {
+    flex-wrap: wrap;
+  }
+}
+
 /* Disable mozilla's settings */
 
 #dataCollectionCategory,
 #dataCollectionGroup,
 #websiteAdvertisingCategory,
 #websiteAdvertisingGroup,
-#webAppearanceGroup,
-#helpButton {
+#helpButton,
+#support-firefox,
+#tabGroupSuggestions,
+#web-appearance-manage-themes-link,
+.mission-message {
   display: none !important;
 }
 
 .sync-engine-workspaces .checkbox-icon,
 .sync-engine-workspaces.sync-engine-image {
   list-style-image: url('chrome://devtools/skin/images/tool-storage.svg');
+}
+
+@media -moz-pref('zen.theme.disable-lightweight') {
+  html|div[data-l10n-id='preferences-web-appearance-footer'] {
+    display: none;
+  }
+}
+
+@media -moz-pref('zen.urlbar.replace-newtab') {
+  #category-home {
+    display: none !important;
+  }
 }

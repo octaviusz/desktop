@@ -6,6 +6,8 @@
 
 /** Zen Decks - ONLY USED FOR SPLIT VIEWS, DO NOT USE THIS CLASS FOR ANY OTHER PURPOSE **/
 
+%include zen-split-group.inc.css
+
 #tabbrowser-tabpanels[zen-split-view='true'] {
   display: flex;
   flex-direction: row;
@@ -16,6 +18,7 @@
   flex: 0;
   margin: 0;
 }
+
 #zen-splitview-dropzone {
   border-radius: var(--zen-native-inner-radius);
   transition: inset ease-out 0.08s;
@@ -29,10 +32,6 @@
 #tabbrowser-tabpanels[zen-split-view='true'] > [zen-split='true'],
 #zen-splitview-dropzone {
   flex: 1;
-  margin: var(--zen-split-column-gap) var(--zen-split-row-gap) !important;
-  margin-bottom: 0 !important;
-  margin-left: 0 !important;
-  position: absolute !important;
   overflow: hidden;
 
   & .dialogStack {
@@ -41,11 +40,25 @@
   }
 }
 
+.browserSidebarContainer[is-zen-split='true'],
+#zen-splitview-dropzone {
+  position: absolute !important;
+
+  margin: var(--zen-split-column-gap) var(--zen-split-row-gap) !important;
+  margin-bottom: 0 !important;
+  margin-left: 0 !important;
+
+  &.browserSidebarContainer:not([zen-split='true']) {
+    margin-top: 0 !important;
+    visibility: hidden;
+  }
+}
+
 #zen-splitview-dropzone {
   margin-top: 0 !important;
 }
 
-#tabbrowser-tabpanels[zen-split-view='true']:not([zen-split-resizing]) > [zen-split='true'] {
+#tabbrowser-tabpanels[zen-split-view='true']:not(.zen-split-view-no-transition):not([zen-split-resizing]) > [zen-split='true'] {
   transition: inset 0.09s ease-out !important;
   & browser {
     transition: opacity 0.2s ease-out !important;
@@ -54,7 +67,7 @@
 
 #tabbrowser-tabpanels[zen-split-view='true'] .browserSidebarContainer.deck-selected {
   &:not(.zen-glance-overlay) {
-    outline: 1px solid var(--zen-primary-color) !important;
+    outline: 2px solid var(--zen-primary-color) !important;
   }
 
   &.zen-glance-overlay {
@@ -64,13 +77,15 @@
   }
 }
 
-#tabbrowser-tabbox:has(#tabbrowser-tabpanels[zen-split-view='true']) {
+#tabbrowser-tabbox {
+  --zen-split-row-gap: var(--zen-element-separation);
+  --zen-split-column-gap: calc(var(--zen-element-separation) + 1px);
+}
+
+#tabbrowser-tabbox[zen-split-view='true'] {
   :root[zen-no-padding='true'] & {
     --zen-element-separation: 8px;
   }
-
-  --zen-split-row-gap: var(--zen-element-separation);
-  --zen-split-column-gap: calc(var(--zen-element-separation) + 1px);
   margin-right: calc(-1 * var(--zen-split-column-gap));
 }
 
@@ -181,10 +196,12 @@
 #zen-split-view-fake-browser {
   position: absolute;
   height: 100%;
+  border: 2px solid var(--zen-primary-color);
   background: rgba(255, 255, 255, 0.1);
   border-radius: var(--zen-native-inner-radius);
   box-shadow: var(--zen-big-shadow);
   overflow: hidden;
+  will-change: width, margin-left;
 
   &[side='right'] {
     right: 0;

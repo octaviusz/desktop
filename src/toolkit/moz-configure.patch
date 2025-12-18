@@ -1,5 +1,5 @@
 diff --git a/toolkit/moz.configure b/toolkit/moz.configure
-index f9b96c0a62ae1e222eebeb6f8ca4fbf4c65703b4..6a439a22ee71a03709411fb8480278104d3996d1 100644
+index 52bca068f90cd8e214900e8f3159e1f7e37fb3e8..bfb5a38258141ed28def7c9a340a61253b0e3274 100644
 --- a/toolkit/moz.configure
 +++ b/toolkit/moz.configure
 @@ -22,6 +22,7 @@ def check_moz_app_id(moz_app_id, build_project):
@@ -18,7 +18,7 @@ index f9b96c0a62ae1e222eebeb6f8ca4fbf4c65703b4..6a439a22ee71a03709411fb848027810
      nargs=1,
      help='Used for application.ini\'s "Profile" field, which controls profile location',
  )
-@@ -87,10 +89,13 @@ option(
+@@ -86,10 +88,13 @@ option(
  )
  set_config("MOZ_INCLUDE_SOURCE_INFO", True, when="MOZ_INCLUDE_SOURCE_INFO")
  
@@ -33,7 +33,7 @@ index f9b96c0a62ae1e222eebeb6f8ca4fbf4c65703b4..6a439a22ee71a03709411fb848027810
      help="Set distribution-specific id",
  )
  set_config("MOZ_DISTRIBUTION_ID", depends("--with-distribution-id")(lambda v: v[0]))
-@@ -932,9 +937,9 @@ set_config("MOZ_SYSTEM_AV1", True, when="--with-system-av1")
+@@ -931,9 +936,9 @@ set_config("MOZ_SYSTEM_AV1", True, when="--with-system-av1")
  option("--disable-jxl", help="Disable jxl image support")
  
  
@@ -46,7 +46,7 @@ index f9b96c0a62ae1e222eebeb6f8ca4fbf4c65703b4..6a439a22ee71a03709411fb848027810
          return True
  
  
-@@ -2060,7 +2065,7 @@ set_define("A11Y_LOG", True, when=a11y_log)
+@@ -2070,7 +2075,7 @@ set_define("A11Y_LOG", True, when=a11y_log)
  # ==============================================================
  @depends(milestone)
  def require_signing(milestone):

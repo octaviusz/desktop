@@ -1,8 +1,8 @@
 diff --git a/browser/components/customizableui/content/panelUI.inc.xhtml b/browser/components/customizableui/content/panelUI.inc.xhtml
-index c78f08bdd3fc4d01e10552ef65c2d5813dd053e8..154fb1de2ab9384937d02c14cb7c9c607b330da9 100644
+index 6cb22be6526b17d952a90fd414c49a31e9afde7a..84f8156e88027a79a40f14c77c83d6a2d19c8a72 100644
 --- a/browser/components/customizableui/content/panelUI.inc.xhtml
 +++ b/browser/components/customizableui/content/panelUI.inc.xhtml
-@@ -132,7 +132,7 @@
+@@ -139,7 +139,7 @@
    <panel id="appMenu-notification-popup"
           class="popup-notification-panel panel-no-padding"
           type="arrow"
