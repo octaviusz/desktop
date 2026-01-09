@@ -1,6 +1,6 @@
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import { nsZenMultiWindowFeature } from 'chrome://browser/content/zen-components/ZenCommonUtils.mjs';
 
@@ -465,7 +465,7 @@ export class nsZenThemePicker extends nsZenMultiWindowFeature {
     let hue = (angle / 360) * 360; // Normalize angle to [0, 360)
     let saturation = normalizedDistance * 100; // stays high even in center
     if (type !== EXPLICIT_LIGHTNESS_TYPE) {
-      saturation = 80 + (1 - normalizedDistance) * 20;
+      saturation = 90 + (1 - normalizedDistance) * 10;
       // Set the current lightness to how far we are from the center of the circle
       // For example, moving the dot outside will have higher lightness, while moving it inside will have lower lightness
       this.#currentLightness = Math.round((1 - normalizedDistance) * 100);
@@ -593,7 +593,7 @@ export class nsZenThemePicker extends nsZenMultiWindowFeature {
     this.panel.querySelector('#PanelUI-zen-gradient-generator-custom-list').prepend(dot);
     this.customColorInput.value = '';
     document.getElementById('PanelUI-zen-gradient-generator-custom-opacity').value = 1;
-    await this.updateCurrentWorkspace();
+    this.updateCurrentWorkspace();
   }
 
   handlePanelCommand(event) {
@@ -1216,9 +1216,9 @@ export class nsZenThemePicker extends nsZenMultiWindowFeature {
         let color2 = this.getSingleRGBColor(themedColors[0], forToolbar);
         let color3 = this.getSingleRGBColor(themedColors[1], forToolbar);
         return [
-          `radial-gradient(circle at 0% 0%, ${color2} -10%, transparent 100%)`,
-          `linear-gradient(to top, ${color1} -50%, transparent 125%)`,
-          `radial-gradient(circle at 100% -100%, ${color3} -100%, transparent 400%)`,
+          `linear-gradient(-5deg, ${color1} 10%, transparent 80%)`,
+          `radial-gradient(circle at 95% 0%, ${color3} 0%, transparent 75%)`,
+          `radial-gradient(circle at 0% 0%, ${color2} 10%, transparent 70%)`,
         ].join(', ');
       }
     }
@@ -1310,20 +1310,20 @@ export class nsZenThemePicker extends nsZenMultiWindowFeature {
   }
 
   getToolbarColor(isDarkMode = false) {
-    return isDarkMode ? [255, 255, 255, 0.8] : [0, 0, 0, 0.8]; // Default toolbar
+    return isDarkMode ? [255, 255, 255, 0.6] : [0, 0, 0, 0.6]; // Default toolbar
   }
 
-  async onWorkspaceChange(workspace, skipUpdate = false, theme = null) {
+  onWorkspaceChange(workspace, skipUpdate = false, theme = null) {
     const uuid = workspace.uuid;
     // Use theme from workspace object or passed theme
     let workspaceTheme = theme || workspace.theme;
 
-    await this.foreachWindowAsActive(async (browser) => {
+    this.forEachWindowSync((browser) => {
       if (!browser.gZenThemePicker?.promiseInitialized) {
         return;
       }
 
-      if (browser.closing || (await browser.gZenThemePicker?.promiseInitialized)) {
+      if (browser.closing) {
         return;
       }
 
@@ -1332,7 +1332,7 @@ export class nsZenThemePicker extends nsZenMultiWindowFeature {
       }
 
       // Do not rebuild if the workspace is not the same as the current one
-      const windowWorkspace = await browser.gZenWorkspaces.getActiveWorkspace();
+      const windowWorkspace = browser.gZenWorkspaces.getActiveWorkspace();
       if (windowWorkspace.uuid !== uuid) {
         return;
       }
@@ -1602,7 +1602,7 @@ export class nsZenThemePicker extends nsZenMultiWindowFeature {
     }
   }
 
-  async updateCurrentWorkspace(skipSave = true) {
+  updateCurrentWorkspace(skipSave = true) {
     this.updated = skipSave;
     const dots = this.panel.querySelectorAll('.zen-theme-picker-dot');
     const colors = Array.from(dots)
@@ -1630,21 +1630,19 @@ export class nsZenThemePicker extends nsZenMultiWindowFeature {
         };
       });
     const gradient = nsZenThemePicker.getTheme(colors, this.currentOpacity, this.currentTexture);
-    let currentWorkspace = await gZenWorkspaces.getActiveWorkspace();
+    let currentWorkspace = gZenWorkspaces.getActiveWorkspace();
 
     if (!skipSave) {
-      await ZenWorkspacesStorage.saveWorkspaceTheme(currentWorkspace.uuid, gradient);
-      await gZenWorkspaces._propagateWorkspaceData();
-      gZenUIManager.showToast('zen-panel-ui-gradient-generator-saved-message');
-      currentWorkspace = await gZenWorkspaces.getActiveWorkspace();
+      currentWorkspace.theme = gradient;
+      gZenWorkspaces.saveWorkspace(currentWorkspace);
     }
 
-    await this.onWorkspaceChange(currentWorkspace, skipSave, skipSave ? gradient : null);
+    this.onWorkspaceChange(currentWorkspace, skipSave, skipSave ? gradient : null);
   }
 
-  async handlePanelClose() {
+  handlePanelClose() {
     if (this.updated) {
-      await this.updateCurrentWorkspace(false);
+      this.updateCurrentWorkspace(false);
     }
     this.uninitThemePicker();
   }
@@ -1691,7 +1689,7 @@ export class nsZenThemePicker extends nsZenMultiWindowFeature {
 
   invalidateGradientCache() {
     this.#gradientsCache = {};
-    window.dispatchEvent(new Event('ZenGradientCacheChanged'));
+    window.dispatchEvent(new Event('ZenGradientCacheChanged', { bubbles: true }));
   }
 
   getGradientForWorkspace(workspace) {

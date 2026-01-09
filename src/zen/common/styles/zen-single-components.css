@@ -180,9 +180,6 @@ body > #confetti {
   --tab-border-radius: 6px;
   --toolbarbutton-border-radius: var(--tab-border-radius);
   --toolbarbutton-inner-padding: 6px;
-  @media (-moz-platform: macos) {
-    --toolbarbutton-inner-padding: 8px;
-  }
   --toolbarbutton-outer-padding: 2px;
 
   transition:
@@ -284,7 +281,7 @@ body > #confetti {
 
 /* Customizable modes */
 #customization-container {
-  --toolbar-bgcolor: var(--zen-dialog-background);
+  --toolbar-bgcolor: var(--arrowpanel-background);
 }
 
 /* Site Data popup */

@@ -34,6 +34,7 @@ class nsZenEmojiPicker extends nsZenDOMOperatedFeature {
   #panel;
 
   #anchor;
+  #emojiAsSVG = false;
 
   #currentPromise = null;
   #currentPromiseResolve = null;
@@ -195,24 +196,34 @@ class nsZenEmojiPicker extends nsZenDOMOperatedFeature {
     this.#currentPromiseReject = null;
 
     this.#anchor.removeAttribute('zen-emoji-open');
+    this.#anchor.parentElement.removeAttribute('zen-emoji-open');
     this.#anchor = null;
   }
 
   #selectEmoji(emoji) {
+    if (this.#emojiAsSVG && emoji && !emoji.startsWith('chrome://')) {
+      emoji = `data:image/svg+xml;base64,${btoa(
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><text y="28" font-size="28" x="0">${unescape(
+          encodeURIComponent(emoji)
+        )}</text></svg>`
+      )}`;
+    }
     this.#currentPromiseResolve?.(emoji);
     this.#panel.hidePopup();
   }
 
-  open(anchor, { onlySvgIcons = false } = {}) {
+  open(anchor, { onlySvgIcons = false, emojiAsSVG = false } = {}) {
     if (this.#currentPromise) {
       return null;
     }
+    this.#emojiAsSVG = emojiAsSVG;
     this.#currentPromise = new Promise((resolve, reject) => {
       this.#currentPromiseResolve = resolve;
       this.#currentPromiseReject = reject;
     });
     this.#anchor = anchor;
     this.#anchor.setAttribute('zen-emoji-open', 'true');
+    this.#anchor.parentElement.setAttribute('zen-emoji-open', 'true');
     if (onlySvgIcons) {
       this.#panel.setAttribute('only-svg-icons', 'true');
     } else {

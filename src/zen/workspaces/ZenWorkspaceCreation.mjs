@@ -1,6 +1,6 @@
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 class nsZenWorkspaceCreation extends MozXULElement {
   #wasInCollapsedMode = false;
@@ -158,7 +158,7 @@ class nsZenWorkspaceCreation extends MozXULElement {
 
     gZenUIManager.motion
       .animate(
-        [gBrowser.tabContainer, gURLBar.textbox],
+        [gBrowser.tabContainer, gURLBar],
         {
           opacity: [1, 0],
         },
@@ -199,7 +199,7 @@ class nsZenWorkspaceCreation extends MozXULElement {
   }
 
   async onCreateButtonCommand() {
-    const workspace = await gZenWorkspaces.getActiveWorkspace();
+    const workspace = gZenWorkspaces.getActiveWorkspace();
     workspace.name = this.inputName.value.trim();
     workspace.icon = this.inputIcon.image || this.inputIcon.label || undefined;
     workspace.containerTabId = this.currentProfile;
@@ -207,8 +207,8 @@ class nsZenWorkspaceCreation extends MozXULElement {
 
     await this.#cleanup();
 
-    await gZenWorkspaces._organizeWorkspaceStripLocations(workspace, true);
-    await gZenWorkspaces.updateTabsContainers();
+    gZenWorkspaces._organizeWorkspaceStripLocations(workspace, true);
+    gZenWorkspaces.updateTabsContainers();
 
     gBrowser.tabContainer._invalidateCachedTabs();
   }
@@ -314,18 +314,18 @@ class nsZenWorkspaceCreation extends MozXULElement {
     gBrowser.tabContainer.style.opacity = 0;
     if (gZenVerticalTabsManager._hasSetSingleToolbar) {
       document.getElementById('nav-bar').style.visibility = '';
-      gURLBar.textbox.style.opacity = 0;
+      gURLBar.style.opacity = 0;
     }
 
     this.remove();
     gZenUIManager.updateTabsToolbar();
 
-    const workspace = await gZenWorkspaces.getActiveWorkspace();
-    await gZenWorkspaces._organizeWorkspaceStripLocations(workspace, true);
-    await gZenWorkspaces.updateTabsContainers();
+    const workspace = gZenWorkspaces.getActiveWorkspace();
+    gZenWorkspaces._organizeWorkspaceStripLocations(workspace);
+    gZenWorkspaces.updateTabsContainers();
 
     await gZenUIManager.motion.animate(
-      [gBrowser.tabContainer, gURLBar.textbox],
+      [gBrowser.tabContainer, gURLBar],
       {
         opacity: [0, 1],
       },
@@ -338,7 +338,7 @@ class nsZenWorkspaceCreation extends MozXULElement {
 
     gBrowser.tabContainer.style.opacity = '';
     if (gZenVerticalTabsManager._hasSetSingleToolbar) {
-      gURLBar.textbox.style.opacity = '';
+      gURLBar.style.opacity = '';
     }
 
     for (const element of this.#hiddenElements) {

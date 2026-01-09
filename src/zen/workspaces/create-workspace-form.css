@@ -33,7 +33,7 @@ zen-workspace-creation {
       width: calc(100% - 10px);
       margin: auto;
       gap: 3.2rem;
-      margin-top: 1.2rem;
+      margin-top: 0.6rem;
       height: 100%;
 
       & .zen-workspace-creation-form {
@@ -41,9 +41,12 @@ zen-workspace-creation {
       }
 
       & xul|button {
-        border: none;
         margin: 0;
         font-weight: 400 !important;
+
+        &:not(.footer-button.primary) {
+          border: none;
+        }
       }
 
       & .zen-workspace-creation-name-wrapper {

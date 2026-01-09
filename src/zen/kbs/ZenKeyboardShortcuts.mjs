@@ -47,6 +47,7 @@ const KEYCODE_MAP = {
 const defaultKeyboardGroups = {
   windowAndTabManagement: [
     'zen-window-new-shortcut',
+    'zen-new-unsynced-window-shortcut',
     'zen-tab-new-shortcut',
     'zen-key-enter-full-screen',
     'zen-key-exit-full-screen',
@@ -71,7 +72,6 @@ const defaultKeyboardGroups = {
     'zen-nav-reload-shortcut-skip-cache',
     'zen-nav-reload-shortcut',
     'zen-key-stop',
-    'zen-window-new-shortcut',
     'zen-private-browsing-shortcut',
     'id:goHome',
     'id:key_gotoHistory',
@@ -694,10 +694,12 @@ class nsZenKeyboardShortcutsLoader {
       newShortcutList.push(
         new KeyShortcut(
           `zen-workspace-switch-${i}`,
-          '',
+          AppConstants.platform == 'macosx' ? `${i === 10 ? 0 : i}` : '',
           '',
           ZEN_WORKSPACE_SHORTCUTS_GROUP,
-          nsKeyShortcutModifiers.fromObject({}),
+          nsKeyShortcutModifiers.fromObject(
+            AppConstants.platform == 'macosx' ? { ctrl: true } : {}
+          ),
           `cmd_zenWorkspaceSwitch${i}`,
           `zen-workspace-shortcut-switch-${i}`
         )
@@ -802,7 +804,7 @@ class nsZenKeyboardShortcutsLoader {
 }
 
 class nsZenKeyboardShortcutsVersioner {
-  static LATEST_KBS_VERSION = 13;
+  static LATEST_KBS_VERSION = 14;
 
   constructor() {}
 
@@ -1085,6 +1087,8 @@ class nsZenKeyboardShortcutsVersioner {
     }
 
     if (version < 13) {
+      // Migrate from version 12 to 13
+      // Add shortcut to close all unpinned tabs: Default Accel+Shift+K
       data.push(
         new KeyShortcut(
           'zen-close-all-unpinned-tabs',
@@ -1094,6 +1098,22 @@ class nsZenKeyboardShortcutsVersioner {
           nsKeyShortcutModifiers.fromObject({ accel: true, shift: true }),
           'cmd_zenCloseUnpinnedTabs',
           'zen-close-all-unpinned-tabs-shortcut'
+        )
+      );
+    }
+
+    if (version < 14) {
+      // Migrate from version 13 to 14
+      // Add shortcut to open a new unsynced window: Default accelt+option+N (Ctrl+Alt+N on non-macOS)
+      data.push(
+        new KeyShortcut(
+          'zen-new-unsynced-window',
+          'N',
+          '',
+          ZEN_OTHER_SHORTCUTS_GROUP,
+          nsKeyShortcutModifiers.fromObject({ accel: true, alt: true }),
+          'cmd_zenNewNavigatorUnsynced',
+          'zen-new-unsynced-window-shortcut'
         )
       );
     }
@@ -1397,13 +1417,3 @@ window.gZenKeyboardShortcutsManager = {
     return null;
   },
 };
-
-document.addEventListener(
-  'MozBeforeInitialXULLayout',
-  () => {
-    if (Services.prefs.getBoolPref('zen.keyboard.shortcuts.enabled', false)) {
-      window.gZenKeyboardShortcutsManager.beforeInit();
-    }
-  },
-  { once: true }
-);

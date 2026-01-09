@@ -1,18 +1,20 @@
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 class nsZenWorkspaceIcons extends MozXULElement {
+  #hasConnected = false;
+
   constructor() {
     super();
   }
 
   connectedCallback() {
-    if (this.delayConnectedCallback() || this._hasConnected) {
+    if (this.delayConnectedCallback() || this.#hasConnected) {
       return;
     }
 
-    this._hasConnected = true;
+    this.#hasConnected = true;
     window.addEventListener('ZenWorkspacesUIUpdate', this, true);
 
     this.initDragAndDrop();
@@ -126,13 +128,13 @@ class nsZenWorkspaceIcons extends MozXULElement {
   }
 
   async #updateIcons() {
-    const workspaces = await gZenWorkspaces._workspaces();
+    const workspaces = gZenWorkspaces.getWorkspaces();
     this.innerHTML = '';
-    for (const workspace of workspaces.workspaces) {
+    for (const workspace of workspaces) {
       const button = this.#createWorkspaceIcon(workspace);
       this.appendChild(button);
     }
-    if (workspaces.workspaces.length <= 1) {
+    if (workspaces.length <= 1) {
       this.setAttribute('dont-show', 'true');
     } else {
       this.removeAttribute('dont-show');
@@ -167,6 +169,9 @@ class nsZenWorkspaceIcons extends MozXULElement {
         button.removeAttribute('active');
       }
       i++;
+    }
+    if (selected == -1) {
+      return;
     }
     buttons[selected].setAttribute('active', true);
     this.scrollLeft = buttons[selected].offsetLeft - 10;

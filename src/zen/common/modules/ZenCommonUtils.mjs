@@ -38,10 +38,25 @@ export class nsZenMultiWindowFeature {
     if (!nsZenMultiWindowFeature.isActiveWindow) {
       return;
     }
+    return this.forEachWindow(callback);
+  }
+
+  async forEachWindow(callback) {
     for (const browser of nsZenMultiWindowFeature.browsers) {
       try {
         if (browser.closed) continue;
         await callback(browser);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }
+
+  forEachWindowSync(callback) {
+    for (const browser of nsZenMultiWindowFeature.browsers) {
+      try {
+        if (browser.closed) continue;
+        callback(browser);
       } catch (e) {
         console.error(e);
       }

@@ -7,6 +7,7 @@
 .subviewbutton,
 #zen-welcome-start-button,
 .zen-toast button,
+.zen-current-workspace-indicator-chevron,
 .pinned-tabs-container-separator toolbarbutton {
   -moz-context-properties: fill, fill-opacity !important;
   fill: currentColor !important;
@@ -116,7 +117,7 @@
   }
 }
 
-#zen-rice-share-options .options-header,
+.zen-current-workspace-indicator-chevron,
 #PanelUI-zen-gradient-generator-color-page-right {
   list-style-image: url('arrow-right.svg');
 }
@@ -521,6 +522,7 @@
     -moz-context-properties: fill, fill-opacity;
     pointer-events: none;
   }
+
   &:is([open], [starred]) image {
     list-style-image: url('permissions-fill.svg');
   }
@@ -955,5 +957,5 @@
 
 #zen-copy-url-button image {
   list-style-image: url('link.svg');
-  fill-opacity: 0.7;
+  fill-opacity: 0.65;
 }

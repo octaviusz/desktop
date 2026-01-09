@@ -2,11 +2,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-class ZenFolder extends MozTabbrowserTabGroup {
+export class nsZenFolder extends MozTabbrowserTabGroup {
   #initialized = false;
 
   static markup = `
-      <hbox class="tab-group-label-container" pack="center">
+      <hbox class="tab-group-label-container zen-drop-target" pack="center">
         <html:div class="tab-group-folder-icon"/>
         <label class="tab-group-label" role="button"/>
         <image class="tab-reset-button reset-icon" role="button" keyNav="false" data-l10n-id="zen-folders-unload-all-tooltip"/>
@@ -68,7 +68,7 @@ class ZenFolder extends MozTabbrowserTabGroup {
     }
     this.#initialized = true;
     this._activeTabs = [];
-    this.icon.appendChild(ZenFolder.rawIcon.cloneNode(true));
+    this.icon.appendChild(nsZenFolder.rawIcon.cloneNode(true));
 
     this.labelElement.parentElement.setAttribute('context', 'zenFolderActions');
 
@@ -81,7 +81,7 @@ class ZenFolder extends MozTabbrowserTabGroup {
     };
 
     if (this.collapsed) {
-      this.querySelector('.tab-group-container').setAttribute('hidden', true);
+      this.groupContainer.setAttribute('hidden', true);
     }
   }
 
@@ -118,6 +118,9 @@ class ZenFolder extends MozTabbrowserTabGroup {
   }
 
   get childActiveGroups() {
+    if (this.tagName === 'zen-workspace-collapsible-pins') {
+      return Array.from(this.parentElement.querySelectorAll('zen-folder[has-active]'));
+    }
     return Array.from(this.querySelectorAll('zen-folder[has-active]'));
   }
 
@@ -141,7 +144,7 @@ class ZenFolder extends MozTabbrowserTabGroup {
     gZenFolders.createFolder([], {
       renameFolder: !gZenUIManager.testingEnabled,
       label: 'Subfolder',
-      insertAfter: this.querySelector('.tab-group-container').lastElementChild,
+      insertAfter: this.groupContainer.lastElementChild,
     });
   }
 
@@ -150,7 +153,6 @@ class ZenFolder extends MozTabbrowserTabGroup {
     for (let tab of this.allItems.reverse()) {
       tab = tab.group.hasAttribute('split-view-group') ? tab.group : tab;
       if (tab.hasAttribute('zen-empty-tab')) {
-        await ZenPinnedTabsStorage.removePin(tab.getAttribute('zen-pin-id'));
         gBrowser.removeTab(tab);
       } else {
         gBrowser.ungroupTab(tab);
@@ -160,7 +162,6 @@ class ZenFolder extends MozTabbrowserTabGroup {
 
   async delete() {
     for (const tab of this.allItemsRecursive) {
-      await ZenPinnedTabsStorage.removePin(tab.getAttribute('zen-pin-id'));
       if (tab.hasAttribute('zen-empty-tab')) {
         // Manually remove the empty tabs as removeTabs() inside removeTabGroup
         // does ignore them.
@@ -183,8 +184,12 @@ class ZenFolder extends MozTabbrowserTabGroup {
   }
 
   get allItems() {
-    return [...this.querySelector('.tab-group-container').children].filter(
-      (child) => !child.classList.contains('zen-tab-group-start')
+    return [...this.groupContainer.children].filter(
+      (child) =>
+        !(
+          child.classList.contains('zen-tab-group-start') ||
+          child.classList.contains('pinned-tabs-container-separator')
+        )
     );
   }
 
@@ -276,4 +281,4 @@ class ZenFolder extends MozTabbrowserTabGroup {
   }
 }
 
-customElements.define('zen-folder', ZenFolder);
+customElements.define('zen-folder', nsZenFolder);

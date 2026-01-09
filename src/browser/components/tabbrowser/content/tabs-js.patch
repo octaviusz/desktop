@@ -1,8 +1,17 @@
 diff --git a/browser/components/tabbrowser/content/tabs.js b/browser/components/tabbrowser/content/tabs.js
-index 6b6c04599fe80983d13d2069ca62b99d8ad70271..a765f2decc3a565226ac8793422474052f476573 100644
+index a61b4e7af40f1404bf3555a7011c6211de917635..bb3c822ad14c4ebf0b8792665ff8242f97e501d9 100644
 --- a/browser/components/tabbrowser/content/tabs.js
 +++ b/browser/components/tabbrowser/content/tabs.js
-@@ -436,7 +436,7 @@
+@@ -240,7 +240,7 @@
+         true
+       )
+         ? new window.TabStacking(this)
+-        : new window.TabDragAndDrop(this);
++        : Services.prefs.getBoolPref("zen.tabs.use-legacy-drag-and-drop") ? new window.TabDragAndDrop(this) : new window.ZenDragAndDrop(this);
+       this.tabDragAndDrop.init();
+     }
+ 
+@@ -453,7 +453,7 @@
        // and we're not hitting the scroll buttons.
        if (
          event.button != 0 ||
@@ -11,7 +20,7 @@ index 6b6c04599fe80983d13d2069ca62b99d8ad70271..a765f2decc3a565226ac879342247405
          event.composedTarget.localName == "toolbarbutton"
        ) {
          return;
-@@ -517,7 +517,6 @@
+@@ -534,7 +534,6 @@
              });
            }
          } else if (isTabGroupLabel(event.target)) {
@@ -19,7 +28,7 @@ index 6b6c04599fe80983d13d2069ca62b99d8ad70271..a765f2decc3a565226ac879342247405
          } else if (
            event.originalTarget.closest("scrollbox") &&
            !Services.prefs.getBoolPref(
-@@ -553,6 +552,9 @@
+@@ -570,6 +569,9 @@
      }
  
      on_keydown(event) {
@@ -29,7 +38,7 @@ index 6b6c04599fe80983d13d2069ca62b99d8ad70271..a765f2decc3a565226ac879342247405
        let { altKey, shiftKey } = event;
        let [accel, nonAccel] =
          AppConstants.platform == "macosx"
-@@ -747,7 +749,6 @@
+@@ -764,7 +766,6 @@
        this._updateCloseButtons();
  
        if (!this.#animatingGroups.size) {
@@ -37,7 +46,7 @@ index 6b6c04599fe80983d13d2069ca62b99d8ad70271..a765f2decc3a565226ac879342247405
        }
  
        document
-@@ -808,7 +809,7 @@
+@@ -825,7 +826,7 @@
      }
  
      get newTabButton() {
@@ -46,7 +55,7 @@ index 6b6c04599fe80983d13d2069ca62b99d8ad70271..a765f2decc3a565226ac879342247405
      }
  
      get verticalMode() {
-@@ -824,6 +825,7 @@
+@@ -841,6 +842,7 @@
      }
  
      get overflowing() {
@@ -54,7 +63,7 @@ index 6b6c04599fe80983d13d2069ca62b99d8ad70271..a765f2decc3a565226ac879342247405
        return this.hasAttribute("overflow");
      }
  
-@@ -837,29 +839,54 @@
+@@ -854,29 +856,56 @@
        if (pinnedChildren?.at(-1)?.id == "pinned-tabs-container-periphery") {
          pinnedChildren.pop();
        }
@@ -81,8 +90,10 @@ index 6b6c04599fe80983d13d2069ca62b99d8ad70271..a765f2decc3a565226ac879342247405
 +            tabs.splice(i, 1);
 +            // add the tabs in the group to the list
 +            tabs.splice(i, 0, ...tab.tabs);
++          } else if (tab.classList.contains("zen-tab-group-start")) {
++            tabs.splice(i, 1);
 +          }
-+        }
+         }
 +      };
 +      expandTabs(pinnedTabs);
 +      expandTabs(unpinnedChildren);
@@ -103,7 +114,7 @@ index 6b6c04599fe80983d13d2069ca62b99d8ad70271..a765f2decc3a565226ac879342247405
 +          // remove the separator from the list
 +          allTabs.splice(i, 1);
 +          i--;
-         }
++        }
 +        i++;
        }
 -
@@ -119,42 +130,55 @@ index 6b6c04599fe80983d13d2069ca62b99d8ad70271..a765f2decc3a565226ac879342247405
      }
  
      /**
-@@ -926,17 +953,10 @@
- 
-       let elementIndex = 0;
+@@ -944,29 +973,28 @@
+         return this.#focusableItems;
+       }
  
 -      let unpinnedChildren = Array.from(this.arrowScrollbox.children);
 -      let pinnedChildren = Array.from(this.pinnedTabsContainer.children);
++      let elementIndex = 0;
 +      let children = gZenWorkspaces.tabboxChildrenWithoutEmpty;
  
        let focusableItems = [];
 -      for (let child of pinnedChildren) {
 -        if (isTab(child)) {
--          child.elementIndex = elementIndex++;
 -          focusableItems.push(child);
 -        }
 -      }
 -      for (let child of unpinnedChildren) {
-+      for (let child of [...gZenWorkspaces.getCurrentEssentialsContainer().children, ...this.pinnedTabsContainer.children, ...children]) {
++      for (let child of [...gZenWorkspaces.getCurrentEssentialsContainer().children, ...(gZenWorkspaces.activeWorkspaceElement?.hasCollapsedPinnedTabs ? [] : this.pinnedTabsContainer.children), ...children]) {
          if (isTab(child) && child.visible) {
-           child.elementIndex = elementIndex++;
            focusableItems.push(child);
-@@ -944,11 +964,13 @@
-           child.labelElement.elementIndex = elementIndex++;
+         } else if (isTabGroup(child)) {
            focusableItems.push(child.labelElement);
- 
+-
 -          let visibleTabsInGroup = child.tabs.filter(tab => tab.visible);
 +        if (!child.hasAttribute("split-view-group")) {
 +          let visibleTabsInGroup = child.childGroupsAndTabs.filter(tab => tab.visible);
-           visibleTabsInGroup.forEach(tab => {
-             tab.elementIndex = elementIndex++;
-           });
++          
            focusableItems.push(...visibleTabsInGroup);
 +        }
          } else if (child.tagName == "tab-split-view-wrapper") {
            let visibleTabsInSplitView = child.tabs.filter(tab => tab.visible);
-           visibleTabsInSplitView.forEach(tab => {
-@@ -992,6 +1014,7 @@
+           focusableItems.push(...visibleTabsInSplitView);
+         }
+       }
+-
++      focusableItems.forEach(item => {
++        item.elementIndex = elementIndex++;
++      });
+       this.#focusableItems = focusableItems;
+ 
+       return this.#focusableItems;
+@@ -979,6 +1007,7 @@
+      * focusable (ex, we don't want the splitview container to be focusable, only its children).
+      */
+     get dragAndDropElements() {
++      return this.ariaFocusableItems;
+       if (this.#dragAndDropElements) {
+         return this.#dragAndDropElements;
+       }
+@@ -1050,6 +1079,7 @@
      _invalidateCachedTabs() {
        this.#allTabs = null;
        this._invalidateCachedVisibleTabs();
@@ -162,7 +186,7 @@ index 6b6c04599fe80983d13d2069ca62b99d8ad70271..a765f2decc3a565226ac879342247405
      }
  
      _invalidateCachedVisibleTabs() {
-@@ -1095,7 +1118,7 @@
+@@ -1154,7 +1184,7 @@
  
        if (node == null) {
          // We have a container for non-tab elements at the end of the scrollbox.
@@ -171,7 +195,7 @@ index 6b6c04599fe80983d13d2069ca62b99d8ad70271..a765f2decc3a565226ac879342247405
        }
  
        node.before(tab);
-@@ -1193,7 +1216,7 @@
+@@ -1252,7 +1282,7 @@
            // There are separate "new tab" buttons for horizontal tabs toolbar, vertical tabs and
            // for when the tab strip is overflowed (which is shared by vertical and horizontal tabs);
            // Attach the long click popup to all of them.
@@ -180,7 +204,7 @@ index 6b6c04599fe80983d13d2069ca62b99d8ad70271..a765f2decc3a565226ac879342247405
            const newTab2 = this.newTabButton;
            const newTabVertical = document.getElementById(
              "vertical-tabs-newtab-button"
-@@ -1294,8 +1317,10 @@
+@@ -1353,8 +1383,10 @@
       */
      _handleTabSelect(aInstant) {
        let selectedTab = this.selectedItem;
@@ -191,7 +215,7 @@ index 6b6c04599fe80983d13d2069ca62b99d8ad70271..a765f2decc3a565226ac879342247405
        selectedTab._notselectedsinceload = false;
      }
  
-@@ -1304,7 +1329,7 @@
+@@ -1363,7 +1395,7 @@
       * @param {boolean} [shouldScrollInstantly=false]
       */
      #ensureTabIsVisible(tab, shouldScrollInstantly = false) {
@@ -200,7 +224,7 @@ index 6b6c04599fe80983d13d2069ca62b99d8ad70271..a765f2decc3a565226ac879342247405
        if (arrowScrollbox?.overflowing) {
          arrowScrollbox.ensureElementIsVisible(tab, shouldScrollInstantly);
        }
-@@ -1437,7 +1462,7 @@
+@@ -1496,7 +1528,7 @@
      }
  
      _notifyBackgroundTab(aTab) {

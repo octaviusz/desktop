@@ -18,6 +18,10 @@ tab-context-zen-remove-essential =
 tab-context-zen-replace-pinned-url-with-current =
     .label = Replace Pinned URL with Current
     .accesskey = C
+tab-context-zen-edit-title =
+    .label = Change Label...
+tab-context-zen-edit-icon =
+    .label = Change Icon...
 
 zen-themes-corrupted = Your { -brand-short-name } mods file is corrupted. They have been reset to the default theme.
 zen-shortcuts-corrupted = Your { -brand-short-name } shortcuts file is corrupted. They have been reset to the default shortcuts.
@@ -33,7 +37,6 @@ pictureinpicture-minimize-btn =
   .tooltip = Minimize
 
 zen-panel-ui-gradient-generator-custom-color = Custom Color
-zen-panel-ui-gradient-generator-saved-message = Successfully saved the gradient!
 
 zen-copy-current-url-confirmation = Copied current URL!
 
@@ -46,12 +49,6 @@ zen-pinned-tab-replaced = Pinned tab URL has been replaced with the current URL!
 zen-tabs-renamed = Tab has been successfully renamed!
 zen-background-tab-opened-toast = New background tab opened!
 zen-workspace-renamed-toast = Workspace has been successfully renamed!
-
-zen-library-sidebar-workspaces =
-    .label = Spaces
-
-zen-library-sidebar-mods =
-    .label = Mods
 
 zen-toggle-compact-mode-button =
     .label = Compact Mode
