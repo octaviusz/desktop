@@ -235,3 +235,9 @@
     text-align: center;
   }
 }
+
+zen-split-fake-tab {
+  height: 32px;
+  background: var(--color-accent-primary);
+  border-radius: var(--border-radius-medium);
+}

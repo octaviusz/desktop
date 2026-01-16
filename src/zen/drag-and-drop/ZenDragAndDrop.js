@@ -64,6 +64,9 @@
     #changeSpaceTimer = null;
     #isAnimatingTabMove = false;
 
+    #dragOverSplitTimer = null;
+    #fakeTabSplit = null;
+
     constructor(tabbrowserTabs) {
       super(tabbrowserTabs);
 
@@ -569,6 +572,7 @@
         return;
       }
       this.#handle_sidebarDragOver(event);
+      this.#handle_tabDragOverToSplit(event);
     }
 
     #shouldSwitchSpace(event) {
@@ -616,6 +620,113 @@
         }
       } else if (this.#changeSpaceTimer) {
         this.clearSpaceSwitchTimer();
+      }
+    }
+
+    #handle_tabDragOverToSplit(event) {
+      if (!Services.prefs.getBoolPref("zen.splitView.enable-drag-over-split", true)) {
+        return;
+      }
+
+      const dt = event.dataTransfer;
+      const draggedTab = dt.mozGetDataAt(TAB_DROP_TYPE, 0);
+      let dragData = draggedTab._dragData;
+      let zenDragData = draggedTab._zenDragData;
+      let movingTabsSet = dragData.movingTabsSet;
+      let dropElement = dragData.dropElement;
+
+      if (!dropElement || !isTab(dropElement)) {
+        return;
+      }
+
+      if (
+        movingTabsSet.has(dropElement) ||
+        !isTab(draggedTab) ||
+        draggedTab?.group?.hasAttribute("split-view-group")
+      ) {
+        this.#clearDragOverSplit();
+        return;
+      }
+
+      let bounds = window.windowUtils.getBoundsWithoutFlushing(dropElement);
+      const { clientX } = event;
+      let targetX = bounds.x;
+      let targetWidth = bounds.width;
+
+      let isLeft = clientX < targetX + targetWidth / 2;
+      let dropSide = isLeft ? "left" : "right";
+
+      // If the drop side or element changes, clear the timer and recreate the fake tab
+      if (
+        zenDragData?.splitDropElement !== dropElement ||
+        zenDragData?.splitDropSide !== dropSide
+      ) {
+        this.#clearDragOverSplit(zenDragData);
+      }
+
+      if (
+        this.#dragOverSplitTimer &&
+        zenDragData?.splitDropElement === dropElement &&
+        zenDragData?.splitDropSide === dropSide
+      ) {
+        // Timer already running for the same target and side, do nothing
+        return;
+      }
+
+      const dragOverSplitDelay = Services.prefs.getIntPref(
+        "zen.splitView.drag-over-split-delayMC",
+        300
+      );
+      this.#dragOverSplitTimer = setTimeout(() => {
+        this.#createFakeTabSplit(dropElement, dropSide, dragData);
+        draggedTab._zenDragData = {
+          splitDropElement: dropElement,
+          splitDropSide: dropSide,
+        };
+      }, dragOverSplitDelay);
+    }
+
+    #createFakeTabSplit(dropElement, dropSide, dragData) {
+      if (this.#dragOverSplitTimer) {
+        clearTimeout(this.#dragOverSplitTimer);
+        this.#dragOverSplitTimer = null;
+      }
+
+      // Remove drop indicator
+      this.clearDragOverVisuals();
+
+      // Remove any existing fake split tab
+      if (this.#fakeTabSplit) {
+        this.#fakeTabSplit.remove();
+      }
+
+      const element = document.createXULElement("zen-split-fake-tab");
+      element.style.width = `${dragData.tabWidth / 2}px`;
+      switch (dropSide) {
+        case "left":
+          dropElement.childNodes[0].before(element);
+          break;
+        case "right":
+          dropElement.childNodes[0].after(element);
+          break;
+      }
+
+      this.#fakeTabSplit = element;
+    }
+
+    #clearDragOverSplit(dragData = null) {
+      if (this.#dragOverSplitTimer) {
+        clearTimeout(this.#dragOverSplitTimer);
+        this.#dragOverSplitTimer = null;
+      }
+      if (this.#fakeTabSplit) {
+        this.#fakeTabSplit.remove();
+        this.#fakeTabSplit = null;
+      }
+      // Clear the stored drop info from dragData
+      if (dragData) {
+        delete dragData.splitDropElement;
+        delete dragData.splitDropSide;
       }
     }
 
@@ -676,6 +787,24 @@
     handle_drop(event) {
       this.clearSpaceSwitchTimer();
       super.handle_drop(event);
+      this.#handele_dropSwitchSpace(event);
+      this.#handle_dropCreateSplit(event);
+    }
+
+    handle_dragleave(event) {
+      super.handle_dragleave(event);
+      const dt = event.dataTransfer;
+      let draggedTab = dt.mozGetDataAt(TAB_DROP_TYPE, 0);
+      let dragData = draggedTab._dragData;
+      let zenDragData = draggedTab._zenDragData;
+      let dropElement = dragData.dropElement;
+      let splitDropElement = zenDragData?.splitDropElement;
+      if (splitDropElement && splitDropElement !== dropElement) {
+        this.#clearDragOverSplit(zenDragData);
+      }
+    }
+
+    #handele_dropSwitchSpace(event) {
       const dt = event.dataTransfer;
       const activeWorkspace = gZenWorkspaces.activeWorkspace;
       let draggedTab = dt.mozGetDataAt(TAB_DROP_TYPE, 0);
@@ -695,6 +824,24 @@
         gZenFolders.changeFolderToSpace(draggedTab, activeWorkspace, { hasDndSwitch: true });
       }
       gZenWorkspaces.updateTabsContainers();
+    }
+
+    #handle_dropCreateSplit(event) {
+      let dt = event.dataTransfer;
+      let draggedTab = dt.mozGetDataAt(TAB_DROP_TYPE, 0);
+      let dragData = draggedTab._zenDragData;
+      const droppedOnTab = dragData?.splitDropElement;
+      const dropSide = dragData?.splitDropSide;
+
+      this.#clearDragOverSplit(dragData); // Clear any visuals and timer
+
+      if (draggedTab && droppedOnTab) {
+        gZenViewSplitter.splitTabs(
+          dropSide == "left" ? [draggedTab, droppedOnTab] : [droppedOnTab, draggedTab],
+          "vsep",
+          dropSide == "left" ? 0 : 1
+        );
+      }
     }
 
     handle_drop_transition(dropElement, draggedTab, movingTabs, dropBefore) {
