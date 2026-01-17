@@ -1390,6 +1390,9 @@
     #makeDragImageEssential(event) {
       const dt = event.dataTransfer;
       const draggedTab = event.dataTransfer.mozGetDataAt(TAB_DROP_TYPE, 0);
+      if (draggedTab.hasAttribute("zen-essential")) {
+        return;
+      }
       const dragData = draggedTab._dragData;
       const [wrapper] = this.originalDragImageArgs;
       const tab = wrapper.firstElementChild;
@@ -1414,9 +1417,6 @@
       const dt = event.dataTransfer;
       const draggedTab = event.dataTransfer.mozGetDataAt(TAB_DROP_TYPE, 0);
       if (draggedTab.hasAttribute("zen-essential")) {
-        setTimeout(() => {
-          dt.updateDragImage(...this.originalDragImageArgs);
-        }, 50);
         return;
       }
       const wrapper = this.originalDragImageArgs[0];

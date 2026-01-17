@@ -132,6 +132,15 @@ class nsZenWorkspaces {
       await this.#waitForPromises();
       await this.restoreWorkspacesFromSessionStore({});
     }
+
+    if (!this.privateWindowOrDisabled) {
+      const observerFunction = async () => {
+        delete this._workspaceBookmarksCache;
+        await this.workspaceBookmarks();
+        this._invalidateBookmarkContainers();
+      };
+      Services.obs.addObserver(observerFunction, "workspace-bookmarks-updated");
+    }
   }
 
   log(...args) {
@@ -2297,7 +2306,7 @@ class nsZenWorkspaces {
     }
 
     // Reset bookmarks
-    this._invalidateBookmarkContainers();
+    this.#invalidateBookmarkContainers();
 
     // Update workspace indicator
     await this.updateWorkspaceIndicator(workspace, this.workspaceIndicator);
@@ -2335,7 +2344,7 @@ class nsZenWorkspaces {
     ctrlTab.readPref();
   }
 
-  _invalidateBookmarkContainers() {
+  #invalidateBookmarkContainers() {
     for (let i = 0, len = this.bookmarkMenus.length; i < len; i++) {
       const element = document.getElementById(this.bookmarkMenus[i]);
       if (element && element._placesView) {
@@ -2343,6 +2352,7 @@ class nsZenWorkspaces {
         placesView.invalidateContainer(placesView._resultNode);
       }
     }
+    BookmarkingUI.updateEmptyToolbarMessage();
   }
 
   updateWorkspacesChangeContextMenu() {
@@ -2809,9 +2819,8 @@ class nsZenWorkspaces {
     const tabWorkspaceId = aTab.getAttribute("zen-workspace-id");
     const containerId = aTab.getAttribute("usercontextid") ?? "0";
     // Return all tabs that are not on the same workspace
-    return this.allStoredTabs.filter(
+    return gBrowser.tabs.filter(
       (tab) =>
-        tab.getAttribute("zen-workspace-id") !== tabWorkspaceId &&
         !this._shouldShowTab(tab, tabWorkspaceId, containerId, this._workspaceCache) &&
         !tab.hasAttribute("zen-empty-tab")
     );

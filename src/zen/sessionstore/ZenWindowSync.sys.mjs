@@ -658,12 +658,12 @@ class nsZenWindowSync {
     // we would start receiving invalid history changes from the the incorrect
     // browser view that was just swapped out.
     this.#maybeFlushTabState(aOurTab).finally(() => {
-      if (!tabStateEntries?.length) {
+      if (!tabStateEntries?.entries.length) {
         this.log(`Error: No tab state entries found for tab ${aOtherTab.id} during swap`);
         return;
       }
       lazy.TabStateCache.update(aOurTab.linkedBrowser.permanentKey, {
-        entries: tabStateEntries,
+        history: tabStateEntries,
       });
     });
     return true;
@@ -853,14 +853,14 @@ class nsZenWindowSync {
    * Retrieves the tab state entries from the cache for a given tab.
    *
    * @param {object} aTab - The tab to retrieve the state for.
-   * @returns {Array} The tab state entries.
+   * @returns {object} The tab state entries.
    */
   #getTabEntriesFromCache(aTab) {
-    if (!aTab.linkedBrowser) {
-      return [];
+    let cachedState;
+    if (aTab.linkedBrowser) {
+      cachedState = lazy.TabStateCache.get(aTab.linkedBrowser.permanentKey);
     }
-    let cachedState = lazy.TabStateCache.get(aTab.linkedBrowser.permanentKey) || { entries: [] };
-    return cachedState.entries || [];
+    return cachedState?.history?.entries ? cachedState.history : { entries: [] };
   }
 
   /**
@@ -887,13 +887,16 @@ class nsZenWindowSync {
   setPinnedTabState(aTab) {
     return this.#maybeFlushTabState(aTab).finally(() => {
       this.log(`Setting pinned initial state for tab ${aTab.id}`);
-      const entries = this.#getTabEntriesFromCache(aTab);
-      let activeIndex = "index" in entries ? entries.index : entries.entries.length - 1;
-      activeIndex = Math.min(activeIndex, entries.entries.length - 1);
+      let { entries, index } = this.#getTabEntriesFromCache(aTab);
+      let image = aTab.getAttribute("image") || aTab.ownerGlobal.gBrowser.getIcon(aTab);
+      let activeIndex = typeof index === "number" ? index : entries.length;
+      // Tab state cache gives us the index starting from 1 instead of 0.
+      activeIndex--;
+      activeIndex = Math.min(activeIndex, entries.length - 1);
       activeIndex = Math.max(activeIndex, 0);
       const initialState = {
-        entry: entries.entries[activeIndex],
-        image: entries.image,
+        entry: (entries[activeIndex] || entries[0]) ?? null,
+        image,
       };
       this.#runOnAllWindows(null, (win) => {
         const targetTab = this.getItemFromWindow(win, aTab.id);
@@ -1019,10 +1022,11 @@ class nsZenWindowSync {
     // There are cases where the pinned state is changed but we don't
     // wan't to override the initial state we stored when the tab was created.
     // For example, when session restore pins a tab again.
+    let tabStatePromise;
     if (!tab._zenPinnedInitialState) {
-      this.setPinnedTabState(tab);
+      tabStatePromise = this.setPinnedTabState(tab);
     }
-    return this.on_TabMove(aEvent);
+    return Promise.all([tabStatePromise, this.on_TabMove(aEvent)]);
   }
 
   on_TabUnpinned(aEvent) {
