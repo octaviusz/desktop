@@ -237,7 +237,26 @@
 }
 
 zen-split-fake-tab {
-  height: 32px;
-  background: var(--color-accent-primary);
+  margin-top: 10px;
+  margin-left: 7px;
   border-radius: var(--border-radius-medium);
+  .fake-tab-icon {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    margin-inline-end: 10px;
+    margin-inline-start: 4px;
+    fill: currentColor;
+    -moz-context-properties: fill;
+  }
+  .fake-tab-label {
+    position: relative;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 250px;
+    color: light-dark(black, white);
+  }
 }

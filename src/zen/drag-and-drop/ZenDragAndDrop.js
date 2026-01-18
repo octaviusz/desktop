@@ -699,8 +699,27 @@
       if (this.#fakeTabSplit) {
         this.#fakeTabSplit.remove();
       }
+      const draggedTab = dragData.movingTabs[0];
 
       const element = document.createXULElement("zen-split-fake-tab");
+      const icon = document.createElement("img");
+      icon.className = "fake-tab-icon";
+      let tabURL = draggedTab.linkedBrowser?.currentURI?.spec || "";
+      try {
+        // Get the hostname from the URL
+        const url = new URL(tabURL);
+        tabURL = url.hostname || tabURL;
+      } catch {
+        // We don't need to do anything if the URL is invalid. e.g. about:blank
+      }
+      let tabLabel = draggedTab.label || "";
+      let iconURL = gBrowser.getIcon(draggedTab) || PlacesUtils.favicons.defaultFavicon.spec;
+      icon.src = iconURL;
+      const label = document.createElement("label");
+      label.className = "fake-tab-label";
+      label.textContent = tabLabel;
+      element.append(icon, label);
+
       element.style.width = `${dragData.tabWidth / 2}px`;
       switch (dropSide) {
         case "left":
