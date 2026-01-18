@@ -191,14 +191,20 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
    * Removes a tab from a group.
    *
    * @param {Tab} tab - The tab to remove.
-   * @param {number} groupIndex - The index of the group.
-   * @param {boolean} [forUnsplit=false] - Whether the removal is for unsplitting.
+   * @param {number} [groupIndex=undefined] - The index of the group.
+   * @param {object} [options={}] - Additional options.
+   * @param {boolean} [options.forUnsplit=false] - Whether the removal is for unsplitting.
+   * @param {boolean} [options.dontRebuildGrid=false] - Whether to skip rebuilding the grid layout.
+   * @param {boolean} [options.changeTab=true] - Whether to change the selected tab.
    */
   removeTabFromGroup(
     tab,
-    groupIndex,
+    groupIndex = undefined,
     { forUnsplit = false, dontRebuildGrid = false, changeTab = true } = {}
   ) {
+    if (typeof groupIndex === "undefined") {
+      groupIndex = this._data.findIndex((group) => group.tabs.includes(tab));
+    }
     const group = this._data[groupIndex];
     const tabIndex = group.tabs.indexOf(tab);
     group.tabs.splice(tabIndex, 1);
@@ -1773,7 +1779,7 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     if (this.fakeBrowser) {
       delete this._hasAnimated;
       this.fakeBrowser.remove();
-      this.fakeBrowser = null;
+      delete this.fakeBrowser;
       if (select) {
         gBrowser.selectedTab = this._draggingTab;
         this._draggingTab = null;
@@ -2164,49 +2170,51 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
       gridType: "grid",
       layoutTree: this.calculateLayoutTree(tabs, "grid"),
     };
-    this._data.push(data);
-    this.activateSplitView(data);
-    gBrowser.selectedTab = emptyTab;
-    setTimeout(() => {
-      window.addEventListener(
-        "ZenURLBarClosed",
-        (event) => {
-          const { onElementPicked, onSwitch } = event.detail;
-          const groupIndex = this._data.findIndex((group) => group.tabs.includes(emptyTab));
-          const newSelectedTab = gBrowser.selectedTab;
-          const cleanup = () => {
-            this.removeTabFromGroup(emptyTab, groupIndex, {
-              changeTab: !onSwitch,
-              forUnsplit: true,
-            });
-            const command = document.getElementById("cmd_zenNewEmptySplit");
-            command.removeAttribute("disabled");
-          };
-          if (onElementPicked) {
-            if (
-              newSelectedTab === emptyTab ||
-              newSelectedTab === selectedTab ||
-              selectedTab.getAttribute("zen-workspace-id") !==
-                newSelectedTab.getAttribute("zen-workspace-id")
-            ) {
+    this.#withoutSplitViewTransition(() => {
+      this._data.push(data);
+      this.activateSplitView(data);
+      gBrowser.selectedTab = emptyTab;
+      setTimeout(() => {
+        window.addEventListener(
+          "ZenURLBarClosed",
+          (event) => {
+            const { onElementPicked, onSwitch } = event.detail;
+            const groupIndex = this._data.findIndex((group) => group.tabs.includes(emptyTab));
+            const newSelectedTab = gBrowser.selectedTab;
+            const cleanup = () => {
+              this.removeTabFromGroup(emptyTab, groupIndex, {
+                changeTab: !onSwitch,
+                forUnsplit: true,
+              });
+              const command = document.getElementById("cmd_zenNewEmptySplit");
+              command.removeAttribute("disabled");
+            };
+            if (onElementPicked) {
+              if (
+                newSelectedTab === emptyTab ||
+                newSelectedTab === selectedTab ||
+                selectedTab.getAttribute("zen-workspace-id") !==
+                  newSelectedTab.getAttribute("zen-workspace-id")
+              ) {
+                cleanup();
+                return;
+              }
+              this.removeTabFromGroup(emptyTab, groupIndex, { forUnsplit: true });
+              gBrowser.selectedTab = selectedTab;
+              this.resetTabState(emptyTab, false);
+              this.splitTabs(
+                rightSide ? [selectedTab, newSelectedTab] : [newSelectedTab, selectedTab],
+                "grid",
+                rightSide ? 1 : 0
+              );
+            } else {
               cleanup();
-              return;
             }
-            this.removeTabFromGroup(emptyTab, groupIndex, { forUnsplit: true });
-            gBrowser.selectedTab = selectedTab;
-            this.resetTabState(emptyTab, false);
-            this.splitTabs(
-              rightSide ? [selectedTab, newSelectedTab] : [newSelectedTab, selectedTab],
-              "grid",
-              rightSide ? 1 : 0
-            );
-          } else {
-            cleanup();
-          }
-        },
-        { once: true }
-      );
-      gZenUIManager.handleNewTab(false, false, "tab", true);
+          },
+          { once: true }
+        );
+        gZenUIManager.handleNewTab(false, false, "tab", true);
+      });
     });
   }
 

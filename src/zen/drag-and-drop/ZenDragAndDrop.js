@@ -206,6 +206,9 @@
         isEssential ? 0 : numEssentials,
         isEssential ? numEssentials : undefined
       );
+      if (!tabs.length) {
+        tabs = [...movingTabs];
+      }
 
       let screen = this._tabbrowserTabs.verticalMode ? event.screenY : event.screenX;
       if (screen == dragData.animLastScreenPos) {
@@ -818,6 +821,7 @@
     handle_drop(event) {
       this.clearSpaceSwitchTimer();
       super.handle_drop(event);
+      this.#maybeClearVerticalPinnedGridDragOver();
       this.#handele_dropSwitchSpace(event);
       this.#handle_dropCreateSplit(event);
     }
@@ -1063,7 +1067,8 @@
         } else {
           const numEssentials = gBrowser._numZenEssentials;
           const numPinned = gBrowser.pinnedTabCount - numEssentials;
-          const tabToUse = event.target.closest(dropZoneSelector);
+          const tabToUse =
+            event.target.closest(dropZoneSelector) || draggedTab._dragData?.dropElement;
           if (!tabToUse) {
             return null;
           }
