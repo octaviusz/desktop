@@ -644,14 +644,23 @@
         !isTab(draggedTab) ||
         draggedTab?.group?.hasAttribute("split-view-group")
       ) {
-        this.#clearDragOverSplit();
+        this._maybeClearDragOverSplit();
         return;
       }
 
       let bounds = window.windowUtils.getBoundsWithoutFlushing(dropElement);
-      const { clientX } = event;
+      const { clientX, clientY } = event;
       let targetX = bounds.x;
+      let targetY = bounds.y;
       let targetWidth = bounds.width;
+      let targetHeight = bounds.height;
+
+      const topThreshold = targetY + targetHeight * 0.2;
+      const bottomThreshold = targetY + targetHeight * 0.8;
+      if (clientY < topThreshold || clientY > bottomThreshold) {
+        this._maybeClearDragOverSplit(zenDragData);
+        return;
+      }
 
       let isLeft = clientX < targetX + targetWidth / 2;
       let dropSide = isLeft ? "left" : "right";
@@ -661,7 +670,7 @@
         zenDragData?.splitDropElement !== dropElement ||
         zenDragData?.splitDropSide !== dropSide
       ) {
-        this.#clearDragOverSplit(zenDragData);
+        this._maybeClearDragOverSplit(zenDragData);
       }
 
       if (
@@ -678,7 +687,7 @@
         300
       );
       this.#dragOverSplitTimer = setTimeout(() => {
-        this.#createFakeTabSplit(dropElement, dropSide, dragData);
+        this._createFakeTabSplit(dropElement, dropSide, dragData);
         draggedTab._zenDragData = {
           splitDropElement: dropElement,
           splitDropSide: dropSide,
@@ -686,7 +695,7 @@
       }, dragOverSplitDelay);
     }
 
-    #createFakeTabSplit(dropElement, dropSide, dragData) {
+    _createFakeTabSplit(dropElement, dropSide, dragData) {
       if (this.#dragOverSplitTimer) {
         clearTimeout(this.#dragOverSplitTimer);
         this.#dragOverSplitTimer = null;
@@ -733,7 +742,7 @@
       this.#fakeTabSplit = element;
     }
 
-    #clearDragOverSplit(dragData = null) {
+    _maybeClearDragOverSplit(dragData = null) {
       if (this.#dragOverSplitTimer) {
         clearTimeout(this.#dragOverSplitTimer);
         this.#dragOverSplitTimer = null;
@@ -819,7 +828,7 @@
       let dropElement = dragData.dropElement;
       let splitDropElement = zenDragData?.splitDropElement;
       if (splitDropElement && splitDropElement !== dropElement) {
-        this.#clearDragOverSplit(zenDragData);
+        this._maybeClearDragOverSplit(zenDragData);
       }
     }
 
@@ -852,7 +861,7 @@
       const droppedOnTab = dragData?.splitDropElement;
       const dropSide = dragData?.splitDropSide;
 
-      this.#clearDragOverSplit(dragData); // Clear any visuals and timer
+      this._maybeClearDragOverSplit(dragData); // Clear any visuals and timer
 
       if (draggedTab && droppedOnTab) {
         gZenViewSplitter.splitTabs(
