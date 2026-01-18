@@ -655,8 +655,11 @@
       let targetWidth = bounds.width;
       let targetHeight = bounds.height;
 
-      const topThreshold = targetY + targetHeight * 0.2;
-      const bottomThreshold = targetY + targetHeight * 0.8;
+      let edgeZoneThreshold =
+        Services.prefs.getIntPref("zen.splitView.drag-over-split-threshold", 25) / 100;
+
+      const topThreshold = targetY + targetHeight * edgeZoneThreshold;
+      const bottomThreshold = targetY + targetHeight * (1 - edgeZoneThreshold);
       if (clientY < topThreshold || clientY > bottomThreshold) {
         this._maybeClearDragOverSplit(zenDragData);
         return;
