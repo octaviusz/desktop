@@ -638,7 +638,7 @@
       let movingTabsSet = dragData.movingTabsSet;
       let dropElement = dragData.dropElement;
 
-      if (!dropElement || !isTab(dropElement)) {
+      if (!dropElement || !isTab(dropElement) || dropElement.hasAttribute("zen-glance-tab")) {
         return;
       }
 
@@ -690,7 +690,7 @@
 
       const dragOverSplitDelay = Services.prefs.getIntPref(
         "zen.splitView.drag-over-split-delayMC",
-        300
+        100
       );
       this.#dragOverSplitTimer = setTimeout(() => {
         this._createFakeTabSplit(dropElement, dropSide, dragData);
