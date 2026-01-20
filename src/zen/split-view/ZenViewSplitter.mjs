@@ -181,6 +181,9 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
    */
   onTabSelect(event) {
     const previousTab = event.detail.previousTab;
+    if (previousTab === gBrowser.selectedTab && this._canDrop) {
+      return;
+    }
     if (previousTab && !previousTab.hasAttribute("zen-empty-tab")) {
       this._lastOpenedTab = previousTab;
     }
@@ -1174,9 +1177,11 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
    * @param {string|undefined} gridType - The type of grid layout.
    * @param {number} initialIndex - The index of the initially active tab.
    *                                use -1 to avoid selecting any tab.
+   * @param {object} options - Additional options.
+   * @param {string|null} options.groupFetchId - An optional group fetch ID.
    * @returns {object|undefined} The split view data or undefined if the split was not performed.
    */
-  splitTabs(tabs, gridType, initialIndex = 0) {
+  splitTabs(tabs, gridType, initialIndex = 0, { groupFetchId = null } = {}) {
     const tabIndexToUse = Math.max(0, initialIndex);
     return this.#withoutSplitViewTransition(() => {
       // TODO: Add support for splitting essential tabs
@@ -1186,12 +1191,18 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
       }
 
       const existingSplitTab = tabs.find((tab) => tab.splitView);
+      let shouldActivateSplit =
+        (initialIndex >= 0 || tabs.includes(window.gBrowser.selectedTab)) &&
+        !this._sessionRestoring;
       if (existingSplitTab) {
         this._moveTabsToContainer(tabs, tabs[tabIndexToUse]);
         const groupIndex = this._data.findIndex((group) => group.tabs.includes(existingSplitTab));
         const group = this._data[groupIndex];
         const gridTypeChange = gridType && group.gridType !== gridType;
         const newTabsAdded = tabs.find((t) => !group.tabs.includes(t));
+        if (group.tabs.length >= this.MAX_TABS) {
+          return;
+        }
         if (gridTypeChange || !newTabsAdded) {
           // reset layout
           group.gridType = gridType;
@@ -1204,17 +1215,18 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
           for (let i = 0; i < tabs.length; i++) {
             const tab = tabs[i];
             if (!group.tabs.includes(tab)) {
-              gBrowser.moveTabToExistingGroup(tab, this._getSplitViewGroup(tabs));
+              gBrowser.moveTabToExistingGroup(tab, this._getSplitViewGroup(tabs, groupFetchId));
               group.tabs.push(tab);
               this.addTabToSplit(tab, group.layoutTree);
+              tab.splitView = true;
             }
           }
         }
-        if (this._sessionRestoring) {
-          return;
+        this.#dispatchItemEvent("ZenSplitViewTabsSplit", group.tabs[0].group);
+        if (!shouldActivateSplit) {
+          return group;
         }
         this.activateSplitView(group, true);
-        this.#dispatchItemEvent("ZenSplitViewTabsSplit", group);
         // eslint-disable-next-line consistent-return
         return group;
       }
@@ -1238,7 +1250,7 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
       gridType ??= "grid";
 
       // Add tabs to the split view group
-      let splitGroup = this._getSplitViewGroup(tabs);
+      let splitGroup = this._getSplitViewGroup(tabs, groupFetchId);
       const groupId = splitGroup?.id;
       if (splitGroup) {
         for (const tab of tabs) {
@@ -1255,12 +1267,13 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
         layoutTree: this.calculateLayoutTree(tabs, gridType),
       };
       this._data.push(splitData);
-      if (!this._sessionRestoring && initialIndex >= 0) {
+      if (shouldActivateSplit) {
         window.gBrowser.selectedTab = tabs[tabIndexToUse] ?? tabs[0];
-      }
-
-      if (!this._sessionRestoring) {
         this.activateSplitView(splitData);
+      } else {
+        for (const tab of tabs) {
+          tab.splitView = true;
+        }
       }
 
       this.#dispatchItemEvent("ZenSplitViewTabsSplit", splitGroup);
@@ -1777,6 +1790,7 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
       delete this._dndElement;
     }
     if (this.fakeBrowser) {
+      delete this._canDrop;
       delete this._hasAnimated;
       this.fakeBrowser.remove();
       delete this.fakeBrowser;
@@ -2004,29 +2018,25 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
    * Gets or creates a tab group for split view tabs
    *
    * @param {Array} tabs Initial tabs to add to the group if creating new
+   * @param {string|null} id Optional ID for the group
    * @returns {TabGroup} The tab group for split view tabs
    */
-  _getSplitViewGroup(tabs) {
+  _getSplitViewGroup(tabs, id = null) {
     if (tabs.some((tab) => tab.hasAttribute("zen-essential"))) {
       return null;
     }
 
     // Try to find an existing split view group
-    let splitGroup = gBrowser.tabGroups.find(
-      (group) =>
-        group.getAttribute("split-view-group") &&
-        group.tabs.some((tab) => tabs.includes(tab) && tab.splitView)
-    );
-
+    let splitGroup = tabs?.find((tab) => tab.group?.hasAttribute("split-view-group"))?.group;
     if (splitGroup) {
       return splitGroup;
     }
 
     // We can't create an empty group, so only create if we have tabs
-    let group = null;
     if (tabs?.length) {
       // Create a new group with the initial tabs
-      group = gBrowser.addTabGroup(tabs, {
+      splitGroup = gBrowser.addTabGroup(tabs, {
+        id,
         label: "",
         showCreateUI: false,
         insertBefore: tabs[0],
@@ -2034,7 +2044,7 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
       });
     }
 
-    return group;
+    return splitGroup;
   }
 
   storeDataForSessionStore() {
@@ -2075,8 +2085,12 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
 
     for (const groupData of data) {
       const group = document.getElementById(groupData.groupId);
+      if (!gBrowser.isTabGroup(group)) {
+        continue;
+      }
 
       // Backwards compatibility
+      group.setAttribute("split-view-group", "true");
       if (!groupData?.layoutTree) {
         this.splitTabs(group.tabs, group.gridType);
         delete this._sessionRestoring;
