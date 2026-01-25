@@ -874,7 +874,7 @@
         this._tempDragImageParent.remove();
         delete this._tempDragImageParent;
       }
-      gZenCompactModeManager._isTabBeingDragged = false;
+      delete gZenCompactModeManager._isTabBeingDragged;
       if (dt.dropEffect !== "move") {
         gZenCompactModeManager._clearAllHoverStates();
       }

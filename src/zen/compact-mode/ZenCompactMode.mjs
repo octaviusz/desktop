@@ -42,7 +42,6 @@ window.gZenCompactModeManager = {
   _flashTimeouts: {},
   _eventListeners: [],
   _removeHoverFrames: {},
-  _isTabBeingDragged: false,
 
   // Delay to avoid flickering when hovering over the sidebar
   HOVER_HACK_DELAY: Services.prefs.getIntPref("zen.view.compact.hover-hack-delay", 0),
