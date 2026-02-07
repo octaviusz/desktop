@@ -1354,10 +1354,15 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
       }
     });
 
+    // Apply grid to tabs first to set zen-split attribute on containers
+    // before setting zen-split-view on parents. This prevents the black flash
+    // caused by CSS rules that hide containers without zen-split attribute
+    // when the parent has zen-split-view attribute.
+    this.applyGridToTabs(splitData.tabs);
+
     this.tabBrowserPanel.setAttribute("zen-split-view", "true");
     document.getElementById("tabbrowser-tabbox").setAttribute("zen-split-view", "true");
 
-    this.applyGridToTabs(splitData.tabs);
     this.applyGridLayout(splitData.layoutTree);
     this.setTabsDocShellState(splitData.tabs, true);
     this.toggleWrapperDisplay(true);
@@ -1381,10 +1386,10 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
           new nsSplitLeafNode(tabs[i], 50),
           new nsSplitLeafNode(tabs[i + 1], 50),
         ];
-        rootNode.addChild(columnNode);
+        rootNode.addChild(columnNode, false);
       }
       if (tabs.length % 2 !== 0) {
-        rootNode.addChild(new nsSplitLeafNode(tabs[tabs.length - 1], rowWidth));
+        rootNode.addChild(new nsSplitLeafNode(tabs[tabs.length - 1], rowWidth), false);
       }
     }
 
@@ -1403,6 +1408,10 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
       tab.setAttribute("split-view", "true");
       const container = tab.linkedBrowser?.closest(".browserSidebarContainer");
       container.setAttribute("is-zen-split", "true");
+      // Set zen-split early to prevent visibility flash when switching workspaces.
+      // The CSS rule for [is-zen-split]:not([zen-split]) sets visibility:hidden,
+      // so we must set zen-split before the parent zen-split-view attribute is applied.
+      container.setAttribute("zen-split", "true");
       if (!container?.querySelector(".zen-tab-rearrange-button")) {
         // insert a header into the container
         const header = this._createHeader(container);
@@ -2084,45 +2093,53 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     this._sessionRestoring = true;
 
     for (const groupData of data) {
-      const group = document.getElementById(groupData.groupId);
-      if (!gBrowser.isTabGroup(group)) {
-        continue;
-      }
-
-      // Backwards compatibility
-      group.setAttribute("split-view-group", "true");
-      if (!groupData?.layoutTree) {
-        this.splitTabs(group.tabs, group.gridType);
-        delete this._sessionRestoring;
-        return;
-      }
-
-      const deserializeNode = (nodeData) => {
-        if (nodeData.type === "leaf") {
-          const tab = document.getElementById(nodeData.tabId);
-          if (!tab) {
-            return null;
-          }
-          return new nsSplitLeafNode(tab, nodeData.sizeInParent);
+      try {
+        const group = document.getElementById(groupData.groupId);
+        if (!gBrowser.isTabGroup(group)) {
+          continue;
         }
 
-        const splitter = new nsSplitNode(nodeData.direction, nodeData.sizeInParent);
-        splitter._children = [];
-
-        for (const childData of nodeData.children) {
-          const childNode = deserializeNode(childData);
-          if (childNode) {
-            childNode.parent = splitter;
-            splitter._children.push(childNode);
-          }
+        // Backwards compatibility
+        group.setAttribute("split-view-group", "true");
+        if (!groupData?.layoutTree) {
+          this.splitTabs(group.tabs, group.gridType);
+          delete this._sessionRestoring;
+          return;
         }
 
-        return splitter;
-      };
+        const deserializeNode = (nodeData) => {
+          if (nodeData.type === "leaf") {
+            const tab = document.getElementById(nodeData.tabId);
+            if (!tab) {
+              return null;
+            }
+            return new nsSplitLeafNode(tab, nodeData.sizeInParent);
+          }
 
-      const layout = deserializeNode(groupData.layoutTree);
-      const splitData = this.splitTabs(group.tabs, groupData.gridType, -1);
-      splitData.layoutTree = layout;
+          const splitter = new nsSplitNode(nodeData.direction, nodeData.sizeInParent);
+          splitter._children = [];
+
+          for (const childData of nodeData.children) {
+            const childNode = deserializeNode(childData);
+            if (childNode) {
+              childNode.parent = splitter;
+              splitter._children.push(childNode);
+            }
+          }
+
+          return splitter;
+        };
+
+        const layout = deserializeNode(groupData.layoutTree);
+        const splitData = this.splitTabs(group.tabs, groupData.gridType, -1);
+        if (splitData) {
+          splitData.layoutTree = layout;
+        } else {
+          gBrowser.removeTabGroup(group);
+        }
+      } catch (e) {
+        console.error("Error restoring split view session data:", e);
+      }
     }
 
     delete this._sessionRestoring;

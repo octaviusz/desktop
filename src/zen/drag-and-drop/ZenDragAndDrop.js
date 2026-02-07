@@ -39,6 +39,7 @@
       !element ||
       element.closest(".zen-current-workspace-indicator") ||
       element.hasAttribute("split-view-group") ||
+      element.classList.contains("zen-drop-target") ||
       isEssentialsPromo(element)
     ) {
       return element;
@@ -51,6 +52,9 @@
     }
     if (isTabGroupLabel(element)) {
       return element.closest(".tab-group-label-container");
+    }
+    if (gBrowser.isTabGroup(element)) {
+      return element.labelContainerElement;
     }
     throw new Error(`Element "${element.tagName}" is not expected to move`);
   };
@@ -104,7 +108,7 @@
 
     startTabDrag(event, tab, ...args) {
       this.ZenDragAndDropService.onDragStart(1);
-
+      gZenCompactModeManager._isTabBeingDragged = true;
       super.startTabDrag(event, tab, ...args);
       const dt = event.dataTransfer;
       if (isTabGroupLabel(tab)) {
@@ -114,11 +118,9 @@
       const { offsetX, offsetY } = this.#getDragImageOffset(event, tab, draggingTabs);
       const dragImage = this.#createDragImageForTabs(draggingTabs);
       this.originalDragImageArgs = [dragImage, offsetX, offsetY];
-      dt.updateDragImage(...this.originalDragImageArgs);
+      dt.setDragImage(...this.originalDragImageArgs);
       if (tab.hasAttribute("zen-essential")) {
-        setTimeout(() => {
-          tab.style.visibility = "hidden";
-        }, 0);
+        tab.style.visibility = "hidden";
       }
     }
 
@@ -128,18 +130,28 @@
       );
       const tabRect = window.windowUtils.getBoundsWithoutFlushing(movingTabs[0]);
       const wrapper = document.createElement("div");
+      let movingTabsCount = Math.min(movingTabs.length, 3);
       wrapper.style.width = tabRect.width + "px";
-      wrapper.style.height = tabRect.height * movingTabs.length + "px";
+      wrapper.style.height = tabRect.height * movingTabsCount + "px";
       wrapper.style.position = "fixed";
       wrapper.style.top = "-9999px";
       periphery.appendChild(wrapper);
-      for (let i = 0; i < movingTabs.length; i++) {
+      for (let i = 0; i < movingTabsCount; i++) {
         const tab = movingTabs[i];
         const tabClone = tab.cloneNode(true);
         if (tab.hasAttribute("zen-essential")) {
           const rect = tab.getBoundingClientRect();
           tabClone.style.minWidth = tabClone.style.maxWidth = `${rect.width}px`;
           tabClone.style.minHeight = tabClone.style.maxHeight = `${rect.height}px`;
+          if (tabClone.hasAttribute("visuallyselected")) {
+            tabClone.style.transform = "translate(-50%, -50%)";
+          }
+        } else if (AppConstants.platform !== "macosx" && !tab.isZenFolder) {
+          // On windows and linux, we still don't add some extra opaqueness
+          // for the tab to be more visible. This is a hacky workaround.
+          // TODO: Make windows and linux DnD use nsZenDragAndDrop::mDragImageOpacity
+          tabClone.style.colorScheme = "light";
+          tabClone.style.color = "black";
         }
         if (i > 0) {
           tabClone.style.transform = `translate(${i * 4}px, -${i * (tabRect.height - 4)}px)`;
@@ -153,6 +165,13 @@
           const label = tabClone.textLabel;
           const tabLabelParentWidth = label.parentElement.getBoundingClientRect().width;
           label.textContent = label.textContent.slice(0, Math.floor(tabLabelParentWidth / 6));
+        } else if (gBrowser.isTabGroup(tabClone) && tabClone.hasAttribute("split-view-group")) {
+          let tabs = tab.tabs;
+          for (let j = 0; j < tabs.length; j++) {
+            const tabInGroup = tabs[j];
+            const tabInGroupClone = tabInGroup.cloneNode(true);
+            tabClone.appendChild(tabInGroupClone);
+          }
         }
       }
       this.#maybeCreateDragImageDot(movingTabs, wrapper);
@@ -200,12 +219,7 @@
         ? dragData.screenY
         : dragData.screenX;
       let allTabs = this._tabbrowserTabs.ariaFocusableItems;
-      let numEssentials = gBrowser._numZenEssentials;
-      let isEssential = draggedTab.hasAttribute("zen-essential");
-      let tabs = allTabs.slice(
-        isEssential ? 0 : numEssentials,
-        isEssential ? numEssentials : undefined
-      );
+      let tabs = allTabs;
       if (!tabs.length) {
         tabs = [...movingTabs];
       }
@@ -238,7 +252,9 @@
       dragData.translateY = translateY;
 
       // Move the dragged tab based on the mouse position.
-      let periphery = document.getElementById("tabbrowser-arrowscrollbox-periphery");
+      let periphery = gZenWorkspaces.activeWorkspaceElement.querySelector(
+        "#tabbrowser-arrowscrollbox-periphery"
+      );
       let lastMovingTab = movingTabs.at(-1);
       let firstMovingTab = movingTabs[0];
       let endEdge = (ele) => ele[screenAxis] + bounds(ele)[size];
@@ -455,9 +471,7 @@
         // 4) we just started dragging and the `oldDropElementIndex` has its default
         //    valuë of `movingTabs[0].elementIndex`. In this case, the drop element
         //    shouldn't be a moving tab, so keep it `undefined`.
-        let lastPossibleDropElement = this._rtlMode
-          ? tabs.find((t) => t != draggedTab)
-          : tabs.findLast((t) => t != draggedTab);
+        let lastPossibleDropElement = this._rtlMode ? tabs.find((t) => t != draggedTab) : undefined;
         let maxElementIndexForDropElement = lastPossibleDropElement?.elementIndex;
         if (Number.isInteger(maxElementIndexForDropElement)) {
           let index = Math.min(oldDropElementIndex, maxElementIndexForDropElement);
@@ -524,7 +538,7 @@
 
       [dropBefore, dropElement] = this.#applyDragoverIndicator(
         event,
-        tabs,
+        dropElement,
         movingTabs,
         draggedTab
       ) ?? [dropBefore, dropElement];
@@ -612,12 +626,30 @@
         if (!this.#changeSpaceTimer) {
           this.#changeSpaceTimer = setTimeout(() => {
             this.clearDragOverVisuals();
-            dt.updateDragImage(...this.originalDragImageArgs);
-            gZenWorkspaces.changeWorkspaceShortcut(
-              isNearLeftEdge ? -1 : 1,
-              false,
-              /* Disable wrapping */ true
-            );
+            gZenWorkspaces
+              .changeWorkspaceShortcut(isNearLeftEdge ? -1 : 1, false, /* Disable wrapping */ true)
+              .then((spaceChanged) => {
+                if (AppConstants.platform !== "macosx") {
+                  // See the hack in #createDragImageForTabs for more details which
+                  // explains why we need to do this on non-macOS platforms.
+                  return;
+                }
+                let tabs = this.originalDragImageArgs[0].children;
+                const { isDarkMode, isExplicitMode } =
+                  gZenThemePicker.getGradientForWorkspace(spaceChanged);
+                for (let tab of tabs) {
+                  if (isExplicitMode) {
+                    tab.style.colorScheme = isDarkMode ? "dark" : "light";
+                  } else {
+                    tab.style.colorScheme = "";
+                  }
+                }
+                requestAnimationFrame(() => {
+                  requestAnimationFrame(() => {
+                    dt.updateDragImage(...this.originalDragImageArgs);
+                  });
+                });
+              });
             this.#changeSpaceTimer = null;
           }, this._dndSwitchSpaceDelay);
         }
@@ -782,12 +814,20 @@
       if (!isTab(draggedTab)) {
         return;
       }
-      const { clientX, clientY } = event;
-      const { innerWidth, innerHeight } = window;
+      let { screenX, clientX, screenY, clientY } = event;
+      if (!screenX && !screenY) {
+        return;
+      }
+      const { innerWidth: winWidth, innerHeight: winHeight } = window;
+      let allowedMargin = Services.prefs.getIntPref("zen.tabs.dnd-outside-window-margin", 5);
       const isOutOfWindow =
-        clientX < 0 || clientX > innerWidth || clientY < 0 || clientY > innerHeight;
+        clientX <= allowedMargin ||
+        clientX >= winWidth - allowedMargin ||
+        clientY <= allowedMargin ||
+        clientY >= winHeight - allowedMargin;
       if (isOutOfWindow && !this.#isOutOfWindow) {
         this.#isOutOfWindow = true;
+        gZenViewSplitter.onBrowserDragEndToSplit(event, true);
         this.#maybeClearVerticalPinnedGridDragOver();
         this.clearSpaceSwitchTimer();
         this.clearDragOverVisuals();
@@ -811,7 +851,7 @@
           this.originalDragImageArgs[1],
           this.originalDragImageArgs[2]
         );
-        window.addEventListener("dragover", this.handle_windowDragEnter, {
+        window.addEventListener("dragenter", this.handle_windowDragEnter, {
           once: true,
           capture: true,
         });
@@ -820,6 +860,7 @@
 
     handle_drop(event) {
       this.clearSpaceSwitchTimer();
+      gZenFolders.highlightGroupOnDragOver(null);
       super.handle_drop(event);
       this.#maybeClearVerticalPinnedGridDragOver();
       this.#handele_dropSwitchSpace(event);
@@ -843,20 +884,22 @@
       const dt = event.dataTransfer;
       const activeWorkspace = gZenWorkspaces.activeWorkspace;
       let draggedTab = dt.mozGetDataAt(TAB_DROP_TYPE, 0);
-      if (
-        isTab(draggedTab) &&
-        !draggedTab.hasAttribute("zen-essential") &&
-        draggedTab.getAttribute("zen-workspace-id") != activeWorkspace
-      ) {
-        const movingTabs = draggedTab._dragData?.movingTabs || [draggedTab];
-        for (let tab of movingTabs) {
-          tab.setAttribute("zen-workspace-id", activeWorkspace);
+      if (draggedTab.ownerGlobal === window) {
+        if (
+          !draggedTab.hasAttribute("zen-essential") &&
+          draggedTab.getAttribute("zen-workspace-id") != activeWorkspace
+        ) {
+          if (isTab(draggedTab)) {
+            const movingTabs = draggedTab._dragData?.movingTabs || [draggedTab];
+            for (let tab of movingTabs) {
+              tab.setAttribute("zen-workspace-id", activeWorkspace);
+            }
+            gBrowser.selectedTab = draggedTab;
+          } else if (isTabGroupLabel(draggedTab)) {
+            draggedTab = draggedTab.group;
+            gZenFolders.changeFolderToSpace(draggedTab, activeWorkspace, { hasDndSwitch: true });
+          }
         }
-        gBrowser.selectedTab = draggedTab;
-      }
-      if (isTabGroupLabel(draggedTab)) {
-        draggedTab = draggedTab.group;
-        gZenFolders.changeFolderToSpace(draggedTab, activeWorkspace, { hasDndSwitch: true });
       }
       gZenWorkspaces.updateTabsContainers();
     }
@@ -883,7 +926,10 @@
       if (isTabGroupLabel(dropElement)) {
         dropElement = dropElement.group;
       }
-      if (isTabGroupLabel(draggedTab)) {
+      if (
+        isTabGroupLabel(draggedTab) ||
+        (isTab(draggedTab) && draggedTab.group?.hasAttribute("split-view-group"))
+      ) {
         draggedTab = draggedTab.group;
       }
       for (let item of this._tabbrowserTabs.ariaFocusableItems) {
@@ -901,7 +947,8 @@
           draggedTab.hasAttribute("zen-essential") ||
           draggedTab.getAttribute("zen-workspace-id") != gZenWorkspaces.activeWorkspace ||
           !dropElement.visible ||
-          !draggedTab.visible
+          !draggedTab.visible ||
+          draggedTab.ownerGlobal !== window
         ) {
           return;
         }
@@ -990,18 +1037,22 @@
     handle_dragend(event) {
       const dt = event.dataTransfer;
       const draggedTab = dt.mozGetDataAt(TAB_DROP_TYPE, 0);
+      let ownerGlobal = draggedTab?.ownerGlobal;
       draggedTab.style.visibility = "";
-      let currentEssenialContainer = gZenWorkspaces.getCurrentEssentialsContainer();
+      let currentEssenialContainer = ownerGlobal.gZenWorkspaces.getCurrentEssentialsContainer();
       if (currentEssenialContainer?.essentialsPromo) {
         currentEssenialContainer.essentialsPromo.remove();
       }
+      // We also call it here to ensure we clear any highlight if the drop happened
+      // outside of a valid drop target.
+      ownerGlobal.gZenFolders.highlightGroupOnDragOver(null);
       this.ZenDragAndDropService.onDragEnd();
       super.handle_dragend(event);
       this.#removeDragOverBackground();
-      gZenPinnedTabManager.removeTabContainersDragoverClass();
+      ownerGlobal.gZenPinnedTabManager.removeTabContainersDragoverClass();
       this.#maybeClearVerticalPinnedGridDragOver();
       this.originalDragImageArgs = [];
-      window.removeEventListener("dragover", this.handle_windowDragEnter, { capture: true });
+      window.removeEventListener("dragenter", this.handle_windowDragEnter, { capture: true });
       this.#isOutOfWindow = false;
       if (this._browserDragImageWrapper) {
         this._browserDragImageWrapper.remove();
@@ -1010,6 +1061,10 @@
       if (this._tempDragImageParent) {
         this._tempDragImageParent.remove();
         delete this._tempDragImageParent;
+      }
+      delete ownerGlobal.gZenCompactModeManager._isTabBeingDragged;
+      if (dt.dropEffect !== "move") {
+        ownerGlobal.gZenCompactModeManager._clearAllHoverStates();
       }
     }
 
@@ -1050,35 +1105,28 @@
     }
 
     // eslint-disable-next-line complexity
-    #applyDragoverIndicator(event, tabs, movingTabs, draggedTab) {
+    #applyDragoverIndicator(event, dropElement, movingTabs, draggedTab) {
       const separation = 4;
-      const dropZoneSelector =
-        ":is(.tabbrowser-tab, .zen-drop-target, .tab-group-label, tab-group[split-view-group])";
+      const dropZoneSelector = ":is(.zen-drop-target)";
       let shouldPlayHapticFeedback = false;
       let showIndicatorUnderNewTabButton = false;
       let dropBefore = false;
-      let dropElement = event.target.closest(dropZoneSelector);
-      if (!dropElement) {
-        if (event.target.classList.contains("zen-workspace-empty-space")) {
-          dropElement = this._tabbrowserTabs.ariaFocusableItems.at(-1);
+      let dropElementFromEvent = event.target.closest(dropZoneSelector);
+      dropElement = dropElementFromEvent || dropElement;
+      if (!dropElementFromEvent) {
+        let hoveringPeriphery = !!event.target.closest(
+          ":is(#tabbrowser-arrowscrollbox-periphery, .pinned-tabs-container-separator)"
+        );
+        if (event.target.classList.contains("zen-workspace-empty-space") || hoveringPeriphery) {
+          let lastTab = gBrowser.tabs.at(-1);
+          dropElement =
+            (hoveringPeriphery && Services.prefs.getBoolPref("zen.view.show-newtab-button-top")
+              ? this._tabbrowserTabs.ariaFocusableItems.at(
+                  gBrowser._numVisiblePinTabsWithoutCollapsed
+                )
+              : this._tabbrowserTabs.ariaFocusableItems.at(-1)) || lastTab;
           // Only if there are no normal tabs to drop after
-          showIndicatorUnderNewTabButton =
-            gBrowser.tabs[gBrowser.tabs.length - 1].hasAttribute("zen-empty-tab");
-        } else {
-          const numEssentials = gBrowser._numZenEssentials;
-          const numPinned = gBrowser.pinnedTabCount - numEssentials;
-          const tabToUse =
-            event.target.closest(dropZoneSelector) || draggedTab._dragData?.dropElement;
-          if (!tabToUse) {
-            return null;
-          }
-          const isPinned = tabToUse.pinned;
-          const relativeTabs = tabs.slice(
-            isPinned ? 0 : numPinned,
-            isPinned ? numPinned : undefined
-          );
-          const draggedTabRect = elementToMove(tabToUse).getBoundingClientRect();
-          dropElement = event.clientY > draggedTabRect.top ? relativeTabs.at(-1) : relativeTabs[0];
+          showIndicatorUnderNewTabButton = lastTab.hasAttribute("zen-empty-tab");
         }
       }
       dropElement = elementToMove(dropElement);
@@ -1087,24 +1135,48 @@
         shouldPlayHapticFeedback = this.#lastDropTarget !== null;
         this.#removeDragOverBackground();
       }
-      let isZenFolder = dropElement.parentElement?.isZenFolder;
+      if (!dropElement) {
+        let dragData = draggedTab._dragData;
+        dropElement = dragData.dropElement;
+        dropBefore = dragData.dropBefore;
+      }
+      // Essentials should be properly handled by ::animateVerticalPinnedGridDragOver
+      if (!dropElement || dropElement.hasAttribute("zen-essential")) {
+        this.clearDragOverVisuals();
+        return null;
+      }
+      if (dropElement.hasAttribute("zen-empty-tab") && dropElement.group) {
+        let secondTab = dropElement.group.tabs[1];
+        dropElement = secondTab || dropElement.group.labelContainerElement;
+        if (secondTab) {
+          dropBefore = true;
+        }
+      }
+      let possibleFolderElement = dropElement.parentElement;
+      let isZenFolder = possibleFolderElement?.isZenFolder;
       let canHightlightGroup =
-        gZenFolders.highlightGroupOnDragOver(dropElement.parentElement, movingTabs) || !isZenFolder;
+        gZenFolders.highlightGroupOnDragOver(possibleFolderElement, movingTabs) || !isZenFolder;
       let rect = window.windowUtils.getBoundsWithoutFlushing(dropElement);
       const overlapPercent = (event.clientY - rect.top) / rect.height;
       // We wan't to leave a small threshold (20% for example) so we can drag tabs below and above
       // a folder label without dragging into the folder.
       let threshold = Services.prefs.getIntPref("zen.tabs.folder-dragover-threshold-percent") / 100;
       let dropIntoFolder =
-        isZenFolder && (overlapPercent < threshold || overlapPercent > 1 - threshold);
+        isZenFolder &&
+        (overlapPercent < threshold ||
+          (overlapPercent > 1 - threshold &&
+            (possibleFolderElement.collapsed ||
+              possibleFolderElement.childGroupsAndTabs.length < 2)));
       if (
         isTabGroupLabel(draggedTab) &&
         draggedTab.group?.isZenFolder &&
-        (isTab(dropElement) || dropElement.hasAttribute("split-view-group")) &&
-        (!dropElement.pinned || dropElement.hasAttribute("zen-essential"))
+        (((isTab(dropElement) || dropElement.hasAttribute("split-view-group")) &&
+          (!dropElement.pinned || dropElement.hasAttribute("zen-essential"))) ||
+          showIndicatorUnderNewTabButton)
       ) {
+        dropElement = null;
         this.clearDragOverVisuals();
-        return null;
+        return [dropElement, dropBefore];
       }
       if (
         isTab(dropElement) ||
@@ -1119,7 +1191,7 @@
         let top = 0;
         threshold =
           Services.prefs.getIntPref("browser.tabs.dragDrop.moveOverThresholdPercent") / 100;
-        if (overlapPercent > threshold) {
+        if (overlapPercent > threshold || showIndicatorUnderNewTabButton) {
           top = Math.round(rect.top + rect.height) + "px";
           dropBefore = false;
         } else {
@@ -1397,6 +1469,9 @@
       if (newIndex == dragData.animDropElementIndex) {
         return;
       }
+
+      // eslint-disable-next-line mozilla/valid-services
+      Services.zen.playHapticFeedback();
 
       dragData.animDropElementIndex = newIndex;
       dragData.dropElement = tabs[Math.min(newIndex, tabs.length - 1)];

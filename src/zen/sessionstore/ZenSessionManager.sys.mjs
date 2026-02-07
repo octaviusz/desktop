@@ -11,6 +11,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
   SessionStore: "resource:///modules/sessionstore/SessionStore.sys.mjs",
   gWindowSyncEnabled: "resource:///modules/zen/ZenWindowSync.sys.mjs",
+  gSyncOnlyPinnedTabs: "resource:///modules/zen/ZenWindowSync.sys.mjs",
   DeferredTask: "resource://gre/modules/DeferredTask.sys.mjs",
 });
 
@@ -84,6 +85,7 @@ export class nsZenSessionManager {
       compression: "lz4",
       backupFile,
     });
+    this.log("Session file path:", this.#file.path);
     this.#deferredBackupTask = new lazy.DeferredTask(async () => {
       await this.#createBackupsIfNeeded();
     }, REGENERATION_DEBOUNCE_RATE_MS);
@@ -150,6 +152,34 @@ export class nsZenSessionManager {
         folderIcon: row.getResultByName("folder_icon"),
         isFolderCollapsed: Boolean(row.getResultByName("is_folder_collapsed")),
       }));
+      try {
+        data.recoveryData = await IOUtils.readJSON(
+          PathUtils.join(
+            Services.dirsvc.get("ProfD", Ci.nsIFile).path,
+            "sessionstore-backups",
+            "recovery.jsonlz4"
+          ),
+          { decompress: true }
+        );
+        this.log("Recovered recovery data from sessionstore-backups");
+      } catch {
+        /* ignore errors reading recovery data */
+      }
+      if (!data.recoverYData) {
+        try {
+          data.recoveryData = await IOUtils.readJSON(
+            PathUtils.join(
+              Services.dirsvc.get("ProfD", Ci.nsIFile).path,
+              "sessionstore-backups",
+              "recovery.jsonlz4"
+            ),
+            { decompress: true }
+          );
+          this.log("Recovered recovery data from sessionstore-backups");
+        } catch {
+          /* ignore errors reading recovery data */
+        }
+      }
       this._migrationData = data;
     } catch {
       /* ignore errors during migration */
@@ -165,6 +195,7 @@ export class nsZenSessionManager {
   async readFile() {
     let fileExists = await IOUtils.exists(this.#storeFilePath);
     if (!fileExists) {
+      this.log("Session file does not exist, running migration", this.#storeFilePath);
       this._shouldRunMigration = true;
     }
     this.init();
@@ -181,12 +212,20 @@ export class nsZenSessionManager {
     }
     this.#sidebar = this.#file.data || {};
     if (!this.#sidebar.spaces?.length && !this._shouldRunMigration) {
+      this.log("No spaces data found in session file, running migration", this.#sidebar);
       // If we have no spaces data, we should run migration
       // to restore them from the database. Note we also do a
       // check if we already planned to run migration for optimization.
       this._shouldRunMigration = true;
       await this.#getDataFromDBForMigration();
     }
+  }
+
+  get #shouldRestoreOnlyPinned() {
+    return (
+      Services.prefs.getIntPref("browser.startup.page", 1) !== BROWSER_STARTUP_RESUME_SESSION ||
+      lazy.PrivateBrowsingUtils.permanentPrivateBrowsing
+    );
   }
 
   /**
@@ -197,15 +236,22 @@ export class nsZenSessionManager {
    *        The initial session state read from the session file.
    */
   onFileRead(initialState) {
-    if (!lazy.gWindowSyncEnabled) {
-      return initialState;
-    }
     // For the first time after migration, we restore the tabs
     // That where going to be restored by SessionStore. The sidebar
     // object will always be empty after migration because we haven't
     // gotten the opportunity to save the session yet.
     if (this._shouldRunMigration) {
-      this.#runStateMigration(initialState);
+      initialState = this.#runStateMigration(initialState);
+    }
+    if (!lazy.gWindowSyncEnabled) {
+      if (initialState?.windows?.length && this.#shouldRestoreOnlyPinned) {
+        this.log("Window sync disabled, restoring only pinned tabs");
+        for (let i = 0; i < initialState.windows.length; i++) {
+          let winData = initialState.windows[i];
+          winData.tabs = (winData.tabs || []).filter((tab) => tab.pinned);
+        }
+      }
+      return initialState;
     }
     // If there are no windows, we create an empty one. By default,
     // firefox would create simply a new empty window, but we want
@@ -215,14 +261,15 @@ export class nsZenSessionManager {
     if (!initialState?.windows?.length) {
       this.log("No windows found in initial state, creating an empty one");
       initialState ||= {};
-      initialState.windows = this._shouldRunMigration ? [] : [{}];
+      initialState.windows = [
+        {
+          tabs: [],
+        },
+      ];
     }
     // When we don't have browser.startup.page set to resume session,
     // we only want to restore the pinned tabs into the new windows.
-    const shouldRestoreOnlyPinned =
-      Services.prefs.getIntPref("browser.startup.page", 1) !== BROWSER_STARTUP_RESUME_SESSION ||
-      lazy.PrivateBrowsingUtils.permanentPrivateBrowsing;
-    if (shouldRestoreOnlyPinned && this.#sidebar?.tabs) {
+    if (this.#shouldRestoreOnlyPinned && this.#sidebar?.tabs) {
       this.log("Restoring only pinned tabs into windows");
       const sidebar = this.#sidebar;
       sidebar.tabs = (sidebar.tabs || []).filter((tab) => tab.pinned);
@@ -249,9 +296,9 @@ export class nsZenSessionManager {
         }
         this.#restoreWindowData(winData);
       }
-    } else {
+    } else if (initialState) {
       this.log("Saving windata state after migration");
-      this.saveState(initialState);
+      this.saveState(Cu.cloneInto(initialState, {}));
     }
     delete this._shouldRunMigration;
     return initialState;
@@ -272,8 +319,19 @@ export class nsZenSessionManager {
    * @param {object} initialState
    *        The initial session state read from the session file.
    */
+  // eslint-disable-next-line complexity
   #runStateMigration(initialState) {
-    this.log("Restoring tabs from Places DB after migration", initialState, this._migrationData);
+    this.log(
+      "Restoring tabs from Places DB after migration",
+      initialState,
+      initialState?.lastSessionState,
+      this._migrationData
+    );
+    if (!initialState?.windows?.length && this._migrationData?.recoveryData) {
+      this.log("Using recovery data for migration");
+      initialState = this._migrationData.recoveryData;
+    }
+    delete this._migrationData?.recoveryData;
     // Restore spaces into the sidebar object if we don't
     // have any yet.
     if (!this.#sidebar.spaces?.length) {
@@ -281,6 +339,12 @@ export class nsZenSessionManager {
         ...this.#sidebar,
         spaces: this._migrationData?.spaces || [],
       };
+    }
+    if (
+      !initialState?.windows?.length &&
+      (initialState?.lastSessionState || initialState?.deferredInitialState)
+    ) {
+      initialState = { ...(initialState.lastSessionState || initialState.deferredInitialState) };
     }
     // There might be cases where there are no windows in the
     // initial state, for example if the user had 'restore previous
@@ -294,6 +358,14 @@ export class nsZenSessionManager {
         initialState.windows = [Cu.cloneInto(normalClosedWindow, {})];
         this.log("Restoring tabs from last closed normal window");
       }
+    }
+    if (!initialState?.windows?.length) {
+      initialState ||= {};
+      initialState.windows = [
+        {
+          tabs: [],
+        },
+      ];
     }
     for (const winData of initialState?.windows || []) {
       winData.spaces = this._migrationData?.spaces || [];
@@ -309,9 +381,17 @@ export class nsZenSessionManager {
         }
       }
     }
-    // Save the state to the sidebar object so that it gets written
-    // to the session file.
-    delete this._migrationData;
+    return initialState;
+  }
+
+  /**
+   * Determines if a given window data object is saveable.
+   *
+   * @param {object} aWinData - The window data object to check.
+   * @returns {boolean} True if the window is saveable, false otherwise.
+   */
+  #isWindowSaveable(aWinData) {
+    return !aWinData.isPopup && !aWinData.isTaskbarTab && !aWinData.isZenUnsynced;
   }
 
   /**
@@ -321,8 +401,8 @@ export class nsZenSessionManager {
    */
   saveState(state) {
     let windows = state?.windows || [];
-    windows = windows.filter((win) => !win.isPopup && !win.isTaskbarTab && !win.isZenUnsynced);
-    if (!windows.length || !lazy.gWindowSyncEnabled) {
+    windows = windows.filter((win) => this.#isWindowSaveable(win));
+    if (!windows.length) {
       // Don't save (or even collect) anything in permanent private
       // browsing mode. We also don't want to save if there are no windows.
       return;
@@ -483,10 +563,31 @@ export class nsZenSessionManager {
     if (!sidebar) {
       return;
     }
-    aWindowData.tabs = sidebar.tabs || [];
-    aWindowData.splitViewData = sidebar.splitViewData;
+    // If we should only sync the pinned tabs, we should only edit the unpinned
+    // tabs in the window data and keep the pinned tabs from the window data,
+    // as they should be the same as the ones in the sidebar.
+    if (lazy.gSyncOnlyPinnedTabs) {
+      let pinnedTabs = (sidebar.tabs || []).filter((tab) => tab.pinned);
+      let unpinedWindowTabs = (aWindowData.tabs || []).filter((tab) => !tab.pinned);
+      aWindowData.tabs = [...pinnedTabs, ...unpinedWindowTabs];
+
+      // We restore ALL the split view data in the sidebar, if the group doesn't exist in the window,
+      // it should be a no-op anyways.
+      aWindowData.splitViewData = [
+        ...(sidebar.splitViewData || []),
+        ...(aWindowData.splitViewData || []),
+      ];
+      // Same thing with groups, we restore all the groups from the sidebar, if they don't have any
+      // existing tabs in the window, they should be a no-op.
+      aWindowData.groups = [...(sidebar.groups || []), ...(aWindowData.groups || [])];
+    } else {
+      aWindowData.tabs = sidebar.tabs || [];
+      aWindowData.splitViewData = sidebar.splitViewData;
+      aWindowData.groups = sidebar.groups;
+    }
+
+    // Folders are always pinned, so we dont need to check for the pinned state here.
     aWindowData.folders = sidebar.folders;
-    aWindowData.groups = sidebar.groups;
     aWindowData.spaces = sidebar.spaces;
   }
 
@@ -502,7 +603,7 @@ export class nsZenSessionManager {
    *        Whether this new window is being restored from a closed window.
    */
   restoreNewWindow(aWindow, SessionStoreInternal, fromClosedWindow = false) {
-    if (aWindow.gZenWorkspaces?.privateWindowOrDisabled || !lazy.gWindowSyncEnabled) {
+    if (aWindow.gZenWorkspaces?.privateWindowOrDisabled) {
       return;
     }
     this.log("Restoring new window with Zen session data");
@@ -520,6 +621,11 @@ export class nsZenSessionManager {
       this.#restoreWindowData(newWindow);
     }
     newWindow.tabs = this.#filterUnusedTabs(newWindow.tabs || []);
+    if (!lazy.gWindowSyncEnabled || lazy.gSyncOnlyPinnedTabs) {
+      // Don't bring over any unpinned tabs if window sync is disabled or if syncing only pinned tabs.
+      newWindow.tabs = newWindow.tabs.filter((tab) => tab.pinned);
+      newWindow.groups = newWindow.groups?.filter((group) => group.pinned);
+    }
 
     // These are window-specific from the previous window state that
     // we don't want to restore into the new window. Otherwise, new

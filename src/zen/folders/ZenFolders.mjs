@@ -1038,43 +1038,47 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
     const tabFolderWorkingData = new Map();
 
     for (const folderData of data) {
-      const workingData = {
-        stateData: folderData,
-        node: null,
-        containingTabsFragment: document.createDocumentFragment(),
-      };
-      tabFolderWorkingData.set(folderData.id, workingData);
+      try {
+        const workingData = {
+          stateData: folderData,
+          node: null,
+          containingTabsFragment: document.createDocumentFragment(),
+        };
+        tabFolderWorkingData.set(folderData.id, workingData);
 
-      const oldGroup = document.getElementById(folderData.id);
-      folderData.emptyTabIds.forEach((id) => {
-        oldGroup?.querySelector(`tab[id="${id}"]`)?.setAttribute("zen-empty-tab", true);
-      });
-      if (gBrowser.isTabGroup(oldGroup)) {
-        if (!folderData.splitViewGroup) {
-          const folder = this._createFolderNode({
-            id: folderData.id,
-            label: folderData.name,
-            collapsed: folderData.collapsed,
-            pinned: folderData.pinned,
-            saveOnWindowClose: folderData.saveOnWindowClose,
-            workspaceId: folderData.workspaceId,
-          });
-          folder.setAttribute("id", folderData.id);
-          workingData.node = folder;
-          oldGroup.before(folder);
-        } else {
-          workingData.node = oldGroup;
-        }
-        while (oldGroup.tabs.length) {
-          const tab = oldGroup.tabs[0];
-          if (folderData.workspaceId) {
-            tab.setAttribute("zen-workspace-id", folderData.workspaceId);
+        const oldGroup = document.getElementById(folderData.id);
+        folderData.emptyTabIds.forEach((id) => {
+          oldGroup?.querySelector(`tab[id="${id}"]`)?.setAttribute("zen-empty-tab", true);
+        });
+        if (gBrowser.isTabGroup(oldGroup)) {
+          if (!folderData.splitViewGroup) {
+            const folder = this._createFolderNode({
+              id: folderData.id,
+              label: folderData.name,
+              collapsed: folderData.collapsed,
+              pinned: folderData.pinned,
+              saveOnWindowClose: folderData.saveOnWindowClose,
+              workspaceId: folderData.workspaceId,
+            });
+            folder.setAttribute("id", folderData.id);
+            workingData.node = folder;
+            oldGroup.before(folder);
+          } else {
+            workingData.node = oldGroup;
           }
-          workingData.containingTabsFragment.appendChild(tab);
+          while (oldGroup.tabs.length) {
+            const tab = oldGroup.tabs[0];
+            if (folderData.workspaceId) {
+              tab.setAttribute("zen-workspace-id", folderData.workspaceId);
+            }
+            workingData.containingTabsFragment.appendChild(tab);
+          }
+          if (!folderData.splitViewGroup) {
+            oldGroup.remove();
+          }
         }
-        if (!folderData.splitViewGroup) {
-          oldGroup.remove();
-        }
+      } catch (e) {
+        console.error("Error restoring Zen Folders session data:", e);
       }
     }
 
@@ -1134,11 +1138,10 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
    * @param {MozTabbrowserTabGroup|undefined|null} folder The folder to highlight, or null to clear highlight.
    * @param {Array<MozTabbrowserTab>|null} movingTabs The tabs being moved.
    */
-  highlightGroupOnDragOver(folder, movingTabs) {
+  highlightGroupOnDragOver(folder, movingTabs = null) {
     if (folder === this.#lastHighlightedGroup) {
       return true;
     }
-    const tab = movingTabs ? movingTabs[0] : null;
     if (this.#lastHighlightedGroup && this.#lastHighlightedGroup !== folder) {
       if (this.#lastHighlightedGroup.collapsed) {
         this.updateFolderIcon(this.#lastHighlightedGroup, "close");
@@ -1148,7 +1151,6 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
     if (
       folder?.isZenFolder &&
       (!folder.hasAttribute("split-view-group") || !folder.hasAttribute("selected")) &&
-      folder !== tab?.group &&
       !(
         folder.level >= this.#ZEN_MAX_SUBFOLDERS &&
         movingTabs?.some((t) => gBrowser.isTabGroupLabel(t))

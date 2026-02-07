@@ -76,6 +76,17 @@ class nsZenPinnedTabManager extends nsZenDOMOperatedFeature {
     this._zenClickEventListener = this._onTabClick.bind(this);
 
     gZenWorkspaces._resolvePinnedInitialized();
+    if (lazy.zenPinnedTabRestorePinnedTabsToPinnedUrl) {
+      gZenWorkspaces.promiseInitialized.then(() => {
+        for (const tab of gZenWorkspaces.allStoredTabs) {
+          try {
+            this.resetPinnedTab(tab);
+          } catch (ex) {
+            console.error("Error restoring pinned tab:", ex);
+          }
+        }
+      });
+    }
   }
 
   log(message) {
@@ -130,6 +141,7 @@ class nsZenPinnedTabManager extends nsZenDOMOperatedFeature {
           tab.removeEventListener("click", tab._zenClickEventListener);
           delete tab._zenClickEventListener;
         }
+        this.resetPinChangedUrl(tab);
         break;
       default:
         console.warn("ZenPinnedTabManager: Unhandled tab event", action);
@@ -162,7 +174,7 @@ class nsZenPinnedTabManager extends nsZenDOMOperatedFeature {
     this._resetTabToStoredState(tab);
   }
 
-  async replacePinnedUrlWithCurrent(tab = undefined) {
+  replacePinnedUrlWithCurrent(tab = undefined) {
     tab ??= TabContextMenu.contextTab;
     if (!tab || !tab.pinned) {
       return;
@@ -547,27 +559,74 @@ class nsZenPinnedTabManager extends nsZenDOMOperatedFeature {
   }
 
   // eslint-disable-next-line complexity
-  moveToAnotherTabContainerIfNecessary(event, movingTabs) {
-    if (!this.enabled) {
-      return false;
+  moveToAnotherTabContainerIfNecessary(event, draggedTab, movingTabs, dropIndex) {
+    let newIndex = dropIndex;
+    let fromDifferentWindow = false;
+    movingTabs = Array.from(movingTabs || draggedTab)
+      .reverse()
+      .map((tab) => {
+        if (!gBrowser.isTab(tab)) {
+          return tab;
+        }
+        let workspaceId;
+        if (tab.ownerGlobal !== window) {
+          fromDifferentWindow = true;
+          if (
+            !tab.hasAttribute("zen-essential") &&
+            tab.getAttribute("zen-workspace-id") != gZenWorkspaces.activeWorkspace
+          ) {
+            workspaceId = gZenWorkspaces.activeWorkspace;
+            tab.ownerGlobal.gBrowser.selectedTab = tab.ownerGlobal.gBrowser._findTabToBlurTo(
+              tab,
+              movingTabs
+            );
+            tab.ownerGlobal.gZenWorkspaces.moveTabToWorkspace(tab, workspaceId);
+          }
+          // Move the tabs into this window. To avoid multiple tab-switches in
+          // the original window, the selected tab should be adopted last.
+          tab = gBrowser.adoptTab(tab, {
+            elementIndex: newIndex,
+            selectTab: tab == draggedTab,
+          });
+          if (tab) {
+            ++newIndex;
+          }
+          if (workspaceId) {
+            tab.setAttribute("zen-workspace-id", workspaceId);
+          }
+        }
+        return tab;
+      });
+    if (fromDifferentWindow) {
+      gBrowser.addRangeToMultiSelectedTabs(
+        gBrowser.tabContainer.dragAndDropElements[dropIndex],
+        gBrowser.tabContainer.dragAndDropElements[newIndex - 1]
+      );
     }
-    movingTabs = movingTabs.map((tab) => {
-      return tab.ownerGlobal !== window ? gBrowser.adoptTab(tab) : tab;
-    });
     try {
       const pinnedTabsTarget = event.target.closest(
         ":is(.zen-current-workspace-indicator, .zen-workspace-pinned-tabs-section)"
       );
       const essentialTabsTarget = event.target.closest(".zen-essentials-container");
       const tabsTarget = !pinnedTabsTarget;
+      let currentEssenialContainer = gZenWorkspaces.getCurrentEssentialsContainer();
+      if (currentEssenialContainer?.essentialsPromo) {
+        currentEssenialContainer.essentialsPromo.remove();
+      }
+
+      movingTabs = movingTabs.filter((tab) =>
+        gBrowser.isTabGroupLabel(tab) && tab.group?.isZenFolder
+          ? !tabsTarget && !essentialTabsTarget
+          : true
+      );
 
       // TODO: Solve the issue of adding a tab between two groups
       // Remove group labels from the moving tabs and replace it
       // with the sub tabs
       for (let i = 0; i < movingTabs.length; i++) {
-        const draggedTab = movingTabs[i];
-        if (gBrowser.isTabGroupLabel(draggedTab)) {
-          const group = draggedTab.group;
+        const tab = movingTabs[i];
+        if (gBrowser.isTabGroupLabel(tab)) {
+          const group = tab.group;
           // remove label and add sub tabs to moving tabs
           if (group) {
             movingTabs.splice(i, 1, ...group.tabs);
@@ -578,32 +637,32 @@ class nsZenPinnedTabManager extends nsZenDOMOperatedFeature {
       let isVertical = this.expandedSidebarMode;
       let moved = false;
       let hasActuallyMoved;
-      for (const draggedTab of movingTabs) {
+      for (const tab of movingTabs) {
         let isRegularTabs = false;
         // Check for essentials container
         if (essentialTabsTarget) {
-          if (!draggedTab.hasAttribute("zen-essential") && !draggedTab?.group) {
+          if (!tab.hasAttribute("zen-essential") && !tab?.group?.hasAttribute("split-view-group")) {
             moved = true;
             isVertical = false;
-            hasActuallyMoved = this.addToEssentials(draggedTab);
+            hasActuallyMoved = this.addToEssentials(tab);
           }
         }
         // Check for pinned tabs container
         else if (pinnedTabsTarget) {
-          if (!draggedTab.pinned) {
-            gBrowser.pinTab(draggedTab);
-          } else if (draggedTab.hasAttribute("zen-essential")) {
-            this.removeEssentials(draggedTab, false);
+          if (!tab.pinned) {
+            gBrowser.pinTab(tab);
+          } else if (tab.hasAttribute("zen-essential")) {
+            this.removeEssentials(tab, false);
             moved = true;
           }
         }
         // Check for normal tabs container
         else if (tabsTarget || event.target.id === "zen-tabs-wrapper") {
-          if (draggedTab.pinned && !draggedTab.hasAttribute("zen-essential")) {
-            gBrowser.unpinTab(draggedTab);
+          if (tab.pinned && !tab.hasAttribute("zen-essential")) {
+            gBrowser.unpinTab(tab);
             isRegularTabs = true;
-          } else if (draggedTab.hasAttribute("zen-essential")) {
-            this.removeEssentials(draggedTab);
+          } else if (tab.hasAttribute("zen-essential")) {
+            this.removeEssentials(tab);
             moved = true;
             isRegularTabs = true;
           }
@@ -644,14 +703,13 @@ class nsZenPinnedTabManager extends nsZenDOMOperatedFeature {
               elementIndex++;
             }
 
-            gBrowser.moveTabTo(draggedTab, {
+            gBrowser.moveTabTo(tab, {
               elementIndex,
               forceUngrouped: targetElem?.group?.collapsed !== false,
             });
           }
         }
       }
-
       return moved;
     } catch (ex) {
       console.error("Error moving tabs:", ex);
