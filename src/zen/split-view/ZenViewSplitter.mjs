@@ -70,393 +70,6 @@ class nsSplitNode extends nsSplitLeafNode {
   }
 }
 
-class nsZenSplitViewLinkDrop {
-  #zenViewSplitter;
-  _linkDropZone = null;
-  _lastSplitSide = 'right';
-
-  _svgIcon = new DOMParser().parseFromString(
-    `
-    <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="transition: transform 0.15s ease;">
-      <path fill-rule="evenodd" clip-rule="evenodd" d="M5.25 8C5.25 6.48122 6.48122 5.25 8 5.25H16C17.5188 5.25 18.75 6.48122 18.75 8V16C18.75 17.5188 17.5188 18.75 16 18.75H8C6.48122 18.75 5.25 17.5188 5.25 16V8ZM12.75 17.25H16C16.6904 17.25 17.25 16.6904 17.25 16V8C17.25 7.30964 16.6904 6.75 16 6.75H12.75V17.25ZM11.25 6.75V17.25H8C7.30964 17.25 6.75 16.6904 6.75 16V8C6.75 7.30964 7.30964 6.75 8 6.75H11.25Z" fill="currentColor" fill-opacity="0.5"></path>
-      <path id="left-fill" d="M8 6.75C7.30964 6.75 6.75 7.30964 6.75 8V16C6.75 16.6904 7.30964 17.25 8 17.25H11.25V6.75H8Z" fill="currentColor" style="transition: opacity 0.15s ease;"></path>
-      <path id="right-fill" d="M12.75 6.75H16C16.6904 6.75 17.25 7.30964 17.25 8V16C17.25 16.6904 16.6904 17.25 16 17.25H12.75V6.75Z" fill="currentColor" style="transition: opacity 0.15s ease;"></path>
-    </svg>
-  `,
-    'image/svg+xml'
-  ).documentElement;
-  _svgIconLeftFill = null;
-  _svgIconRightFill = null;
-
-  constructor(zenViewSplitter) {
-    this.#zenViewSplitter = zenViewSplitter;
-  }
-
-  init() {
-    const tabBox = document.getElementById('tabbrowser-tabbox');
-
-    tabBox.addEventListener('dragenter', this._handleLinkDragEnter.bind(this));
-    tabBox.addEventListener('dragleave', this._handleLinkDragLeave.bind(this));
-    tabBox.addEventListener('drop', this._handleLinkDragDrop.bind(this));
-    tabBox.addEventListener('dragend', this._handleLinkDragEnd.bind(this));
-  }
-
-  _createLinkDropZone() {
-    const wrapper = document.createXULElement('box');
-    wrapper.id = 'zen-drop-link-wrapper';
-
-    this._linkDropZone = document.createXULElement('box');
-    this._linkDropZone.id = 'zen-drop-link-zone';
-
-    const content = document.createXULElement('vbox');
-    content.setAttribute('align', 'center');
-    content.setAttribute('pack', 'center');
-    content.setAttribute('flex', '1');
-
-    this._svgIcon.id = 'zen-drop-link-icon';
-
-    this._svgIconLeftFill = this._svgIcon.querySelector('#left-fill');
-    this._svgIconRightFill = this._svgIcon.querySelector('#right-fill');
-
-    content.appendChild(this._svgIcon);
-    this._updateIconForSide('center');
-
-    const text = document.createXULElement('description');
-    text.setAttribute('data-l10n-id', 'zen-drop-link-zone-label');
-    text.style.marginTop = '8px';
-
-    content.appendChild(text);
-    this._linkDropZone.appendChild(content);
-
-    wrapper.appendChild(this._linkDropZone);
-
-    this._linkDropZone.addEventListener('dragover', this._handleDragOver.bind(this));
-    this._linkDropZone.addEventListener('dragleave', this._handleDragLeave.bind(this));
-    this._linkDropZone.addEventListener('drop', this._handleDropForSplit.bind(this));
-
-    const tabBox = document.getElementById('tabbrowser-tabbox');
-    tabBox.appendChild(wrapper);
-
-    gZenUIManager.motion.animate(this._linkDropZone, {
-      opacity: [0, 1],
-      scale: [0.1, 1],
-      duration: 0.15,
-      ease: [0.16, 1, 0.3, 1],
-    });
-  }
-
-  _updateIconForSide(side) {
-    this._svgIcon.style.transform = 'rotate(0deg)';
-    this._svgIconLeftFill.style.opacity = '1';
-    this._svgIconRightFill.style.opacity = '1';
-
-    switch (side) {
-      case 'left':
-        this._svgIconRightFill.style.opacity = '0';
-        break;
-      case 'right':
-        this._svgIconLeftFill.style.opacity = '0';
-        break;
-      case 'top':
-        this._svgIcon.style.transform = 'rotate(90deg)';
-        this._svgIconRightFill.style.opacity = '0';
-        break;
-      case 'bottom':
-        this._svgIcon.style.transform = 'rotate(-90deg)';
-        this._svgIconRightFill.style.opacity = '0';
-        break;
-    }
-  }
-
-  _handleDragOver(event) {
-    event.preventDefault();
-    event.stopPropagation();
-    event.dataTransfer.dropEffect = 'link';
-    const side = this._calculateDropSide(event, this._linkDropZone);
-    this._linkDropZone.setAttribute('drop-side', side);
-
-    this._updateIconForSide(side);
-
-    if (!this._linkDropZone.hasAttribute('has-focus')) {
-      this._linkDropZone.setAttribute('has-focus', 'true');
-      gZenUIManager.motion.animate(this._linkDropZone, {
-        scale: [1, 1.1],
-        duration: 0.15,
-      });
-    }
-  }
-
-  _handleDragLeave(event) {
-    event.stopPropagation();
-    if (!this._linkDropZone.contains(event.relatedTarget)) {
-      this._updateIconForSide('center');
-      gZenUIManager.motion
-        .animate(this._linkDropZone, {
-          scale: [1.1, 1],
-          duration: 0.15,
-        })
-        .then(() => {
-          this._linkDropZone.removeAttribute('has-focus');
-          this._linkDropZone.removeAttribute('drop-side');
-        });
-    }
-  }
-
-  _removeLinkDropZone() {
-    if (!this._linkDropZone) return;
-
-    const wrapper = this._linkDropZone.parentElement;
-
-    gZenUIManager.motion
-      .animate(this._linkDropZone, {
-        opacity: [1, 0],
-        scale: [1, 0.1],
-        duration: 0.15,
-        ease: [0.16, 1, 0.3, 1],
-      })
-      .then(() => {
-        wrapper.remove();
-        this._linkDropZone = null;
-        this._svgIconLeftFill = null;
-        this._svgIconRightFill = null;
-      });
-  }
-
-  _validateURI(dataTransfer) {
-    let dt = dataTransfer;
-
-    const URL_TYPES = ['text/uri-list', 'text/x-moz-url', 'text/plain'];
-
-    let fixupFlags =
-      Ci.nsIURIFixup.FIXUP_FLAG_FIX_SCHEME_TYPOS | Ci.nsIURIFixup.FIXUP_FLAG_ALLOW_KEYWORD_LOOKUP;
-
-    const matchedType = URL_TYPES.find((type) => {
-      const raw = dt.getData(type);
-      return typeof raw === 'string' && raw.trim().length > 0;
-    });
-
-    const uriString = dt.getData(matchedType).trim();
-
-    if (!uriString) {
-      return null;
-    }
-
-    const info = Services.uriFixup.getFixupURIInfo(uriString, fixupFlags);
-
-    if (!info || !info.fixedURI) {
-      return null;
-    }
-
-    return info.fixedURI.spec;
-  }
-
-  _handleLinkDragEnter(event) {
-    event.preventDefault();
-    event.stopPropagation();
-
-    // If rearrangeViewEnabled - don't do anything
-    if (this.#zenViewSplitter.rearrangeViewEnabled) {
-      return;
-    }
-
-    const shouldBeDisabled = !this.#zenViewSplitter.canOpenLinkInSplitView();
-    if (shouldBeDisabled) return;
-
-    // If _linkDropZone is already created, we don't want to do anything
-    if (this._linkDropZone) {
-      return;
-    }
-
-    // If the data is not a valid URI, we don't want to do anything
-    if (!this._validateURI(event.dataTransfer)) {
-      return;
-    }
-
-    this._createLinkDropZone();
-  }
-
-  _handleLinkDragLeave(event) {
-    if (
-      event.target === document.documentElement ||
-      (event.clientX <= 0 && event.clientY <= 0) ||
-      event.clientX >= window.innerWidth ||
-      event.clientY >= window.innerHeight
-    ) {
-      if (this._linkDropZone && !this._linkDropZone.contains(event.relatedTarget)) {
-        this._removeLinkDropZone();
-      }
-    }
-  }
-
-  _handleLinkDragDrop(event) {
-    if (!this._linkDropZone || !this._linkDropZone.contains(event.target)) {
-      this._removeLinkDropZone();
-    }
-  }
-
-  _handleLinkDragEnd() {
-    this._removeLinkDropZone();
-  }
-
-  _handleDropForSplit(event) {
-    let linkDropZone = this._linkDropZone;
-    event.preventDefault();
-    event.stopPropagation();
-
-    const url = this._validateURI(event.dataTransfer);
-
-    if (!url) {
-      this._removeLinkDropZone();
-      return;
-    }
-
-    const currentTab = gZenGlanceManager.getTabOrGlanceParent(gBrowser.selectedTab);
-    const newTab = this.#zenViewSplitter.openAndSwitchToTab(url, { inBackground: false });
-
-    if (!newTab) {
-      this._removeLinkDropZone();
-      return;
-    }
-
-    const linkDropSide = this._calculateDropSide(event, linkDropZone);
-
-    if (linkDropSide === 'center') {
-      const rect = event.target.getBoundingClientRect();
-      gZenGlanceManager.openGlance(
-        {
-          clientX: rect.left,
-          clientY: rect.top,
-          width: rect.width,
-          height: rect.height,
-        },
-        newTab,
-        currentTab
-      );
-
-      this._removeLinkDropZone();
-      return;
-    }
-
-    this._dispatchSplitAction(currentTab, newTab, linkDropSide);
-
-    this._removeLinkDropZone();
-  }
-
-  _calculateDropSide(event, linkDropZone) {
-    const rect = linkDropZone.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-    const width = rect.width;
-    const height = rect.height;
-
-    // Defines the size of the "active" zone near the edges (30%)
-    const EDGE_SIZE_RATIO = 0.3;
-    const hEdge = width * EDGE_SIZE_RATIO;
-    const vEdge = height * EDGE_SIZE_RATIO;
-
-    const isInLeftEdge = x < hEdge;
-    const isInRightEdge = x > width - hEdge;
-    const isInTopEdge = y < vEdge;
-    const isInBottomEdge = y > height - vEdge;
-
-    if (isInTopEdge) {
-      // If the cursor is in a top corner, determine which side it's proportionally "closer" to
-      // This comparison decides if it's a side drop or a top drop
-      if (isInLeftEdge && x / width < y / height) return 'left';
-      if (isInRightEdge && (width - x) / width < y / height) return 'right';
-      return 'top';
-    }
-    if (isInBottomEdge) {
-      // Similar logic for the bottom corners
-      if (isInLeftEdge && x / width < (height - y) / height) return 'left';
-      if (isInRightEdge && (width - x) / width < (height - y) / height) return 'right';
-      return 'bottom';
-    }
-    if (isInLeftEdge) {
-      return 'left';
-    }
-    if (isInRightEdge) {
-      return 'right';
-    }
-
-    // If the cursor is not in any edge zone, it's considered the center
-    return 'center';
-  }
-
-  _dispatchSplitAction(currentTab, newTab, linkDropSide) {
-    const groupIndex = this.#zenViewSplitter._data.findIndex((group) =>
-      group.tabs.includes(currentTab)
-    );
-
-    if (groupIndex > -1) {
-      this._addToExistingGroup(groupIndex, currentTab, newTab, linkDropSide);
-    } else {
-      this._createNewSplitGroup(currentTab, newTab, linkDropSide);
-    }
-  }
-
-  _addToExistingGroup(groupIndex, currentTab, newTab, linkDropSide) {
-    const group = this.#zenViewSplitter._data[groupIndex];
-    const splitViewGroup = this.#zenViewSplitter._getSplitViewGroup(group.tabs);
-
-    if (splitViewGroup && newTab.group !== splitViewGroup) {
-      this.#zenViewSplitter._moveTabsToContainer([newTab], currentTab);
-      gBrowser.moveTabToGroup(newTab, splitViewGroup);
-    }
-
-    if (!group.tabs.includes(newTab)) {
-      group.tabs.push(newTab);
-
-      const targetNode = this.#zenViewSplitter.getSplitNodeFromTab(currentTab);
-      const parentNode = targetNode?.parent || group.layoutTree;
-      const isValidSide = ['left', 'right', 'top', 'bottom'].includes(linkDropSide);
-
-      if (targetNode && isValidSide) {
-        this._lastSplitSide = linkDropSide;
-
-        this.#zenViewSplitter.splitIntoNode(
-          targetNode,
-          new nsSplitLeafNode(newTab),
-          linkDropSide,
-          0.5
-        );
-
-        // Rebalance sizes
-        const newSize = 100 / parentNode.children.length;
-        parentNode.children.forEach((child) => {
-          child.sizeInParent = newSize;
-        });
-      }
-
-      this.#zenViewSplitter.activateSplitView(group, true);
-    }
-  }
-
-  _createNewSplitGroup(currentTab, newTab, linkDropSide) {
-    const splitConfig = {
-      left: { tabs: [newTab, currentTab], gridType: 'vsep', initialIndex: 0 },
-      right: { tabs: [currentTab, newTab], gridType: 'vsep', initialIndex: 1 },
-      top: { tabs: [newTab, currentTab], gridType: 'hsep', initialIndex: 0 },
-      bottom: { tabs: [currentTab, newTab], gridType: 'hsep', initialIndex: 1 },
-    };
-
-    const defaultConfig = {
-      tabs: [currentTab, newTab],
-      gridType: 'vsep',
-      initialIndex: 1,
-    };
-
-    const {
-      tabs: tabsToSplit,
-      gridType,
-      initialIndex,
-    } = splitConfig[linkDropSide] || defaultConfig;
-
-    this._lastSplitSide = linkDropSide;
-    this.#zenViewSplitter.splitTabs(tabsToSplit, gridType, initialIndex);
-  }
-}
-
 class nsZenViewSplitter extends nsZenDOMOperatedFeature {
   currentView = -1;
   _data = [];
@@ -470,10 +83,9 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
   minResizeWidth;
 
   _lastOpenedTab = null;
+  _linkData = null;
 
   MAX_TABS = 4;
-
-  #ZenSplitViewLinkDrop;
 
   init() {
     this.handleTabEvent = this._handleTabEvent.bind(this);
@@ -514,15 +126,14 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     );
 
     // Add drag over listener to the browser view
+    const tabBox = document.getElementById("tabbrowser-tabbox");
     if (Services.prefs.getBoolPref("zen.splitView.enable-tab-drop")) {
-      const tabBox = document.getElementById("tabbrowser-tabbox");
       tabBox.addEventListener("dragover", this.onBrowserDragOverToSplit.bind(this));
       this.onBrowserDragEndToSplit = this.onBrowserDragEndToSplit.bind(this);
     }
-
-    if (Services.prefs.getBoolPref('zen.splitView.enable-link-drop')) {
-      this.#ZenSplitViewLinkDrop = new nsZenSplitViewLinkDrop(this);
-      this.#ZenSplitViewLinkDrop.init();
+    if (Services.prefs.getBoolPref("zen.splitView.enable-link-drop")) {
+      tabBox.addEventListener("dragend", this.splitLinkDragEnd.bind(this));
+      this.dragEnd = this.splitLinkDragEnd.bind(this);
     }
   }
 
@@ -662,8 +273,8 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     const { clientX, clientY } = event;
     // TODO(octaviusz): Maybe we should add this as preference
     // `zen.splitView.tab-drop-treshold`
-    const quarterWidth = width / 4;
-    const quarterHeight = height / 4;
+    const quarterWidth = this._linkData ? 50 : width / 4;
+    const quarterHeight = this._linkData ? 50 : height / 4;
 
     const edges = [
       { side: "left", dist: clientX - panelsRect.left, threshold: quarterWidth },
@@ -705,7 +316,24 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
       }
       gBrowser.tabContainer.tabDragAndDrop.finishMoveTogetherSelectedTabs(draggedTab);
     } else {
-      return;
+      // Enable link drop
+      if (!Services.prefs.getBoolPref("zen.splitView.enable-link-drop")) {
+        return;
+      }
+      const url = this._validateURI(dt);
+      if (!url) {
+        return;
+      }
+      // Check if we're already dragging this URL
+      if (this._linkData?.url === url) {
+        // Reuse the existing tab
+        draggedTab = this._linkData.tab;
+      } else {
+        const newTab = this.openAndSwitchToTab(url, { inBackground: true });
+        this._linkData = { url, tab: newTab };
+        draggedTab = newTab;
+        this._lastOpenedTab = gBrowser.selectedTab;
+      }
     }
     if (
       !this._lastOpenedTab ||
@@ -754,13 +382,13 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     }
     dt.mozCursor = "default";
     if (!this._dndElement) {
-      const originalDNDArgs = gBrowser.tabContainer.tabDragAndDrop.originalDragImageArgs;
+      const { offsetX, offsetY } = gBrowser.tabContainer.tabDragAndDrop._getDragImageOffset(
+        event,
+        this._lastOpenedTab,
+        [this._draggingTab]
+      );
       requestAnimationFrame(() => {
-        dt.updateDragImage(
-          this.#getDragImageForSplit(draggedTab),
-          originalDNDArgs[1],
-          originalDNDArgs[2]
-        );
+        dt.updateDragImage(this.#getDragImageForSplit(draggedTab), offsetX, offsetY);
       });
       gBrowser.tabContainer.tabDragAndDrop.clearDragOverVisuals();
     }
@@ -783,8 +411,8 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     if (currentView) {
       numOfTabsToDivide = currentView.tabs.length + 1;
     }
-    const halfWidth = width / numOfTabsToDivide;
-    const halfHeight = height / numOfTabsToDivide;
+    const halfWidth = this._linkData ? 150 : width / numOfTabsToDivide;
+    const halfHeight = this._linkData ? 150 : height / numOfTabsToDivide;
     const side = dropSide;
     for (const browser of gBrowser.browsers) {
       if (!browser) {
@@ -873,8 +501,34 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
             .classList.remove("deck-selected");
         }
         this.fakeBrowser.addEventListener("dragleave", this.onBrowserDragEndToSplit);
+        this.fakeBrowser.addEventListener("drop", this._handleFakeBrowserDrop.bind(this));
         this._canDrop = true;
       });
+    }
+  }
+
+  _handleFakeBrowserDrop(event) {
+    if (this._linkData?.tab) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const moved = this.moveTabToSplitView(event, this._linkData.tab);
+
+      // Clear URL drag state
+      if (moved) {
+        this._linkData = null;
+      }
+    }
+  }
+
+  splitLinkDragEnd() {
+    if (this._linkData?.tab) {
+      gBrowser.removeTab(this._linkData.tab, {
+        animate: false,
+        skipPermitUnload: true,
+        skipSessionStore: true,
+      });
+      this._linkData = null;
     }
   }
 
@@ -905,18 +559,25 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     if (currentView) {
       numOfTabsToDivide = currentView.tabs.length + 1;
     }
-    const halfWidth = panelsWidth / numOfTabsToDivide;
-    const halfHeight = panelsHeight / numOfTabsToDivide;
+    const halfWidth = this._linkData ? 150 : panelsWidth / numOfTabsToDivide;
+    const halfHeight = this._linkData ? 150 : panelsHeight / numOfTabsToDivide;
     const padding = ZenThemeModifier.elementSeparation;
     if (!this.fakeBrowser) {
       return;
     }
     const side = this.fakeBrowser.getAttribute("side");
+    const { offsetX, offsetY } = gBrowser.tabContainer.tabDragAndDrop._getDragImageOffset(
+      event,
+      this._lastOpenedTab,
+      [this._draggingTab]
+    );
+    const dragImage = gBrowser.tabContainer.tabDragAndDrop._createDragImageForTabs([
+      this._draggingTab,
+    ]);
+    const originalDragImageArgs = [dragImage, offsetX, offsetY];
+    event.dataTransfer.updateDragImage(...originalDragImageArgs);
     this._lastOpenedTab = gBrowser.selectedTab;
     this._draggingTab = null;
-    event.dataTransfer.updateDragImage(
-      ...gBrowser.tabContainer.tabDragAndDrop.originalDragImageArgs
-    );
     this._canDrop = false;
     let animateTabBox = null;
     let animateFakeBrowser = null;
@@ -2216,7 +1877,6 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     const parentWindow = window.ownerGlobal.parent;
     const targetWindow = parentWindow || window;
     const tab = targetWindow.gBrowser.addTrustedTab(url, options);
-    targetWindow.gBrowser.selectedTab = tab;
     return tab;
   }
 
@@ -2736,6 +2396,34 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
       return [];
     }
     return this._data[this.currentView].tabs.map((tab) => tab.linkedBrowser);
+  }
+
+  _validateURI(dataTransfer) {
+    let dt = dataTransfer;
+
+    const URL_TYPES = ["text/uri-list", "text/x-moz-url", "text/plain"];
+
+    let fixupFlags =
+      Ci.nsIURIFixup.FIXUP_FLAG_FIX_SCHEME_TYPOS | Ci.nsIURIFixup.FIXUP_FLAG_ALLOW_KEYWORD_LOOKUP;
+
+    const matchedType = URL_TYPES.find((type) => {
+      const raw = dt.getData(type);
+      return typeof raw === "string" && raw.trim().length > 0;
+    });
+
+    const uriString = dt.getData(matchedType).trim();
+
+    if (!uriString) {
+      return null;
+    }
+
+    const info = Services.uriFixup.getFixupURIInfo(uriString, fixupFlags);
+
+    if (!info || !info.fixedURI) {
+      return null;
+    }
+
+    return info.fixedURI.spec;
   }
 }
 

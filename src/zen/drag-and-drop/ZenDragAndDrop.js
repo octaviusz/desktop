@@ -112,8 +112,8 @@
         tab = tab.group;
       }
       const draggingTabs = tab.multiselected ? gBrowser.selectedTabs : [tab];
-      const { offsetX, offsetY } = this.#getDragImageOffset(event, tab, draggingTabs);
-      const dragImage = this.#createDragImageForTabs(draggingTabs);
+      const { offsetX, offsetY } = this._getDragImageOffset(event, tab, draggingTabs);
+      const dragImage = this._createDragImageForTabs(draggingTabs);
       this.originalDragImageArgs = [dragImage, offsetX, offsetY];
       dt.setDragImage(...this.originalDragImageArgs);
       if (tab.hasAttribute("zen-essential")) {
@@ -121,7 +121,10 @@
       }
     }
 
-    #createDragImageForTabs(movingTabs) {
+    _createDragImageForTabs(movingTabs) {
+      if (!movingTabs.length) {
+        return null;
+      }
       const periphery = gZenWorkspaces.activeWorkspaceElement.querySelector(
         "#tabbrowser-arrowscrollbox-periphery"
       );
@@ -613,7 +616,7 @@
     #handle_sidebarDragOver(event) {
       const dt = event.dataTransfer;
       const draggedTab = dt.mozGetDataAt(TAB_DROP_TYPE, 0);
-      if (draggedTab.hasAttribute("zen-essential")) {
+      if (draggedTab?.hasAttribute("zen-essential")) {
         this.clearSpaceSwitchTimer();
         return;
       }
@@ -724,7 +727,7 @@
       const dt = event.dataTransfer;
       const activeWorkspace = gZenWorkspaces.activeWorkspace;
       let draggedTab = dt.mozGetDataAt(TAB_DROP_TYPE, 0);
-      if (draggedTab.ownerGlobal === window) {
+      if (draggedTab?.ownerGlobal === window) {
         if (
           !draggedTab.hasAttribute("zen-essential") &&
           draggedTab.getAttribute("zen-workspace-id") != activeWorkspace
@@ -1051,7 +1054,7 @@
       return [dropBefore, dropElement];
     }
 
-    #getDragImageOffset(event, tab, draggingTabs) {
+    _getDragImageOffset(event, tab, draggingTabs) {
       if (draggingTabs.length > 1) {
         return {
           offsetX: 18,
