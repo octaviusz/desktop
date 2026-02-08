@@ -11,6 +11,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
   SessionStore: "resource:///modules/sessionstore/SessionStore.sys.mjs",
   gWindowSyncEnabled: "resource:///modules/zen/ZenWindowSync.sys.mjs",
+  gSyncOnlyPinnedTabs: "resource:///modules/zen/ZenWindowSync.sys.mjs",
   DeferredTask: "resource://gre/modules/DeferredTask.sys.mjs",
 });
 
@@ -51,6 +52,9 @@ class nsZenSidebarObject {
   }
 
   set data(data) {
+    if (typeof data !== "object") {
+      throw new Error("Sidebar data must be an object");
+    }
     this.#sidebar = data;
   }
 }
@@ -163,6 +167,21 @@ export class nsZenSessionManager {
         this.log("Recovered recovery data from sessionstore-backups");
       } catch {
         /* ignore errors reading recovery data */
+      }
+      if (!data.recoverYData) {
+        try {
+          data.recoveryData = await IOUtils.readJSON(
+            PathUtils.join(
+              Services.dirsvc.get("ProfD", Ci.nsIFile).path,
+              "sessionstore-backups",
+              "recovery.jsonlz4"
+            ),
+            { decompress: true }
+          );
+          this.log("Recovered recovery data from sessionstore-backups");
+        } catch {
+          /* ignore errors reading recovery data */
+        }
       }
       this._migrationData = data;
     } catch {
@@ -394,10 +413,11 @@ export class nsZenSessionManager {
     this.#collectWindowData(windows);
     // This would save the data to disk asynchronously or when
     // quitting the app.
-    this.#file.data = this.#sidebar;
+    let sidebar = this.#sidebar;
+    this.#file.data = sidebar;
     this.#file.saveSoon();
     this.#debounceRegeneration();
-    this.log(`Saving Zen session data with ${this.#sidebar.tabs?.length || 0} tabs`);
+    this.log(`Saving Zen session data with ${sidebar.tabs?.length || 0} tabs`);
   }
 
   /**
@@ -498,6 +518,13 @@ export class nsZenSessionManager {
     this.#sidebar = sidebarData;
   }
 
+  /**
+   * Filters out tabs that are not useful to restore, such as empty tabs with no group association.
+   * If removeUnpinnedTabs is true, it also filters out unpinned tabs.
+   *
+   * @param {Array} tabs - The array of tab data objects to filter.
+   * @returns {Array} The filtered array of tab data objects.
+   */
   #filterUnusedTabs(tabs) {
     return tabs.filter((tab) => {
       // We need to ignore empty tabs with no group association
@@ -547,10 +574,34 @@ export class nsZenSessionManager {
     if (!sidebar) {
       return;
     }
-    aWindowData.tabs = sidebar.tabs || [];
-    aWindowData.splitViewData = sidebar.splitViewData;
+    // If we should only sync the pinned tabs, we should only edit the unpinned
+    // tabs in the window data and keep the pinned tabs from the window data,
+    // as they should be the same as the ones in the sidebar.
+    if (lazy.gSyncOnlyPinnedTabs) {
+      let pinnedTabs = (sidebar.tabs || []).filter((tab) => tab.pinned);
+      let unpinedWindowTabs = [];
+      if (!this.#shouldRestoreOnlyPinned) {
+        unpinedWindowTabs = (aWindowData.tabs || []).filter((tab) => !tab.pinned);
+      }
+      aWindowData.tabs = [...pinnedTabs, ...unpinedWindowTabs];
+
+      // We restore ALL the split view data in the sidebar, if the group doesn't exist in the window,
+      // it should be a no-op anyways.
+      aWindowData.splitViewData = [
+        ...(sidebar.splitViewData || []),
+        ...(aWindowData.splitViewData || []),
+      ];
+      // Same thing with groups, we restore all the groups from the sidebar, if they don't have any
+      // existing tabs in the window, they should be a no-op.
+      aWindowData.groups = [...(sidebar.groups || []), ...(aWindowData.groups || [])];
+    } else {
+      aWindowData.tabs = sidebar.tabs || [];
+      aWindowData.splitViewData = sidebar.splitViewData;
+      aWindowData.groups = sidebar.groups;
+    }
+
+    // Folders are always pinned, so we dont need to check for the pinned state here.
     aWindowData.folders = sidebar.folders;
-    aWindowData.groups = sidebar.groups;
     aWindowData.spaces = sidebar.spaces;
   }
 
@@ -584,9 +635,10 @@ export class nsZenSessionManager {
       this.#restoreWindowData(newWindow);
     }
     newWindow.tabs = this.#filterUnusedTabs(newWindow.tabs || []);
-    if (!lazy.gWindowSyncEnabled) {
-      // Don't bring over any unpinned tabs if window sync is disabled.
+    if (!lazy.gWindowSyncEnabled || lazy.gSyncOnlyPinnedTabs) {
+      // Don't bring over any unpinned tabs if window sync is disabled or if syncing only pinned tabs.
       newWindow.tabs = newWindow.tabs.filter((tab) => tab.pinned);
+      newWindow.groups = newWindow.groups?.filter((group) => group.pinned);
     }
 
     // These are window-specific from the previous window state that
