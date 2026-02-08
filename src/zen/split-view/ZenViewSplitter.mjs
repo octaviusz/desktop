@@ -2408,7 +2408,7 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
 
     const matchedType = URL_TYPES.find((type) => {
       const raw = dt.getData(type);
-      return typeof raw === "string" && raw.trim().length > 0;
+      return typeof raw === "string" && raw.trim().length;
     });
 
     const uriString = dt.getData(matchedType).trim();
