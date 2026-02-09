@@ -324,16 +324,30 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
       if (!url) {
         return;
       }
-      // Check if we're already dragging this URL
-      if (this._linkData?.url === url) {
-        // Reuse the existing tab
-        draggedTab = this._linkData.tab;
-      } else {
-        const newTab = this.openAndSwitchToTab(url, { inBackground: true });
-        this._linkData = { url, tab: newTab };
-        draggedTab = newTab;
-        this._lastOpenedTab = gBrowser.selectedTab;
+
+      // Check if we already have _linkData in current win
+      if (!this._linkData?.tab) {
+        const lastFocusWin = window.gZenWindowSync?.lastFocusedWindow;
+
+        if (lastFocusWin !== window) {
+          const winLinkData = lastFocusWin.gZenViewSplitter?._linkData;
+
+          if (winLinkData?.tab) {
+            // Find synced tab in current window by ID
+            const syncedTab = window.document.getElementById(winLinkData.tab.id);
+            this._linkData = { tab: syncedTab };
+          }
+        }
+
+        // If still no tab, create one (only once)
+        if (!this._linkData?.tab) {
+          const newTab = this.openAndSwitchToTab(url, { inBackground: true });
+          this._linkData = { tab: newTab };
+          this._lastOpenedTab = gBrowser.selectedTab;
+        }
       }
+
+      draggedTab = this._linkData.tab;
     }
     if (
       !this._lastOpenedTab ||
@@ -354,7 +368,7 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     if (currentView?.tabs.length >= this.MAX_TABS) {
       return;
     }
-    const panelsRect = gBrowser.tabbox.getBoundingClientRect();
+    const panelsRect = window.gBrowser.tabbox.getBoundingClientRect();
     const panelsWidth = panelsRect.width;
     const panelsHeight = panelsRect.height;
     if (
@@ -400,10 +414,10 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     gBrowser.selectedTab = oldTab;
     this._hasAnimated = true;
     this.tabBrowserPanel.setAttribute("dragging-split", "true");
-    this._animateDropEdge(dropSide, currentView, draggedTab, oldTab);
+    this._animateFakeBrowserOpen(dropSide, currentView, draggedTab, oldTab);
   }
 
-  _animateDropEdge(dropSide, currentView, draggedTab, oldTab) {
+  _animateFakeBrowserOpen(dropSide, currentView, draggedTab, oldTab) {
     // Add a min width to all the browser elements to prevent them from resizing
     // eslint-disable-next-line no-shadow
     const { height, width } = gBrowser.tabbox.getBoundingClientRect();
@@ -494,7 +508,7 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     ]);
     if (this._finishAllAnimatingPromise) {
       this._finishAllAnimatingPromise.then(() => {
-        if (draggedTab !== oldTab) {
+        if (draggedTab && draggedTab !== oldTab) {
           draggedTab.linkedBrowser.docShellIsActive = false;
           draggedTab.linkedBrowser
             .closest(".browserSidebarContainer")
@@ -513,10 +527,12 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
       event.stopPropagation();
 
       const moved = this.moveTabToSplitView(event, this._linkData.tab);
+      const lastFocusWin = window.gZenWindowSync?.lastFocusedWindow;
 
       // Clear URL drag state
       if (moved) {
         this._linkData = null;
+        lastFocusWin.gZenViewSplitter._linkData = null;
       }
     }
   }
@@ -530,28 +546,15 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
       });
       this._linkData = null;
     }
+    this._animateFakeBrowserClose();
   }
 
-  onBrowserDragEndToSplit(event, cancelled = false) {
-    if (!this._canDrop) {
+  _animateFakeBrowserClose() {
+    if (!this.fakeBrowser) {
       return;
     }
+    const side = this.fakeBrowser.getAttribute("side");
     const panelsRect = gBrowser.tabbox.getBoundingClientRect();
-    const fakeBrowserRect = this.fakeBrowser && this.fakeBrowser.getBoundingClientRect();
-    if (
-      ((fakeBrowserRect &&
-        event.clientX > fakeBrowserRect.left &&
-        event.clientX < fakeBrowserRect.left + fakeBrowserRect.width &&
-        event.clientY > fakeBrowserRect.top &&
-        event.clientY < fakeBrowserRect.top + fakeBrowserRect.height) ||
-        (event.screenX === 0 && event.screenY === 0)) && // It's equivalent to 0 if the event has been dropped
-      !cancelled
-    ) {
-      return;
-    }
-    if (!this._hasAnimated || !this.fakeBrowser) {
-      return;
-    }
     const panelsWidth = panelsRect.width;
     const panelsHeight = panelsRect.height;
     let numOfTabsToDivide = 2;
@@ -562,23 +565,6 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     const halfWidth = this._linkData ? 150 : panelsWidth / numOfTabsToDivide;
     const halfHeight = this._linkData ? 150 : panelsHeight / numOfTabsToDivide;
     const padding = ZenThemeModifier.elementSeparation;
-    if (!this.fakeBrowser) {
-      return;
-    }
-    const side = this.fakeBrowser.getAttribute("side");
-    const { offsetX, offsetY } = gBrowser.tabContainer.tabDragAndDrop._getDragImageOffset(
-      event,
-      this._lastOpenedTab,
-      [this._draggingTab]
-    );
-    const dragImage = gBrowser.tabContainer.tabDragAndDrop._createDragImageForTabs([
-      this._draggingTab,
-    ]);
-    const originalDragImageArgs = [dragImage, offsetX, offsetY];
-    event.dataTransfer.updateDragImage(...originalDragImageArgs);
-    this._lastOpenedTab = gBrowser.selectedTab;
-    this._draggingTab = null;
-    this._canDrop = false;
     let animateTabBox = null;
     let animateFakeBrowser = null;
     switch (side) {
@@ -633,6 +619,44 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
         this._maybeRemoveFakeBrowser();
       });
     }
+  }
+
+  onBrowserDragEndToSplit(event, cancelled = false) {
+    if (!this._canDrop) {
+      return;
+    }
+    const fakeBrowserRect = this.fakeBrowser && this.fakeBrowser.getBoundingClientRect();
+    if (
+      ((fakeBrowserRect &&
+        event.clientX > fakeBrowserRect.left &&
+        event.clientX < fakeBrowserRect.left + fakeBrowserRect.width &&
+        event.clientY > fakeBrowserRect.top &&
+        event.clientY < fakeBrowserRect.top + fakeBrowserRect.height) ||
+        (event.screenX === 0 && event.screenY === 0)) && // It's equivalent to 0 if the event has been dropped
+      !cancelled
+    ) {
+      return;
+    }
+    if (!this._hasAnimated || !this.fakeBrowser) {
+      return;
+    }
+    if (!this.fakeBrowser) {
+      return;
+    }
+    const { offsetX, offsetY } = gBrowser.tabContainer.tabDragAndDrop._getDragImageOffset(
+      event,
+      this._lastOpenedTab,
+      [this._draggingTab]
+    );
+    const dragImage = gBrowser.tabContainer.tabDragAndDrop._createDragImageForTabs([
+      this._draggingTab,
+    ]);
+    const originalDragImageArgs = [dragImage, offsetX, offsetY];
+    event.dataTransfer.updateDragImage(...originalDragImageArgs);
+    this._lastOpenedTab = gBrowser.selectedTab;
+    this._draggingTab = null;
+    this._canDrop = false;
+    this._animateFakeBrowserClose();
   }
 
   /**
