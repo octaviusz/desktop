@@ -83,7 +83,8 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
   minResizeWidth;
 
   _lastOpenedTab = null;
-  _linkData = null;
+  // Stores info about dragged link
+  _linkTab = null;
 
   MAX_TABS = 4;
 
@@ -273,8 +274,8 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     const { clientX, clientY } = event;
     // TODO(octaviusz): Maybe we should add this as preference
     // `zen.splitView.tab-drop-treshold`
-    const quarterWidth = this._linkData ? 50 : width / 4;
-    const quarterHeight = this._linkData ? 50 : height / 4;
+    const quarterWidth = this._linkTab ? 50 : width / 4;
+    const quarterHeight = this._linkTab ? 50 : height / 4;
 
     const edges = [
       { side: "left", dist: clientX - panelsRect.left, threshold: quarterWidth },
@@ -325,29 +326,29 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
         return;
       }
 
-      // Check if we already have _linkData in current win
-      if (!this._linkData?.tab) {
+      // Check if we already have _linkTab in current win
+      if (!this._linkTab) {
         const lastFocusWin = window.gZenWindowSync?.lastFocusedWindow;
 
         if (lastFocusWin !== window) {
-          const winLinkData = lastFocusWin.gZenViewSplitter?._linkData;
+          const winLinkTab = lastFocusWin.gZenViewSplitter?._linkTab;
 
-          if (winLinkData?.tab) {
+          if (winLinkTab) {
             // Find synced tab in current window by ID
-            const syncedTab = window.document.getElementById(winLinkData.tab.id);
-            this._linkData = { tab: syncedTab };
+            const syncedTab = window.document.getElementById(winLinkTab.id);
+            this._linkTab = syncedTab;
           }
         }
 
         // If still no tab, create one (only once)
-        if (!this._linkData?.tab) {
+        if (!this._linkTab) {
           const newTab = this.openAndSwitchToTab(url, { inBackground: true });
-          this._linkData = { tab: newTab };
+          this._linkTab = newTab;
           this._lastOpenedTab = gBrowser.selectedTab;
         }
       }
 
-      draggedTab = this._linkData.tab;
+      draggedTab = this._linkTab;
     }
     if (
       !this._lastOpenedTab ||
@@ -396,13 +397,13 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     }
     dt.mozCursor = "default";
     if (!this._dndElement) {
-      const { offsetX, offsetY } = gBrowser.tabContainer.tabDragAndDrop._getDragImageOffset(
-        event,
-        this._lastOpenedTab,
-        [this._draggingTab]
-      );
+      const originalDNDArgs = gBrowser.tabContainer.tabDragAndDrop.originalDragImageArgs;
       requestAnimationFrame(() => {
-        dt.updateDragImage(this.#getDragImageForSplit(draggedTab), offsetX, offsetY);
+        dt.updateDragImage(
+          this.#getDragImageForSplit(draggedTab),
+          originalDNDArgs[1],
+          originalDNDArgs[2]
+        );
       });
       gBrowser.tabContainer.tabDragAndDrop.clearDragOverVisuals();
     }
@@ -425,8 +426,8 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     if (currentView) {
       numOfTabsToDivide = currentView.tabs.length + 1;
     }
-    const halfWidth = this._linkData ? 150 : width / numOfTabsToDivide;
-    const halfHeight = this._linkData ? 150 : height / numOfTabsToDivide;
+    const halfWidth = this._linkTab ? 150 : width / numOfTabsToDivide;
+    const halfHeight = this._linkTab ? 150 : height / numOfTabsToDivide;
     const side = dropSide;
     for (const browser of gBrowser.browsers) {
       if (!browser) {
@@ -522,29 +523,29 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
   }
 
   _handleFakeBrowserDrop(event) {
-    if (this._linkData?.tab) {
+    if (this._linkTab) {
       event.preventDefault();
       event.stopPropagation();
 
-      const moved = this.moveTabToSplitView(event, this._linkData.tab);
+      const moved = this.moveTabToSplitView(event, this._linkTab);
       const lastFocusWin = window.gZenWindowSync?.lastFocusedWindow;
 
       // Clear URL drag state
       if (moved) {
-        this._linkData = null;
-        lastFocusWin.gZenViewSplitter._linkData = null;
+        delete this._linkTab;
+        delete lastFocusWin.gZenViewSplitter._linkTab;
       }
     }
   }
 
   splitLinkDragEnd() {
-    if (this._linkData?.tab) {
-      gBrowser.removeTab(this._linkData.tab, {
+    if (this._linkTab) {
+      gBrowser.removeTab(this._linkTab, {
         animate: false,
         skipPermitUnload: true,
         skipSessionStore: true,
       });
-      this._linkData = null;
+      delete this._linkTab;
     }
     this._animateFakeBrowserClose();
   }
@@ -562,8 +563,8 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     if (currentView) {
       numOfTabsToDivide = currentView.tabs.length + 1;
     }
-    const halfWidth = this._linkData ? 150 : panelsWidth / numOfTabsToDivide;
-    const halfHeight = this._linkData ? 150 : panelsHeight / numOfTabsToDivide;
+    const halfWidth = this._linkTab ? 150 : panelsWidth / numOfTabsToDivide;
+    const halfHeight = this._linkTab ? 150 : panelsHeight / numOfTabsToDivide;
     const padding = ZenThemeModifier.elementSeparation;
     let animateTabBox = null;
     let animateFakeBrowser = null;
@@ -643,16 +644,11 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     if (!this.fakeBrowser) {
       return;
     }
-    const { offsetX, offsetY } = gBrowser.tabContainer.tabDragAndDrop._getDragImageOffset(
-      event,
-      this._lastOpenedTab,
-      [this._draggingTab]
-    );
-    const dragImage = gBrowser.tabContainer.tabDragAndDrop._createDragImageForTabs([
-      this._draggingTab,
-    ]);
-    const originalDragImageArgs = [dragImage, offsetX, offsetY];
-    event.dataTransfer.updateDragImage(...originalDragImageArgs);
+    if (!this._linkTab) {
+      event.dataTransfer.updateDragImage(
+        ...gBrowser.tabContainer.tabDragAndDrop.originalDragImageArgs
+      );
+    }
     this._lastOpenedTab = gBrowser.selectedTab;
     this._draggingTab = null;
     this._canDrop = false;
@@ -2425,7 +2421,7 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
   _validateURI(dataTransfer) {
     let dt = dataTransfer;
 
-    const URL_TYPES = ["text/uri-list", "text/x-moz-url", "text/plain"];
+    const URL_TYPES = ["text/uri-list", "text/x-moz-url"];
 
     let fixupFlags =
       Ci.nsIURIFixup.FIXUP_FLAG_FIX_SCHEME_TYPOS | Ci.nsIURIFixup.FIXUP_FLAG_ALLOW_KEYWORD_LOOKUP;

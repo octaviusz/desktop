@@ -112,8 +112,8 @@
         tab = tab.group;
       }
       const draggingTabs = tab.multiselected ? gBrowser.selectedTabs : [tab];
-      const { offsetX, offsetY } = this._getDragImageOffset(event, tab, draggingTabs);
-      const dragImage = this._createDragImageForTabs(draggingTabs);
+      const { offsetX, offsetY } = this.#getDragImageOffset(event, tab, draggingTabs);
+      const dragImage = this.#createDragImageForTabs(draggingTabs);
       this.originalDragImageArgs = [dragImage, offsetX, offsetY];
       dt.setDragImage(...this.originalDragImageArgs);
       if (tab.hasAttribute("zen-essential")) {
@@ -121,7 +121,7 @@
       }
     }
 
-    _createDragImageForTabs(movingTabs) {
+    #createDragImageForTabs(movingTabs) {
       if (!movingTabs.length) {
         return null;
       }
@@ -1054,7 +1054,7 @@
       return [dropBefore, dropElement];
     }
 
-    _getDragImageOffset(event, tab, draggingTabs) {
+    #getDragImageOffset(event, tab, draggingTabs) {
       if (draggingTabs.length > 1) {
         return {
           offsetX: 18,
