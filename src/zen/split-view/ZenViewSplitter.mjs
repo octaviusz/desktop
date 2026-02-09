@@ -2107,6 +2107,7 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
           }
 
           this.activateSplitView(group, true);
+          this.#dispatchItemEvent("ZenSplitViewTabsSplit", group.tabs[0].group);
         }
       } else {
         // Create new split view with layout based on drop position
