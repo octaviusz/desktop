@@ -13,3 +13,12 @@
 
 - name: zen.splitView.rearrange-hover-size
   value: 24
+
+- name: zen.splitView.tab-drop-treshold
+  value: 150
+
+- name: zen.splitView.link-drop-treshold
+  value: 50
+
+- name: zen.splitView.link-drop-window-size
+  value: 150

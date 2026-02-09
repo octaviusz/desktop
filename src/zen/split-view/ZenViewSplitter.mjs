@@ -85,7 +85,10 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
   _lastOpenedTab = null;
   // Stores info about dragged link
   _linkTab = null;
+  _tabDropTreshold;
+  _linkDropTreshold;
 
+  LINK_FAKE_BROWSER_SIZE;
   MAX_TABS = 4;
 
   init() {
@@ -103,6 +106,24 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
       "zen.splitView.rearrange-edge-hover-size",
       24
     );
+    XPCOMUtils.defineLazyPreferenceGetter(
+      this,
+      "_tabDropTreshold",
+      "zen.splitView.tab-drop-treshold",
+      150
+    );
+    XPCOMUtils.defineLazyPreferenceGetter(
+      this,
+      "_linkDropTreshold",
+      "zen.splitView.link-drop-treshold",
+      50
+    );
+    XPCOMUtils.defineLazyPreferenceGetter(
+      this,
+      "LINK_FAKE_BROWSER_SIZE",
+      "zen.splitView.link-drop-window-size",
+      150
+    );
 
     ChromeUtils.defineLazyGetter(this, "overlay", () =>
       document.getElementById("zen-splitview-overlay")
@@ -111,6 +132,11 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     ChromeUtils.defineLazyGetter(this, "dropZone", () =>
       document.getElementById("zen-splitview-dropzone")
     );
+
+    // Make sure the link drop treshold is not bigger than the fake browser size
+    if (this._linkDropTreshold > this.LINK_FAKE_BROWSER_SIZE) {
+      this._linkDropTreshold = this.LINK_FAKE_BROWSER_SIZE;
+    }
 
     window.addEventListener("TabClose", this.handleTabClose.bind(this));
     window.addEventListener("TabBrowserDiscarded", this.handleTabBrowserDiscarded.bind(this));
@@ -270,24 +296,20 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
   }
 
   _calculateDropSide(event, panelsRect) {
-    const { width, height } = panelsRect;
     const { clientX, clientY } = event;
-    // TODO(octaviusz): Maybe we should add this as preference
-    // `zen.splitView.tab-drop-treshold`
-    const quarterWidth = this._linkTab ? 50 : width / 4;
-    const quarterHeight = this._linkTab ? 50 : height / 4;
+    const dropThreshold = this._linkTab ? this._linkDropTreshold : this._tabDropTreshold;
 
     const edges = [
-      { side: "left", dist: clientX - panelsRect.left, threshold: quarterWidth },
-      { side: "right", dist: panelsRect.right - clientX, threshold: quarterWidth },
-      { side: "top", dist: clientY - panelsRect.top, threshold: quarterHeight },
-      { side: "bottom", dist: panelsRect.bottom - clientY, threshold: quarterHeight },
+      { side: "left", dist: clientX - panelsRect.left },
+      { side: "right", dist: panelsRect.right - clientX },
+      { side: "top", dist: clientY - panelsRect.top },
+      { side: "bottom", dist: panelsRect.bottom - clientY },
     ];
 
     let closestEdge = null;
     let minDist = Infinity;
     for (const edge of edges) {
-      if (edge.dist < edge.threshold && edge.dist < minDist) {
+      if (edge.dist < dropThreshold && edge.dist < minDist) {
         minDist = edge.dist;
         closestEdge = edge;
       }
@@ -426,8 +448,8 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     if (currentView) {
       numOfTabsToDivide = currentView.tabs.length + 1;
     }
-    const halfWidth = this._linkTab ? 150 : width / numOfTabsToDivide;
-    const halfHeight = this._linkTab ? 150 : height / numOfTabsToDivide;
+    const halfWidth = this._linkTab ? this.LINK_FAKE_BROWSER_SIZE : width / numOfTabsToDivide;
+    const halfHeight = this._linkTab ? this.LINK_FAKE_BROWSER_SIZE : height / numOfTabsToDivide;
     const side = dropSide;
     for (const browser of gBrowser.browsers) {
       if (!browser) {
@@ -563,8 +585,10 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     if (currentView) {
       numOfTabsToDivide = currentView.tabs.length + 1;
     }
-    const halfWidth = this._linkTab ? 150 : panelsWidth / numOfTabsToDivide;
-    const halfHeight = this._linkTab ? 150 : panelsHeight / numOfTabsToDivide;
+    const halfWidth = this._linkTab ? this.LINK_FAKE_BROWSER_SIZE : panelsWidth / numOfTabsToDivide;
+    const halfHeight = this._linkTab
+      ? this.LINK_FAKE_BROWSER_SIZE
+      : panelsHeight / numOfTabsToDivide;
     const padding = ZenThemeModifier.elementSeparation;
     let animateTabBox = null;
     let animateFakeBrowser = null;
