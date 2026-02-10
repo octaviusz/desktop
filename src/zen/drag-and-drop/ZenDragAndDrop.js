@@ -613,7 +613,7 @@
     #handle_sidebarDragOver(event) {
       const dt = event.dataTransfer;
       const draggedTab = dt.mozGetDataAt(TAB_DROP_TYPE, 0);
-      if (draggedTab.hasAttribute("zen-essential")) {
+      if (draggedTab?.hasAttribute("zen-essential")) {
         this.clearSpaceSwitchTimer();
         return;
       }
@@ -724,7 +724,7 @@
       const dt = event.dataTransfer;
       const activeWorkspace = gZenWorkspaces.activeWorkspace;
       let draggedTab = dt.mozGetDataAt(TAB_DROP_TYPE, 0);
-      if (draggedTab.ownerGlobal === window) {
+      if (draggedTab?.ownerGlobal === window) {
         if (
           !draggedTab.hasAttribute("zen-essential") &&
           draggedTab.getAttribute("zen-workspace-id") != activeWorkspace

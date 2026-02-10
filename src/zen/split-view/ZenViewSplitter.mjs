@@ -83,7 +83,12 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
   minResizeWidth;
 
   _lastOpenedTab = null;
+  // Stores info about dragged link
+  _linkTab = null;
+  _tabDropTreshold;
+  _linkDropTreshold;
 
+  LINK_FAKE_BROWSER_SIZE;
   MAX_TABS = 4;
 
   init() {
@@ -101,6 +106,24 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
       "zen.splitView.rearrange-edge-hover-size",
       24
     );
+    XPCOMUtils.defineLazyPreferenceGetter(
+      this,
+      "_tabDropTreshold",
+      "zen.splitView.tab-drop-treshold",
+      150
+    );
+    XPCOMUtils.defineLazyPreferenceGetter(
+      this,
+      "_linkDropTreshold",
+      "zen.splitView.link-drop-treshold",
+      50
+    );
+    XPCOMUtils.defineLazyPreferenceGetter(
+      this,
+      "LINK_FAKE_BROWSER_SIZE",
+      "zen.splitView.link-drop-window-size",
+      150
+    );
 
     ChromeUtils.defineLazyGetter(this, "overlay", () =>
       document.getElementById("zen-splitview-overlay")
@@ -109,6 +132,11 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     ChromeUtils.defineLazyGetter(this, "dropZone", () =>
       document.getElementById("zen-splitview-dropzone")
     );
+
+    // Make sure the link drop treshold is not bigger than the fake browser size
+    if (this._linkDropTreshold > this.LINK_FAKE_BROWSER_SIZE) {
+      this._linkDropTreshold = this.LINK_FAKE_BROWSER_SIZE;
+    }
 
     window.addEventListener("TabClose", this.handleTabClose.bind(this));
     window.addEventListener("TabBrowserDiscarded", this.handleTabBrowserDiscarded.bind(this));
@@ -125,10 +153,14 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     );
 
     // Add drag over listener to the browser view
+    const tabBox = document.getElementById("tabbrowser-tabbox");
     if (Services.prefs.getBoolPref("zen.splitView.enable-tab-drop")) {
-      const tabBox = document.getElementById("tabbrowser-tabbox");
       tabBox.addEventListener("dragover", this.onBrowserDragOverToSplit.bind(this));
       this.onBrowserDragEndToSplit = this.onBrowserDragEndToSplit.bind(this);
+    }
+    if (Services.prefs.getBoolPref("zen.splitView.enable-link-drop")) {
+      tabBox.addEventListener("dragend", this.splitLinkDragEnd.bind(this));
+      this.dragEnd = this.splitLinkDragEnd.bind(this);
     }
   }
 
@@ -264,24 +296,20 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
   }
 
   _calculateDropSide(event, panelsRect) {
-    const { width, height } = panelsRect;
     const { clientX, clientY } = event;
-    // TODO(octaviusz): Maybe we should add this as preference
-    // `zen.splitView.tab-drop-treshold`
-    const quarterWidth = width / 4;
-    const quarterHeight = height / 4;
+    const dropThreshold = this._linkTab ? this._linkDropTreshold : this._tabDropTreshold;
 
     const edges = [
-      { side: "left", dist: clientX - panelsRect.left, threshold: quarterWidth },
-      { side: "right", dist: panelsRect.right - clientX, threshold: quarterWidth },
-      { side: "top", dist: clientY - panelsRect.top, threshold: quarterHeight },
-      { side: "bottom", dist: panelsRect.bottom - clientY, threshold: quarterHeight },
+      { side: "left", dist: clientX - panelsRect.left },
+      { side: "right", dist: panelsRect.right - clientX },
+      { side: "top", dist: clientY - panelsRect.top },
+      { side: "bottom", dist: panelsRect.bottom - clientY },
     ];
 
     let closestEdge = null;
     let minDist = Infinity;
     for (const edge of edges) {
-      if (edge.dist < edge.threshold && edge.dist < minDist) {
+      if (edge.dist < dropThreshold && edge.dist < minDist) {
         minDist = edge.dist;
         closestEdge = edge;
       }
@@ -311,7 +339,38 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
       }
       gBrowser.tabContainer.tabDragAndDrop.finishMoveTogetherSelectedTabs(draggedTab);
     } else {
-      return;
+      // Enable link drop
+      if (!Services.prefs.getBoolPref("zen.splitView.enable-link-drop")) {
+        return;
+      }
+      const url = this._validateURI(dt);
+      if (!url) {
+        return;
+      }
+
+      // Check if we already have _linkTab in current win
+      if (!this._linkTab) {
+        const lastFocusWin = window.gZenWindowSync?.lastFocusedWindow;
+
+        if (lastFocusWin !== window) {
+          const winLinkTab = lastFocusWin.gZenViewSplitter?._linkTab;
+
+          if (winLinkTab) {
+            // Find synced tab in current window by ID
+            const syncedTab = window.document.getElementById(winLinkTab.id);
+            this._linkTab = syncedTab;
+          }
+        }
+
+        // If still no tab, create one (only once)
+        if (!this._linkTab) {
+          const newTab = this.openAndSwitchToTab(url, { inBackground: true });
+          this._linkTab = newTab;
+          this._lastOpenedTab = gBrowser.selectedTab;
+        }
+      }
+
+      draggedTab = this._linkTab;
     }
     if (
       !this._lastOpenedTab ||
@@ -332,7 +391,7 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     if (currentView?.tabs.length >= this.MAX_TABS) {
       return;
     }
-    const panelsRect = gBrowser.tabbox.getBoundingClientRect();
+    const panelsRect = window.gBrowser.tabbox.getBoundingClientRect();
     const panelsWidth = panelsRect.width;
     const panelsHeight = panelsRect.height;
     if (
@@ -378,10 +437,10 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     gBrowser.selectedTab = oldTab;
     this._hasAnimated = true;
     this.tabBrowserPanel.setAttribute("dragging-split", "true");
-    this._animateDropEdge(dropSide, currentView, draggedTab, oldTab);
+    this._animateFakeBrowserOpen(dropSide, currentView, draggedTab, oldTab);
   }
 
-  _animateDropEdge(dropSide, currentView, draggedTab, oldTab) {
+  _animateFakeBrowserOpen(dropSide, currentView, draggedTab, oldTab) {
     // Add a min width to all the browser elements to prevent them from resizing
     // eslint-disable-next-line no-shadow
     const { height, width } = gBrowser.tabbox.getBoundingClientRect();
@@ -389,8 +448,8 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     if (currentView) {
       numOfTabsToDivide = currentView.tabs.length + 1;
     }
-    const halfWidth = width / numOfTabsToDivide;
-    const halfHeight = height / numOfTabsToDivide;
+    const halfWidth = this._linkTab ? this.LINK_FAKE_BROWSER_SIZE : width / numOfTabsToDivide;
+    const halfHeight = this._linkTab ? this.LINK_FAKE_BROWSER_SIZE : height / numOfTabsToDivide;
     const side = dropSide;
     for (const browser of gBrowser.browsers) {
       if (!browser) {
@@ -472,38 +531,53 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     ]);
     if (this._finishAllAnimatingPromise) {
       this._finishAllAnimatingPromise.then(() => {
-        if (draggedTab !== oldTab) {
+        if (draggedTab && draggedTab !== oldTab) {
           draggedTab.linkedBrowser.docShellIsActive = false;
           draggedTab.linkedBrowser
             .closest(".browserSidebarContainer")
             .classList.remove("deck-selected");
         }
         this.fakeBrowser.addEventListener("dragleave", this.onBrowserDragEndToSplit);
+        this.fakeBrowser.addEventListener("drop", this._handleFakeBrowserDrop.bind(this));
         this._canDrop = true;
       });
     }
   }
 
-  onBrowserDragEndToSplit(event, cancelled = false) {
-    if (!this._canDrop) {
+  _handleFakeBrowserDrop(event) {
+    if (this._linkTab) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const moved = this.moveTabToSplitView(event, this._linkTab);
+      const lastFocusWin = window.gZenWindowSync?.lastFocusedWindow;
+
+      // Clear URL drag state
+      if (moved) {
+        delete this._linkTab;
+        delete lastFocusWin.gZenViewSplitter._linkTab;
+      }
+    }
+  }
+
+  splitLinkDragEnd() {
+    if (this._linkTab) {
+      gBrowser.removeTab(this._linkTab, {
+        animate: false,
+        skipPermitUnload: true,
+        skipSessionStore: true,
+      });
+      delete this._linkTab;
+    }
+    this._animateFakeBrowserClose();
+  }
+
+  _animateFakeBrowserClose() {
+    if (!this.fakeBrowser) {
       return;
     }
+    const side = this.fakeBrowser.getAttribute("side");
     const panelsRect = gBrowser.tabbox.getBoundingClientRect();
-    const fakeBrowserRect = this.fakeBrowser && this.fakeBrowser.getBoundingClientRect();
-    if (
-      ((fakeBrowserRect &&
-        event.clientX > fakeBrowserRect.left &&
-        event.clientX < fakeBrowserRect.left + fakeBrowserRect.width &&
-        event.clientY > fakeBrowserRect.top &&
-        event.clientY < fakeBrowserRect.top + fakeBrowserRect.height) ||
-        (event.screenX === 0 && event.screenY === 0)) && // It's equivalent to 0 if the event has been dropped
-      !cancelled
-    ) {
-      return;
-    }
-    if (!this._hasAnimated || !this.fakeBrowser) {
-      return;
-    }
     const panelsWidth = panelsRect.width;
     const panelsHeight = panelsRect.height;
     let numOfTabsToDivide = 2;
@@ -511,19 +585,11 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     if (currentView) {
       numOfTabsToDivide = currentView.tabs.length + 1;
     }
-    const halfWidth = panelsWidth / numOfTabsToDivide;
-    const halfHeight = panelsHeight / numOfTabsToDivide;
+    const halfWidth = this._linkTab ? this.LINK_FAKE_BROWSER_SIZE : panelsWidth / numOfTabsToDivide;
+    const halfHeight = this._linkTab
+      ? this.LINK_FAKE_BROWSER_SIZE
+      : panelsHeight / numOfTabsToDivide;
     const padding = ZenThemeModifier.elementSeparation;
-    if (!this.fakeBrowser) {
-      return;
-    }
-    const side = this.fakeBrowser.getAttribute("side");
-    this._lastOpenedTab = gBrowser.selectedTab;
-    this._draggingTab = null;
-    event.dataTransfer.updateDragImage(
-      ...gBrowser.tabContainer.tabDragAndDrop.originalDragImageArgs
-    );
-    this._canDrop = false;
     let animateTabBox = null;
     let animateFakeBrowser = null;
     switch (side) {
@@ -578,6 +644,39 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
         this._maybeRemoveFakeBrowser();
       });
     }
+  }
+
+  onBrowserDragEndToSplit(event, cancelled = false) {
+    if (!this._canDrop) {
+      return;
+    }
+    const fakeBrowserRect = this.fakeBrowser && this.fakeBrowser.getBoundingClientRect();
+    if (
+      ((fakeBrowserRect &&
+        event.clientX > fakeBrowserRect.left &&
+        event.clientX < fakeBrowserRect.left + fakeBrowserRect.width &&
+        event.clientY > fakeBrowserRect.top &&
+        event.clientY < fakeBrowserRect.top + fakeBrowserRect.height) ||
+        (event.screenX === 0 && event.screenY === 0)) && // It's equivalent to 0 if the event has been dropped
+      !cancelled
+    ) {
+      return;
+    }
+    if (!this._hasAnimated || !this.fakeBrowser) {
+      return;
+    }
+    if (!this.fakeBrowser) {
+      return;
+    }
+    if (!this._linkTab) {
+      event.dataTransfer.updateDragImage(
+        ...gBrowser.tabContainer.tabDragAndDrop.originalDragImageArgs
+      );
+    }
+    this._lastOpenedTab = gBrowser.selectedTab;
+    this._draggingTab = null;
+    this._canDrop = false;
+    this._animateFakeBrowserClose();
   }
 
   /**
@@ -1822,7 +1921,6 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     const parentWindow = window.ownerGlobal.parent;
     const targetWindow = parentWindow || window;
     const tab = targetWindow.gBrowser.addTrustedTab(url, options);
-    targetWindow.gBrowser.selectedTab = tab;
     return tab;
   }
 
@@ -2033,6 +2131,7 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
           }
 
           this.activateSplitView(group, true);
+          this.#dispatchItemEvent("ZenSplitViewTabsSplit", group.tabs[0].group);
         }
       } else {
         // Create new split view with layout based on drop position
@@ -2342,6 +2441,34 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
       return [];
     }
     return this._data[this.currentView].tabs.map((tab) => tab.linkedBrowser);
+  }
+
+  _validateURI(dataTransfer) {
+    let dt = dataTransfer;
+
+    const URL_TYPES = ["text/uri-list", "text/x-moz-url"];
+
+    let fixupFlags =
+      Ci.nsIURIFixup.FIXUP_FLAG_FIX_SCHEME_TYPOS | Ci.nsIURIFixup.FIXUP_FLAG_ALLOW_KEYWORD_LOOKUP;
+
+    const matchedType = URL_TYPES.find((type) => {
+      const raw = dt.getData(type);
+      return typeof raw === "string" && raw.trim().length;
+    });
+
+    const uriString = dt.getData(matchedType).trim();
+
+    if (!uriString) {
+      return null;
+    }
+
+    const info = Services.uriFixup.getFixupURIInfo(uriString, fixupFlags);
+
+    if (!info || !info.fixedURI) {
+      return null;
+    }
+
+    return info.fixedURI.spec;
   }
 }
 
