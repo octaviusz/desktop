@@ -339,38 +339,8 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
       }
       gBrowser.tabContainer.tabDragAndDrop.finishMoveTogetherSelectedTabs(draggedTab);
     } else {
-      // Enable link drop
-      if (!Services.prefs.getBoolPref("zen.splitView.enable-link-drop")) {
-        return;
-      }
-      const url = this._validateURI(dt);
-      if (!url) {
-        return;
-      }
-
-      // Check if we already have _linkTab in current win
-      if (!this._linkTab) {
-        const lastFocusWin = window.gZenWindowSync?.lastFocusedWindow;
-
-        if (lastFocusWin !== window) {
-          const winLinkTab = lastFocusWin.gZenViewSplitter?._linkTab;
-
-          if (winLinkTab) {
-            // Find synced tab in current window by ID
-            const syncedTab = window.document.getElementById(winLinkTab.id);
-            this._linkTab = syncedTab;
-          }
-        }
-
-        // If still no tab, create one (only once)
-        if (!this._linkTab) {
-          const newTab = this.openAndSwitchToTab(url, { inBackground: true });
-          this._linkTab = newTab;
-          this._lastOpenedTab = gBrowser.selectedTab;
-        }
-      }
-
-      draggedTab = this._linkTab;
+      this._dragLinkOverToSplit(event);
+      return;
     }
     if (
       !this._lastOpenedTab ||
@@ -438,6 +408,49 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     this._hasAnimated = true;
     this.tabBrowserPanel.setAttribute("dragging-split", "true");
     this._animateFakeBrowserOpen(dropSide, currentView, draggedTab, oldTab);
+  }
+
+  _dragLinkOverToSplit(event) {
+    // Enable link drop
+    if (!Services.prefs.getBoolPref("zen.splitView.enable-link-drop")) {
+      return;
+    }
+    const dt = event.dataTransfer;
+    const url = this._validateURI(dt);
+    if (!url) {
+      return;
+    }
+
+    // Check if we already have _linkTab in current win
+    this._linkTab = url;
+    this._lastOpenedTab = gBrowser.selectedTab;
+
+    const currentView = this._data[this._lastOpenedTab.splitViewValue];
+    if (currentView?.tabs.length >= this.MAX_TABS) {
+      return;
+    }
+    const panelsRect = window.gBrowser.tabbox.getBoundingClientRect();
+    const panelsWidth = panelsRect.width;
+    if (
+      event.clientX > panelsRect.left + panelsWidth - 10 ||
+      event.clientX < panelsRect.left + 10 ||
+      event.clientY < panelsRect.top + 10 ||
+      event.clientY > panelsRect.bottom - 10
+    ) {
+      return;
+    }
+    const dropSide = this._calculateDropSide(event, panelsRect);
+    if (!dropSide) {
+      return;
+    }
+    const oldTab = this._lastOpenedTab;
+    this._canDrop = true;
+    // eslint-disable-next-line mozilla/valid-services
+    Services.zen.playHapticFeedback();
+    gBrowser.selectedTab = oldTab;
+    this._hasAnimated = true;
+    this.tabBrowserPanel.setAttribute("dragging-split", "true");
+    this._animateFakeBrowserOpen(dropSide, currentView, null, oldTab);
   }
 
   _animateFakeBrowserOpen(dropSide, currentView, draggedTab, oldTab) {
@@ -531,14 +544,15 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     ]);
     if (this._finishAllAnimatingPromise) {
       this._finishAllAnimatingPromise.then(() => {
-        if (draggedTab && draggedTab !== oldTab) {
+        if (this._linkTab) {
+          this.fakeBrowser.addEventListener("drop", this._handleFakeBrowserDrop.bind(this));
+        } else if (draggedTab && draggedTab !== oldTab) {
           draggedTab.linkedBrowser.docShellIsActive = false;
           draggedTab.linkedBrowser
             .closest(".browserSidebarContainer")
             .classList.remove("deck-selected");
         }
         this.fakeBrowser.addEventListener("dragleave", this.onBrowserDragEndToSplit);
-        this.fakeBrowser.addEventListener("drop", this._handleFakeBrowserDrop.bind(this));
         this._canDrop = true;
       });
     }
@@ -548,25 +562,18 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     if (this._linkTab) {
       event.preventDefault();
       event.stopPropagation();
-
-      const moved = this.moveTabToSplitView(event, this._linkTab);
-      const lastFocusWin = window.gZenWindowSync?.lastFocusedWindow;
+      const newTab = this.openAndSwitchToTab(this._linkTab, { inBackground: true });
+      const moved = this.moveTabToSplitView(event, newTab);
 
       // Clear URL drag state
       if (moved) {
         delete this._linkTab;
-        delete lastFocusWin.gZenViewSplitter._linkTab;
       }
     }
   }
 
   splitLinkDragEnd() {
     if (this._linkTab) {
-      gBrowser.removeTab(this._linkTab, {
-        animate: false,
-        skipPermitUnload: true,
-        skipSessionStore: true,
-      });
       delete this._linkTab;
     }
     this._animateFakeBrowserClose();

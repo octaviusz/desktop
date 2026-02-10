@@ -146,13 +146,6 @@ class nsZenWindowSync {
     return null;
   }
 
-  /**
-   * @returns {Window|null} The last focused browser window, or null if none exist.
-   */
-  get lastFocusedWindow() {
-    return this.#lastFocusedWindow?.deref();
-  }
-
   init() {
     if (this.#initialized) {
       return;
