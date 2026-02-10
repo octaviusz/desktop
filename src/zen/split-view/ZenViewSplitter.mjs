@@ -109,13 +109,13 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     XPCOMUtils.defineLazyPreferenceGetter(
       this,
       "_tabDropTreshold",
-      "zen.splitView.tab-drop-treshold",
+      "zen.splitView.tab-drop-threshold",
       150
     );
     XPCOMUtils.defineLazyPreferenceGetter(
       this,
       "_linkDropTreshold",
-      "zen.splitView.link-drop-treshold",
+      "zen.splitView.link-drop-threshold",
       50
     );
     XPCOMUtils.defineLazyPreferenceGetter(
