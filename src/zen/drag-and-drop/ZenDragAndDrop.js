@@ -873,10 +873,9 @@
       this.ZenDragAndDropService.onDragEnd();
       super.handle_dragend(event);
       if (!dt.mozUserCancelled && dt.dropEffect == "none" && !this._isCustomizing) {
-        const moved = gZenViewSplitter.moveTabToSplitView(event, gZenViewSplitter._draggingTab);
+        const moved = gZenViewSplitter.moveTabToSplitView(event, draggedTab);
         if (moved) {
           delete draggedTab._dragData;
-          delete gZenViewSplitter._linkTab;
           return;
         }
       } else if (dt.mozUserCancelled) {

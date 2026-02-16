@@ -1375,12 +1375,7 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
    * @param {Tab|null} options.insertBefore - An optional tab to insert group before.
    * @returns {object|undefined} The split view data or undefined if the split was not performed.
    */
-  splitTabs(
-    tabs,
-    gridType,
-    initialIndex = 0,
-    { groupFetchId = null, insertBefore = null } = {}
-  ) {
+  splitTabs(tabs, gridType, initialIndex = 0, { groupFetchId = null, insertBefore = null } = {}) {
     const tabIndexToUse = Math.max(0, initialIndex);
     return this.#withoutSplitViewTransition(() => {
       // TODO: Add support for splitting essential tabs
