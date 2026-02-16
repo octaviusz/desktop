@@ -30,6 +30,10 @@ XPCOMUtils.defineLazyPreferenceGetter(
   3
 );
 
+const SHOULD_LOG_TAB_ENTRIES = Services.prefs.getBoolPref(
+  "zen.session-store.log-tab-entries",
+  false
+);
 const SHOULD_BACKUP_FILE = Services.prefs.getBoolPref("zen.session-store.backup-file", true);
 const FILE_NAME = "zen-sessions.jsonlz4";
 
@@ -80,14 +84,14 @@ export class nsZenSessionManager {
 
   init() {
     this.log("Initializing session manager");
-    let backupFile = null;
+    let backupTo = null;
     if (SHOULD_BACKUP_FILE) {
-      backupFile = PathUtils.join(this.#backupFolderPath, FILE_NAME);
+      backupTo = PathUtils.join(this.#backupFolderPath, "recovery.baklz4");
     }
     this.#file = new JSONFile({
       path: this.#storeFilePath,
       compression: "lz4",
-      backupFile,
+      backupTo,
     });
     this.log("Session file path:", this.#file.path);
     this.#deferredBackupTask = new lazy.DeferredTask(async () => {
@@ -98,18 +102,16 @@ export class nsZenSessionManager {
   log(...args) {
     if (lazy.gShouldLog) {
       // eslint-disable-next-line no-console
-      console.log("ZenSessionManager:", ...args);
+      console.debug("ZenSessionManager:", ...args);
     }
   }
 
   get #storeFilePath() {
-    let profileDir = Services.dirsvc.get("ProfD", Ci.nsIFile).path;
-    return PathUtils.join(profileDir, FILE_NAME);
+    return PathUtils.join(PathUtils.profileDir, FILE_NAME);
   }
 
   get #backupFolderPath() {
-    let profileDir = Services.dirsvc.get("ProfD", Ci.nsIFile).path;
-    return PathUtils.join(profileDir, "zen-sessions-backup");
+    return PathUtils.join(PathUtils.profileDir, "zen-sessions-backup");
   }
 
   /**
@@ -125,37 +127,47 @@ export class nsZenSessionManager {
       const db = await PlacesUtils.promiseDBConnection();
       let data = {};
       let rows = await db.execute("SELECT * FROM zen_workspaces ORDER BY created_at ASC");
-      data.spaces = rows.map((row) => ({
-        uuid: row.getResultByName("uuid"),
-        name: row.getResultByName("name"),
-        icon: row.getResultByName("icon"),
-        containerTabId: row.getResultByName("container_id") ?? 0,
-        position: row.getResultByName("position"),
-        theme: row.getResultByName("theme_type")
-          ? {
-              type: row.getResultByName("theme_type"),
-              gradientColors: JSON.parse(row.getResultByName("theme_colors")),
-              opacity: row.getResultByName("theme_opacity"),
-              rotation: row.getResultByName("theme_rotation"),
-              texture: row.getResultByName("theme_texture"),
-            }
-          : null,
-      }));
-      rows = await db.execute("SELECT * FROM zen_pins ORDER BY position ASC");
-      data.pins = rows.map((row) => ({
-        uuid: row.getResultByName("uuid"),
-        title: row.getResultByName("title"),
-        url: row.getResultByName("url"),
-        containerTabId: row.getResultByName("container_id"),
-        workspaceUuid: row.getResultByName("workspace_uuid"),
-        position: row.getResultByName("position"),
-        isEssential: Boolean(row.getResultByName("is_essential")),
-        isGroup: Boolean(row.getResultByName("is_group")),
-        parentUuid: row.getResultByName("folder_parent_uuid"),
-        editedTitle: Boolean(row.getResultByName("edited_title")),
-        folderIcon: row.getResultByName("folder_icon"),
-        isFolderCollapsed: Boolean(row.getResultByName("is_folder_collapsed")),
-      }));
+      try {
+        data.spaces = rows.map((row) => ({
+          uuid: row.getResultByName("uuid"),
+          name: row.getResultByName("name"),
+          icon: row.getResultByName("icon"),
+          containerTabId: row.getResultByName("container_id") ?? 0,
+          position: row.getResultByName("position"),
+          theme: row.getResultByName("theme_type")
+            ? {
+                type: row.getResultByName("theme_type"),
+                gradientColors: JSON.parse(row.getResultByName("theme_colors")),
+                opacity: row.getResultByName("theme_opacity"),
+                rotation: row.getResultByName("theme_rotation"),
+                texture: row.getResultByName("theme_texture"),
+              }
+            : null,
+        }));
+      } catch (e) {
+        /* ignore errors reading spaces data, as it is not critical and we want to migrate even if we fail to read it */
+        console.error("Failed to read spaces data from database during migration", e);
+      }
+      try {
+        rows = await db.execute("SELECT * FROM zen_pins ORDER BY position ASC");
+        data.pins = rows.map((row) => ({
+          uuid: row.getResultByName("uuid"),
+          title: row.getResultByName("title"),
+          url: row.getResultByName("url"),
+          containerTabId: row.getResultByName("container_id"),
+          workspaceUuid: row.getResultByName("workspace_uuid"),
+          position: row.getResultByName("position"),
+          isEssential: Boolean(row.getResultByName("is_essential")),
+          isGroup: Boolean(row.getResultByName("is_group")),
+          parentUuid: row.getResultByName("folder_parent_uuid"),
+          editedTitle: Boolean(row.getResultByName("edited_title")),
+          folderIcon: row.getResultByName("folder_icon"),
+          isFolderCollapsed: Boolean(row.getResultByName("is_folder_collapsed")),
+        }));
+      } catch (e) {
+        /* ignore errors reading pins data, as it is not critical and we want to migrate even if we fail to read it */
+        console.error("Failed to read pins data from database during migration", e);
+      }
       try {
         data.recoveryData = await IOUtils.readJSON(
           PathUtils.join(
@@ -185,8 +197,9 @@ export class nsZenSessionManager {
         }
       }
       this._migrationData = data;
-    } catch {
+    } catch (e) {
       /* ignore errors during migration */
+      console.error(e);
     }
   }
 
@@ -222,6 +235,11 @@ export class nsZenSessionManager {
       // check if we already planned to run migration for optimization.
       this._shouldRunMigration = true;
       await this.#getDataFromDBForMigration();
+    }
+    if (SHOULD_LOG_TAB_ENTRIES) {
+      for (const tab of this.#sidebar.tabs || []) {
+        this.log("Tab entry in session file:", tab);
+      }
     }
   }
 
@@ -264,19 +282,33 @@ export class nsZenSessionManager {
       }
       return initialState;
     }
+    const allowRestoreUnsynced = Services.prefs.getBoolPref(
+      "zen.session-store.restore-unsynced-windows",
+      true
+    );
+    if (initialState?.windows?.length && !allowRestoreUnsynced) {
+      initialState.windows = initialState.windows.filter((win) => {
+        if (win.isZenUnsynced) {
+          this.log("Skipping unsynced window during restore");
+        }
+        return !win.isZenUnsynced;
+      });
+    }
     // If there are no windows, we create an empty one. By default,
     // firefox would create simply a new empty window, but we want
     // to make sure that the sidebar object is properly initialized.
     // This would happen on first run after having a single private window
     // open when quitting the app, for example.
-    if (!initialState?.windows?.length) {
+    let normalWindowsExist = initialState?.windows?.some(
+      (win) => !win.isPrivate && !win.isPopup && !win.isTaskbarTab && !win.isZenUnsynced
+    );
+    if (!initialState?.windows?.length || !normalWindowsExist) {
       this.log("No windows found in initial state, creating an empty one");
       initialState ||= {};
-      initialState.windows = [
-        {
-          tabs: [],
-        },
-      ];
+      initialState.windows ||= [];
+      initialState.windows.push({
+        tabs: [],
+      });
     }
     return initialState;
   }
@@ -291,6 +323,9 @@ export class nsZenSessionManager {
    *        The initial session state read from the session file, possibly modified by onFileRead.
    */
   onCrashCheckpoints(initialState) {
+    if (!lazy.gWindowSyncEnabled) {
+      return;
+    }
     // When we don't have browser.startup.page set to resume session,
     // we only want to restore the pinned tabs into the new windows.
     if (this.#shouldRestoreOnlyPinned && !this.#shouldRestoreFromCrash && this.#sidebar?.tabs) {
@@ -302,27 +337,18 @@ export class nsZenSessionManager {
     // Restore all windows with the same sidebar object, this will
     // guarantee that all tabs, groups, folders and split view data
     // are properly synced across all windows.
-    const allowRestoreUnsynced = Services.prefs.getBoolPref(
-      "zen.session-store.restore-unsynced-windows",
-      true
-    );
     if (!this._shouldRunMigration) {
       this.log(`Restoring Zen session data into ${initialState.windows?.length || 0} windows`);
       for (let i = 0; i < initialState.windows.length; i++) {
         let winData = initialState.windows[i];
-        if (winData.isZenUnsynced) {
-          if (!allowRestoreUnsynced) {
-            // We don't wan't to restore any unsynced windows with the sidebar data.
-            this.log("Skipping restore of unsynced window");
-            delete initialState.windows[i];
-          }
+        if (winData.isZenUnsynced || winData.isPrivate || winData.isPopup || winData.isTaskbarTab) {
           continue;
         }
         this.#restoreWindowData(winData);
       }
     } else if (initialState) {
       this.log("Saving windata state after migration");
-      this.saveState(Cu.cloneInto(initialState, {}));
+      this.saveState(Cu.cloneInto(initialState, {}), true);
     }
     delete this._shouldRunMigration;
   }
@@ -440,8 +466,11 @@ export class nsZenSessionManager {
    * Saves the current session state. Collects data and writes to disk.
    *
    * @param {object} state The current session state.
+   * @param {boolean} soon Whether to save the file soon or immediately.
+   *        If true, the file will be saved asynchronously or when quitting
+   *        the app. If false, the file will be saved immediately.
    */
-  saveState(state) {
+  saveState(state, soon = false) {
     let windows = state?.windows || [];
     windows = windows.filter((win) => this.#isWindowSaveable(win));
     if (!windows.length) {
@@ -450,11 +479,14 @@ export class nsZenSessionManager {
       return;
     }
     this.#collectWindowData(windows);
-    // This would save the data to disk asynchronously or when
-    // quitting the app.
+    // This would save the data to disk asynchronously or when quitting the app.
     let sidebar = this.#sidebar;
     this.#file.data = sidebar;
-    this.#file.saveSoon();
+    if (soon) {
+      this.#file.saveSoon();
+    } else {
+      this.#file._save();
+    }
     this.#debounceRegeneration();
     this.log(`Saving Zen session data with ${sidebar.tabs?.length || 0} tabs`);
   }
@@ -508,12 +540,12 @@ export class nsZenSessionManager {
       // Now we need to check if we have exceeded the maximum
       // number of backups allowed, and delete the oldest ones
       // if needed.
+      let prefix = PathUtils.join(backupFolder, "zen-sessions-");
       let files = await IOUtils.getChildren(backupFolder);
-      files = files.filter((file) => file.startsWith("zen-sessions-")).sort();
+      files = files.filter((file) => file.startsWith(prefix)).sort();
       for (let i = 0; i < files.length - lazy.gMaxSessionBackups; i++) {
-        const fileToDelete = PathUtils.join(backupFolder, files[i].name);
-        this.log(`Deleting old backup file ${files[i].name}`);
-        await IOUtils.remove(fileToDelete);
+        this.log(`Deleting old backup file ${files[i]}`);
+        await IOUtils.remove(files[i]);
       }
     } catch (e) {
       console.error("ZenSessionManager: Failed to create session file backups", e);
@@ -535,7 +567,7 @@ export class nsZenSessionManager {
       return;
     }
     this.log("Saving closed window session data into Zen session store");
-    this.saveState({ windows: [aWinData] });
+    this.saveState({ windows: [aWinData] }, true);
   }
 
   /**
