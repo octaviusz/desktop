@@ -153,14 +153,16 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     );
 
     // Add drag over listener to the browser view
+    this.boundDragOver = this.onBrowserDragOverToSplit.bind(this);
     const tabBox = document.getElementById("tabbrowser-tabbox");
     if (Services.prefs.getBoolPref("zen.splitView.enable-tab-drop")) {
-      tabBox.addEventListener("dragover", this.onBrowserDragOverToSplit.bind(this));
+      tabBox.addEventListener("dragover", this.boundDragOver);
       this.onBrowserDragEndToSplit = this.onBrowserDragEndToSplit.bind(this);
     }
     if (Services.prefs.getBoolPref("zen.splitView.enable-link-drop")) {
+      tabBox.addEventListener("dragover", this.boundDragOver);
       tabBox.addEventListener("dragend", this.splitLinkDragEnd.bind(this));
-      this.dragEnd = this.splitLinkDragEnd.bind(this);
+      this.splitLinkDragEnd = this.splitLinkDragEnd.bind(this);
     }
   }
 
@@ -326,7 +328,10 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     }
     var dt = event.dataTransfer;
     var draggedTab;
-    if (dt.mozTypesAt(0)[0] == TAB_DROP_TYPE) {
+    if (
+      dt.mozTypesAt(0)[0] == TAB_DROP_TYPE &&
+      Services.prefs.getBoolPref("zen.splitView.enable-tab-drop")
+    ) {
       // tab copy or move
       draggedTab = dt.mozGetDataAt(TAB_DROP_TYPE, 0);
       // not our drop then
@@ -483,6 +488,9 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     }
     this.fakeBrowser = document.createXULElement("vbox");
     window.addEventListener("dragend", this.onBrowserDragEndToSplit, { once: true });
+    if (this._linkTab) {
+      this.fakeBrowser.addEventListener("drop", this._handleFakeBrowserDrop.bind(this));
+    }
     const padding = ZenThemeModifier.elementSeparation;
     this.fakeBrowser.setAttribute("flex", "1");
     this.fakeBrowser.id = "zen-split-view-fake-browser";
@@ -544,9 +552,7 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     ]);
     if (this._finishAllAnimatingPromise) {
       this._finishAllAnimatingPromise.then(() => {
-        if (this._linkTab) {
-          this.fakeBrowser.addEventListener("drop", this._handleFakeBrowserDrop.bind(this));
-        } else if (draggedTab && draggedTab !== oldTab) {
+        if (draggedTab && draggedTab !== oldTab) {
           draggedTab.linkedBrowser.docShellIsActive = false;
           draggedTab.linkedBrowser
             .closest(".browserSidebarContainer")
@@ -1366,9 +1372,15 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
    *                                use -1 to avoid selecting any tab.
    * @param {object} options - Additional options.
    * @param {string|null} options.groupFetchId - An optional group fetch ID.
+   * @param {Tab|null} options.insertBefore - An optional tab to insert group before.
    * @returns {object|undefined} The split view data or undefined if the split was not performed.
    */
-  splitTabs(tabs, gridType, initialIndex = 0, { groupFetchId = null } = {}) {
+  splitTabs(
+    tabs,
+    gridType,
+    initialIndex = 0,
+    { groupFetchId = null, insertBefore = null } = {}
+  ) {
     const tabIndexToUse = Math.max(0, initialIndex);
     return this.#withoutSplitViewTransition(() => {
       // TODO: Add support for splitting essential tabs
@@ -1437,7 +1449,7 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
       gridType ??= "grid";
 
       // Add tabs to the split view group
-      let splitGroup = this._getSplitViewGroup(tabs, groupFetchId);
+      let splitGroup = this._getSplitViewGroup(tabs, groupFetchId, insertBefore);
       const groupId = splitGroup?.id;
       if (splitGroup) {
         for (const tab of tabs) {
@@ -2149,7 +2161,8 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
         this.splitTabs(
           topOrLeft ? [draggedTab, droppedOnTab] : [droppedOnTab, draggedTab],
           gridType,
-          topOrLeft ? 0 : 1
+          topOrLeft ? 0 : 1,
+          { insertBefore: droppedOnTab }
         );
       }
 
@@ -2222,7 +2235,7 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
    * @param {string|null} id Optional ID for the group
    * @returns {TabGroup} The tab group for split view tabs
    */
-  _getSplitViewGroup(tabs, id = null) {
+  _getSplitViewGroup(tabs, id = null, insertBefore = null) {
     if (tabs.some((tab) => tab.hasAttribute("zen-essential"))) {
       return null;
     }
@@ -2240,7 +2253,7 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
         id,
         label: "",
         showCreateUI: false,
-        insertBefore: tabs[0],
+        insertBefore: insertBefore ?? tabs[0],
         forSplitView: true,
       });
     }

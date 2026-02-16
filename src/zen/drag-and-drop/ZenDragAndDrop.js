@@ -872,6 +872,19 @@
       ownerGlobal.gZenFolders.highlightGroupOnDragOver(null);
       this.ZenDragAndDropService.onDragEnd();
       super.handle_dragend(event);
+      if (!dt.mozUserCancelled && dt.dropEffect == "none" && !this._isCustomizing) {
+        const moved = gZenViewSplitter.moveTabToSplitView(event, gZenViewSplitter._draggingTab);
+        if (moved) {
+          delete draggedTab._dragData;
+          delete gZenViewSplitter._linkTab;
+          return;
+        }
+      } else if (dt.mozUserCancelled) {
+        gZenViewSplitter.onBrowserDragEndToSplit(event, true);
+        if (gZenViewSplitter._lastOpenedTab) {
+          gZenViewSplitter._lastOpenedTab._visuallySelected = false;
+        }
+      }
       thisFromGlobal.clearDragOverVisuals();
       ownerGlobal.gZenPinnedTabManager.removeTabContainersDragoverClass();
       this.#maybeClearVerticalPinnedGridDragOver();
