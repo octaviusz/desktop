@@ -145,7 +145,7 @@
     color-mix(in oklch, var(--toolbox-textcolor) 15%, transparent)
   );
 
-  --zen-toolbar-element-bg-hover: light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.2));
+  --zen-toolbar-element-bg-hover: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.1));
 
   /* Toolbar */
   --tab-selected-color-scheme: inherit !important;
@@ -219,7 +219,7 @@
   --input-border-color: var(--zen-input-border-color) !important;
   --zen-themed-toolbar-bg-transparent: light-dark(var(--zen-branding-bg), #171717);
 
-  --zen-workspace-indicator-height: 46px;
+  --zen-workspace-indicator-height: 44px;
 
   &:not([zen-sidebar-expanded='true']) {
     --zen-workspace-indicator-height: 38px;
@@ -288,7 +288,7 @@
   }
 }
 
-#main-window:not([chromehidden~='toolbar']) {
+#main-window[windowtype="navigator:browser"]:not([chromehidden~='toolbar']) {
   min-height: 495px !important;
 
   @media (-moz-windows-mica) or (-moz-platform: macos) or ((-moz-platform: linux) and
