@@ -704,7 +704,7 @@
         !isTab(draggedTab) ||
         draggedTab?.group?.hasAttribute("split-view-group")
       ) {
-        this._maybeClearDragOverSplit();
+        this._clearDragOverSplit();
         return;
       }
 
@@ -719,7 +719,7 @@
 
       const overlapRatio = (clientY - targetTop) / targetHeight;
       if (overlapRatio < edgeZoneThreshold || overlapRatio > 1 - edgeZoneThreshold) {
-        this._maybeClearDragOverSplit();
+        this._clearDragOverSplit();
         return;
       }
 
@@ -731,7 +731,7 @@
         this.#dragOverSplit.data?.dropElement !== dropElement ||
         this.#dragOverSplit.data?.dropSide !== dropSide
       ) {
-        this._maybeClearDragOverSplit();
+        this._clearDragOverSplit();
       }
 
       if (
@@ -775,7 +775,7 @@
       this.#dragOverSplit.fakeTab = element;
     }
 
-    _maybeClearDragOverSplit() {
+    _clearDragOverSplit() {
       if (this.#dragOverSplit.timer) {
         clearTimeout(this.#dragOverSplit.timer);
       }
@@ -855,7 +855,7 @@
       this.#maybeClearVerticalPinnedGridDragOver();
       this.#handele_dropSwitchSpace(event);
       this.#handle_dropCreateSplit(event);
-      this._maybeClearDragOverSplit();
+      this._clearDragOverSplit();
     }
 
     handle_dragleave(event) {
@@ -899,7 +899,7 @@
       const dropSide = dragData.dropSide;
 
       // Clear any visuals and timer
-      this._maybeClearDragOverSplit();
+      this._clearDragOverSplit();
 
       const isLeft = dropSide === "left";
       gZenViewSplitter.splitTabs(
