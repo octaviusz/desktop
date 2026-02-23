@@ -252,36 +252,14 @@
 
 zen-split-fake-tab {
   border-radius: var(--tab-border-radius);
-  margin: 4px -1px 4px 4px;
   background-color:  color-mix(
       in srgb,
-      var(--zen-toolbar-element-bg),
+      var(--zen-colors-primary),
       transparent 40%
     );
-  .fake-tab-icon {
-    width: 16px;
-    height: 16px;
-    border-radius: 4px;
-    flex-shrink: 0;
-    margin-top: 8px;
-    margin-inline-end: 10px;
-    margin-inline-start: 8px;
-    fill: currentColor;
-    -moz-context-properties: fill;
-  }
-  .fake-tab-label {
-    margin-top: 6px;
-    position: relative;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: clip;
-    mask-image: linear-gradient(to left, transparent, black var(--tab-label-mask-size));
-    width: 250px;
-  }
 }
 
 .tabbrowser-tab:has(zen-split-fake-tab) {
-  height: 40px;
   background: color-mix(
     in srgb,
     var(--zen-toolbar-element-bg),

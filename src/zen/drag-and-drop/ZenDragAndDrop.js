@@ -68,8 +68,7 @@
     #changeSpaceTimer = null;
     #isAnimatingTabMove = false;
 
-    #dragOverSplitTimer = null;
-    #fakeTabSplit = null;
+    #dragOverSplit = {};
 
     constructor(tabbrowserTabs) {
       super(tabbrowserTabs);
@@ -81,6 +80,24 @@
         Ci.nsIZenDragAndDrop
       );
 
+      XPCOMUtils.defineLazyPreferenceGetter(
+        this,
+        "_dndSplitEnabled",
+        "zen.splitView.enable-drag-over-split",
+        true
+      );
+      XPCOMUtils.defineLazyPreferenceGetter(
+        this,
+        "_dndSplitThreshold",
+        "zen.splitView.drag-over-split-threshold",
+        25
+      );
+      XPCOMUtils.defineLazyPreferenceGetter(
+        this,
+        "_dndSplitDelay",
+        "zen.splitView.drag-over-split-delayMC",
+        300
+      );
       XPCOMUtils.defineLazyPreferenceGetter(
         this,
         "_dndSwitchSpaceDelay",
@@ -660,18 +677,25 @@
     }
 
     #handle_tabDragOverToSplit(event) {
-      if (!Services.prefs.getBoolPref("zen.splitView.enable-drag-over-split", true)) {
+      if (!this._dndSplitEnabled) {
         return;
       }
 
       const dt = event.dataTransfer;
       const draggedTab = dt.mozGetDataAt(TAB_DROP_TYPE, 0);
-      let dragData = draggedTab._dragData;
-      let zenDragData = draggedTab._zenDragData;
-      let movingTabsSet = dragData.movingTabsSet;
-      let dropElement = dragData.dropElement;
+      const dragData = draggedTab._dragData;
+      const movingTabsSet = dragData.movingTabsSet;
+      const dropElement = event.target.closest(".tabbrowser-tab");
 
-      if (!dropElement || !isTab(dropElement) || dropElement.hasAttribute("zen-glance-tab")) {
+      // TODO: After Cheff adds split view support for essentials, don't forget to remove the check
+      if (
+        !dropElement ||
+        !isTab(dropElement) ||
+        dropElement.hasAttribute("zen-essential") ||
+        dropElement.hasAttribute("zen-glance-tab") ||
+        dropElement?.group?.hasAttribute("split-view-group") ||
+        movingTabsSet.size > 1
+      ) {
         return;
       }
 
@@ -684,117 +708,82 @@
         return;
       }
 
-      let bounds = window.windowUtils.getBoundsWithoutFlushing(dropElement);
+      const rect = window.windowUtils.getBoundsWithoutFlushing(dropElement);
       const { clientX, clientY } = event;
-      let targetX = bounds.x;
-      let targetY = bounds.y;
-      let targetWidth = bounds.width;
-      let targetHeight = bounds.height;
+      const targetX = rect.x;
+      const targetTop = rect.top;
+      const targetWidth = rect.width;
+      const targetHeight = rect.height;
 
-      let edgeZoneThreshold =
-        Services.prefs.getIntPref("zen.splitView.drag-over-split-threshold", 25) / 100;
+      const edgeZoneThreshold = this._dndSplitThreshold / 100;
 
-      const topThreshold = targetY + targetHeight * edgeZoneThreshold;
-      const bottomThreshold = targetY + targetHeight * (1 - edgeZoneThreshold);
-      if (clientY < topThreshold || clientY > bottomThreshold) {
-        this._maybeClearDragOverSplit(zenDragData);
+      const overlapRatio = (clientY - targetTop) / targetHeight;
+      if (overlapRatio < edgeZoneThreshold || overlapRatio > 1 - edgeZoneThreshold) {
+        this._maybeClearDragOverSplit();
         return;
       }
 
-      let isLeft = clientX < targetX + targetWidth / 2;
-      let dropSide = isLeft ? "left" : "right";
+      const isLeft = clientX < targetX + targetWidth / 2;
+      const dropSide = isLeft ? "left" : "right";
 
-      // If the drop side or element changes, clear the timer and recreate the fake tab
+      // If the drop side or element changes, clear dragOverSplit
       if (
-        zenDragData?.splitDropElement !== dropElement ||
-        zenDragData?.splitDropSide !== dropSide
+        this.#dragOverSplit.data?.dropElement !== dropElement ||
+        this.#dragOverSplit.data?.dropSide !== dropSide
       ) {
-        this._maybeClearDragOverSplit(zenDragData);
+        this._maybeClearDragOverSplit();
       }
 
       if (
-        this.#dragOverSplitTimer &&
-        zenDragData?.splitDropElement === dropElement &&
-        zenDragData?.splitDropSide === dropSide
+        this.#dragOverSplit.timer &&
+        this.#dragOverSplit.data?.dropElement === dropElement &&
+        this.#dragOverSplit.data?.dropSide === dropSide
       ) {
         // Timer already running for the same target and side, do nothing
         return;
       }
 
-      const dragOverSplitDelay = Services.prefs.getIntPref(
-        "zen.splitView.drag-over-split-delayMC",
-        100
-      );
-      this.#dragOverSplitTimer = setTimeout(() => {
-        this._createFakeTabSplit(dropElement, dropSide, dragData);
-        draggedTab._zenDragData = {
-          splitDropElement: dropElement,
-          splitDropSide: dropSide,
+      this.#dragOverSplit.timer = setTimeout(() => {
+        this.#createFakeTabSplit(dropElement, dropSide, dragData);
+        this.#dragOverSplit.data = {
+          dropElement,
+          dropSide,
         };
-      }, dragOverSplitDelay);
+      }, this._dndSplitDelay);
     }
 
-    _createFakeTabSplit(dropElement, dropSide, dragData) {
-      if (this.#dragOverSplitTimer) {
-        clearTimeout(this.#dragOverSplitTimer);
-        this.#dragOverSplitTimer = null;
-      }
-
+    #createFakeTabSplit(dropElement, dropSide, dragData) {
       // Remove drop indicator
       this.clearDragOverVisuals();
 
-      // Remove any existing fake split tab
-      if (this.#fakeTabSplit) {
-        this.#fakeTabSplit.remove();
+      // Remove any existing fake tab
+      if (this.#dragOverSplit.fakeTab) {
+        this.#dragOverSplit.fakeTab.remove();
       }
-      const draggedTab = dragData.movingTabs[0];
 
       const element = document.createXULElement("zen-split-fake-tab");
-      const icon = document.createElement("img");
-      icon.className = "fake-tab-icon";
-      let tabURL = draggedTab.linkedBrowser?.currentURI?.spec || "";
-      try {
-        // Get the hostname from the URL
-        const url = new URL(tabURL);
-        tabURL = url.hostname || tabURL;
-      } catch {
-        // We don't need to do anything if the URL is invalid. e.g. about:blank
-      }
-      let tabLabel = draggedTab.label || "";
-      let iconURL = gBrowser.getIcon(draggedTab) || PlacesUtils.favicons.defaultFavicon.spec;
-      icon.src = iconURL;
-      const label = document.createElement("label");
-      label.className = "fake-tab-label";
-      label.textContent = tabLabel;
-      element.append(icon, label);
-
       element.style.width = `${dragData.tabWidth / 2}px`;
-      switch (dropSide) {
-        case "left":
-          dropElement.childNodes[0].before(element);
-          break;
-        case "right":
-          dropElement.childNodes[0].after(element);
-          break;
+      element.style.height = `${dragData.tabHeight}px`;
+
+      const firstChild = dropElement.firstChild;
+      if (dropSide === "left") {
+        firstChild.before(element);
+      } else {
+        firstChild.after(element);
       }
 
-      this.#fakeTabSplit = element;
+      this.#dragOverSplit.fakeTab = element;
     }
 
-    _maybeClearDragOverSplit(dragData = null) {
-      if (this.#dragOverSplitTimer) {
-        clearTimeout(this.#dragOverSplitTimer);
-        this.#dragOverSplitTimer = null;
+    _maybeClearDragOverSplit() {
+      if (this.#dragOverSplit.timer) {
+        clearTimeout(this.#dragOverSplit.timer);
       }
-      if (this.#fakeTabSplit) {
-        this.#fakeTabSplit.remove();
-        this.#fakeTabSplit = null;
-      }
-      // Clear the stored drop info from dragData
-      if (dragData) {
-        delete dragData.splitDropElement;
-        delete dragData.splitDropSide;
-      }
+      this.#dragOverSplit.fakeTab?.remove();
+
+      this.#dragOverSplit.timer = null;
+      this.#dragOverSplit.fakeTab = null;
+      this.#dragOverSplit.data = null;
     }
 
     handle_windowDragEnter(event) {
@@ -866,19 +855,11 @@
       this.#maybeClearVerticalPinnedGridDragOver();
       this.#handele_dropSwitchSpace(event);
       this.#handle_dropCreateSplit(event);
+      this._maybeClearDragOverSplit();
     }
 
     handle_dragleave(event) {
       super.handle_dragleave(event);
-      const dt = event.dataTransfer;
-      let draggedTab = dt.mozGetDataAt(TAB_DROP_TYPE, 0);
-      let dragData = draggedTab._dragData;
-      let zenDragData = draggedTab._zenDragData;
-      let dropElement = dragData.dropElement;
-      let splitDropElement = zenDragData?.splitDropElement;
-      if (splitDropElement && splitDropElement !== dropElement) {
-        this._maybeClearDragOverSplit(zenDragData);
-      }
     }
 
     #handele_dropSwitchSpace(event) {
@@ -906,21 +887,26 @@
     }
 
     #handle_dropCreateSplit(event) {
-      let dt = event.dataTransfer;
-      let draggedTab = dt.mozGetDataAt(TAB_DROP_TYPE, 0);
-      let dragData = draggedTab._zenDragData;
-      const droppedOnTab = dragData?.splitDropElement;
-      const dropSide = dragData?.splitDropSide;
+      const dragData = this.#dragOverSplit.data;
+      const dt = event.dataTransfer;
+      const draggedTab = dt.mozGetDataAt(TAB_DROP_TYPE, 0);
 
-      this._maybeClearDragOverSplit(dragData); // Clear any visuals and timer
-
-      if (draggedTab && droppedOnTab) {
-        gZenViewSplitter.splitTabs(
-          dropSide == "left" ? [draggedTab, droppedOnTab] : [droppedOnTab, draggedTab],
-          "vsep",
-          dropSide == "left" ? 0 : 1
-        );
+      if (!dragData || !draggedTab) {
+        return;
       }
+
+      const droppedOnTab = dragData.dropElement;
+      const dropSide = dragData.dropSide;
+
+      // Clear any visuals and timer
+      this._maybeClearDragOverSplit();
+
+      const isLeft = dropSide === "left";
+      gZenViewSplitter.splitTabs(
+        isLeft ? [draggedTab, droppedOnTab] : [droppedOnTab, draggedTab],
+        "vsep",
+        isLeft ? 0 : 1
+      );
     }
 
     handle_drop_transition(dropElement, draggedTab, movingTabs, dropBefore) {
@@ -1126,6 +1112,10 @@
 
     // eslint-disable-next-line complexity
     #applyDragoverIndicator(event, dropElement, movingTabs, draggedTab) {
+      // Doesn't show indicator when dragOverSplit
+      if (this.#dragOverSplit.data) {
+        return;
+      }
       const separation = 4;
       const dropZoneSelector = ":is(.zen-drop-target)";
       let shouldPlayHapticFeedback = false;
