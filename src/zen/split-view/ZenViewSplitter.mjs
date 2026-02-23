@@ -110,13 +110,13 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
       this,
       "_tabDropTreshold",
       "zen.splitView.tab-drop-threshold",
-      150
+      300
     );
     XPCOMUtils.defineLazyPreferenceGetter(
       this,
       "_linkDropTreshold",
       "zen.splitView.link-drop-threshold",
-      50
+      150
     );
     XPCOMUtils.defineLazyPreferenceGetter(
       this,
@@ -155,11 +155,13 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     // Add drag over listener to the browser view
     this.boundDragOver = this.onBrowserDragOverToSplit.bind(this);
     const tabBox = document.getElementById("tabbrowser-tabbox");
-    if (Services.prefs.getBoolPref("zen.splitView.enable-tab-drop")) {
+    this._onTabDropEnabled = Services.prefs.getBoolPref("zen.splitView.enable-tab-drop");
+    this._onLinkDropEnabled = Services.prefs.getBoolPref("zen.splitView.enable-link-drop");
+    if (this._onTabDropEnabled) {
       tabBox.addEventListener("dragover", this.boundDragOver);
       this.onBrowserDragEndToSplit = this.onBrowserDragEndToSplit.bind(this);
     }
-    if (Services.prefs.getBoolPref("zen.splitView.enable-link-drop")) {
+    if (this._onLinkDropEnabled) {
       tabBox.addEventListener("dragover", this.boundDragOver);
       tabBox.addEventListener("dragend", this.splitLinkDragEnd.bind(this));
       this.splitLinkDragEnd = this.splitLinkDragEnd.bind(this);
@@ -330,14 +332,17 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     var draggedTab;
     if (
       dt.mozTypesAt(0)[0] == TAB_DROP_TYPE &&
-      Services.prefs.getBoolPref("zen.splitView.enable-tab-drop")
+      this._onTabDropEnabled
     ) {
       // tab copy or move
       draggedTab = dt.mozGetDataAt(TAB_DROP_TYPE, 0);
+      const dragData = draggedTab._dragData;
+      const movingTabsSet = dragData.movingTabsSet;
       // not our drop then
       if (
         !gBrowser.isTab(draggedTab) ||
         gBrowser.selectedTab.hasAttribute("zen-empty-tab") ||
+        movingTabsSet.size > 1 ||
         draggedTab.ownerGlobal !== window
       ) {
         return;
@@ -417,7 +422,7 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
 
   _dragLinkOverToSplit(event) {
     // Enable link drop
-    if (!Services.prefs.getBoolPref("zen.splitView.enable-link-drop")) {
+    if (!this._onLinkDropEnabled) {
       return;
     }
     const dt = event.dataTransfer;

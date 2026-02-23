@@ -15,10 +15,10 @@
   value: 24
 
 - name: zen.splitView.tab-drop-threshold
-  value: 150
+  value: 300
 
 - name: zen.splitView.link-drop-threshold
-  value: 50
+  value: 150
 
 - name: zen.splitView.link-drop-window-size
   value: 150
