@@ -12,11 +12,11 @@ document.addEventListener(
         case "cmd_zenCompactModeToggle":
           gZenCompactModeManager.toggle();
           break;
-        case "cmd_zenCompactModeShowSidebar":
-          gZenCompactModeManager.toggleSidebar();
-          break;
         case "cmd_toggleCompactModeIgnoreHover":
           gZenCompactModeManager.toggle(true);
+          break;
+        case "cmd_zenCompactModeShowSidebar":
+          gZenCompactModeManager.toggleSidebar();
           break;
         case "cmd_zenWorkspaceForward":
           gZenWorkspaces.changeWorkspaceShortcut();
@@ -130,6 +130,13 @@ document.addEventListener(
         case "cmd_zenNewNavigatorUnsynced":
           OpenBrowserWindow({ zenSyncedWindow: false });
           break;
+        case "cmd_zenNewLiveFolder": {
+          const { ZenLiveFoldersManager } = ChromeUtils.importESModule(
+            "resource:///modules/zen/ZenLiveFoldersManager.sys.mjs"
+          );
+          ZenLiveFoldersManager.handleEvent(event);
+          break;
+        }
         default:
           gZenGlanceManager.handleMainCommandSet(event);
           if (event.target.id.startsWith("cmd_zenWorkspaceSwitch")) {
