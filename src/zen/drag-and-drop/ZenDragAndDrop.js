@@ -855,7 +855,7 @@
       gZenFolders.highlightGroupOnDragOver(null);
       super.handle_drop(event);
       this.#maybeClearVerticalPinnedGridDragOver();
-      this.#handele_dropSwitchSpace(event);
+      this.#handle_dropSwitchSpace(event);
       this.#handle_dropCreateSplit(event);
       this._clearDragOverSplit();
     }
@@ -864,7 +864,7 @@
       super.handle_dragleave(event);
     }
 
-    #handele_dropSwitchSpace(event) {
+    #handle_dropSwitchSpace(event) {
       const dt = event.dataTransfer;
       const activeWorkspace = gZenWorkspaces.activeWorkspace;
       let draggedTab = dt.mozGetDataAt(TAB_DROP_TYPE, 0);
