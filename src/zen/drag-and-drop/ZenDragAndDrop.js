@@ -696,6 +696,7 @@
         dropElement?.group?.hasAttribute("split-view-group") ||
         movingTabsSet.size > 1
       ) {
+        this._clearDragOverSplit();
         return;
       }
 
@@ -862,6 +863,7 @@
 
     handle_dragleave(event) {
       super.handle_dragleave(event);
+      this._clearDragOverSplit();
     }
 
     #handle_dropSwitchSpace(event) {
