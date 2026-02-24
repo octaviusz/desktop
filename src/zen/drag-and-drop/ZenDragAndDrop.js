@@ -717,8 +717,13 @@
 
       const edgeZoneThreshold = this._dndSplitThreshold / 100;
 
-      const overlapRatio = (clientY - targetTop) / targetHeight;
-      if (overlapRatio < edgeZoneThreshold || overlapRatio > 1 - edgeZoneThreshold) {
+      const overlapRatioY = (clientY - targetTop) / targetHeight;
+      const overlapRatioX = (clientX - targetX) / targetWidth;
+      if (
+        (overlapRatioX > edgeZoneThreshold && overlapRatioX < 1 - edgeZoneThreshold) ||
+        overlapRatioY < edgeZoneThreshold ||
+        overlapRatioY > 1 - edgeZoneThreshold
+      ) {
         this._clearDragOverSplit();
         return;
       }
@@ -743,16 +748,16 @@
         return;
       }
 
+      this.#dragOverSplit.data = {
+        dropElement,
+        dropSide,
+      };
       this.#dragOverSplit.timer = setTimeout(() => {
-        this.#createFakeTabSplit(dropElement, dropSide, dragData);
-        this.#dragOverSplit.data = {
-          dropElement,
-          dropSide,
-        };
+        this.#createFakeTabSplit(dropElement, dropSide);
       }, this._dndSplitDelay);
     }
 
-    #createFakeTabSplit(dropElement, dropSide, dragData) {
+    #createFakeTabSplit(dropElement, dropSide) {
       // Remove drop indicator
       this.clearDragOverVisuals();
 
@@ -762,9 +767,6 @@
       }
 
       const element = document.createXULElement("zen-split-fake-tab");
-      element.style.width = `${dragData.tabWidth / 2}px`;
-      element.style.height = `${dragData.tabHeight}px`;
-
       const firstChild = dropElement.firstChild;
       if (dropSide === "left") {
         firstChild.before(element);
@@ -1038,6 +1040,7 @@
       super.handle_dragend(event);
       thisFromGlobal.clearDragOverVisuals();
       ownerGlobal.gZenPinnedTabManager.removeTabContainersDragoverClass();
+      thisFromGlobal._clearDragOverSplit();
       this.#maybeClearVerticalPinnedGridDragOver();
       thisFromGlobal.originalDragImageArgs = [];
       window.removeEventListener("dragenter", thisFromGlobal.handle_windowDragEnter, {
