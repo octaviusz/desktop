@@ -696,6 +696,7 @@
         dropElement?.group?.hasAttribute("split-view-group") ||
         movingTabsSet.size > 1
       ) {
+        this._clearDragOverSplit();
         return;
       }
 
