@@ -862,6 +862,7 @@
 
     handle_dragleave(event) {
       super.handle_dragleave(event);
+      this._clearDragOverSplit();
     }
 
     #handele_dropSwitchSpace(event) {
