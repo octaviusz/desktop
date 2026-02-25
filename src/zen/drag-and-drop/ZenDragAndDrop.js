@@ -683,7 +683,7 @@
 
       const dt = event.dataTransfer;
       const draggedTab = dt.mozGetDataAt(TAB_DROP_TYPE, 0);
-      if (!draggedTab) {
+      if (!isTab(draggedTab)) {
         return;
       }
 
