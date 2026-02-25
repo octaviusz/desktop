@@ -683,6 +683,10 @@
 
       const dt = event.dataTransfer;
       const draggedTab = dt.mozGetDataAt(TAB_DROP_TYPE, 0);
+      if (!draggedTab) {
+        return;
+      }
+
       const dragData = draggedTab._dragData;
       const movingTabsSet = dragData.movingTabsSet;
       const dropElement = event.target.closest(".tabbrowser-tab");
