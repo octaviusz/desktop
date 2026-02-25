@@ -48,8 +48,8 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
         <rect class="front" x="5.625" y="9.625" width="16.75" height="12.75" rx="2.375" style="stroke-width: 1.5px; stroke: var(--zen-folder-stroke); fill: url(#gradient-1); fill-opacity: 0.1;">
         </rect>
         <!--Icon (g)-->
-        <g class="icon" style="fill: var(--zen-folder-stroke);">
-          <image href="" height="10" width="10"/>
+        <g class="icon">
+          <image href="" height="11" width="11"/>
         </g>
         <!--End Icon (g)-->
         <g class="dots" style="fill: var(--zen-folder-stroke);">
@@ -276,6 +276,21 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
       return;
     }
     super.on_click(event);
+  }
+
+  addTabs(tabs) {
+    super.addTabs(tabs);
+    if (this.collapsed && !gZenFolders._sessionRestoring && this.isLiveFolder && tabs.length) {
+      let activeTabs = this.activeTabs;
+      activeTabs.push(...tabs);
+      gZenFolders._dontAnimateFolder = true;
+      this.collapsed = false;
+      for (let tab of activeTabs) {
+        tab.setAttribute("folder-active", "true");
+      }
+      this.collapsed = true;
+      delete gZenFolders._dontAnimateFolder;
+    }
   }
 
   /**
