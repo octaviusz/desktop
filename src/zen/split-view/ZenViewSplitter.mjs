@@ -319,7 +319,7 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
         draggedTab.getAttribute("zen-workspace-id") &&
         !this._lastOpenedTab.hasAttribute("zen-essential") &&
         !draggedTab.hasAttribute("zen-essential")) ||
-        this._lastOpenedTab.hasAttribute("zen-live-folder-item-id")
+      this._lastOpenedTab.hasAttribute("zen-live-folder-item-id")
     ) {
       this._lastOpenedTab = gBrowser.selectedTab;
     }
@@ -1297,9 +1297,7 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
       const allArePinned = tabs.every((tab) => tab.pinned);
       const thereIsOnePinned = tabs.some((tab) => tab.pinned);
       const thereIsOneEssential = tabs.some((tab) => tab.hasAttribute("zen-essential"));
-      const thereIsOneLiveFolder = tabs.some((tab) =>
-        tab.hasAttribute("zen-live-folder-item-id")
-      );
+      const thereIsOneLiveFolder = tabs.some((tab) => tab.hasAttribute("zen-live-folder-item-id"));
 
       if (thereIsOneEssential || (thereIsOnePinned && !allArePinned) || thereIsOneLiveFolder) {
         for (let i = 0; i < tabs.length; i++) {
