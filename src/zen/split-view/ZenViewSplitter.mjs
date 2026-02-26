@@ -1277,7 +1277,7 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
             if (!group.tabs.includes(tab)) {
               gBrowser.moveTabToExistingGroup(tab, this._getSplitViewGroup(tabs, groupFetchId));
               group.tabs.push(tab);
-              this.addTabToSplit(tab, group.layoutTree);
+              this.addTabToSplit(tab, group.layoutTree, false);
               tab.splitView = true;
             }
           }
