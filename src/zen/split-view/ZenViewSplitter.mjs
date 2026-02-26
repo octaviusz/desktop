@@ -1278,9 +1278,14 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
       }
 
       // Prevent mixing tabs from different live folders
-      const thereIsOneLiveFolderTab = tabs.some((tab) => tab.hasAttribute("zen-live-folder-item-id"));
+      const thereIsOneLiveFolderTab = tabs.some((tab) =>
+        tab.hasAttribute("zen-live-folder-item-id")
+      );
       if (thereIsOneLiveFolderTab) {
-        const isSameLiveFolder = new Set(tabs.map(tab => tab.getAttribute("zen-live-folder-item-id").split(":", 2)[0])).size === 1
+        const isSameLiveFolder =
+          new Set(
+            tabs.map((tab) => tab?.getAttribute("zen-live-folder-item-id")?.split(":", 2)?.[0])
+          ).size === 1;
         if (!isSameLiveFolder) {
           return;
         }

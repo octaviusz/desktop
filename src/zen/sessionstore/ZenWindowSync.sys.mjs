@@ -1176,10 +1176,12 @@ class nsZenWindowSync {
   }
 
   on_FolderGrouped(aEvent) {
+    // Unimplemented
     return aEvent;
   }
 
   on_FolderUngrouped(aEvent) {
+    // Unimplemented
     return aEvent;
   }
 
