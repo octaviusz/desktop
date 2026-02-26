@@ -30,6 +30,7 @@ XPCOMUtils.defineLazyPreferenceGetter(lazy, "gShouldLog", "zen.window-sync.log",
 const OBSERVING = ["browser-window-before-show", "sessionstore-windows-restored"];
 const INSTANT_EVENTS = ["SSWindowClosing", "TabSelect", "focus"];
 const UNSYNCED_WINDOW_EVENTS = ["TabOpen"];
+const FOLDER_EVENTS = ["FolderGrouped", "FolderUngrouped"];
 const EVENTS = [
   "TabClose",
 
@@ -55,6 +56,7 @@ const EVENTS = [
   "ZenSplitViewTabsSplit",
 
   ...INSTANT_EVENTS,
+  ...FOLDER_EVENTS,
   ...UNSYNCED_WINDOW_EVENTS,
 ];
 
@@ -1171,6 +1173,14 @@ class nsZenWindowSync {
       return;
     }
     return this.#delegateGenericSyncEvent(aEvent, SYNC_FLAG_LABEL);
+  }
+
+  on_FolderGrouped(aEvent) {
+    return aEvent;
+  }
+
+  on_FolderUngrouped(aEvent) {
+    return aEvent;
   }
 
   on_TabHide(aEvent) {

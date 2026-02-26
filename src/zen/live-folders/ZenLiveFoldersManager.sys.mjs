@@ -70,6 +70,7 @@ class nsZenLiveFoldersManager {
 
   handleEvent(aEvent) {
     switch (aEvent.type) {
+      case "FolderUngrouped":
       case "TabUngrouped":
       case "TabClose": {
         this.#onTabDismiss(aEvent);
@@ -115,27 +116,55 @@ class nsZenLiveFoldersManager {
   #onTabDismiss(event) {
     const itemIdAttr = "zen-live-folder-item-id";
     const itemId =
-      event.target.getAttribute(itemIdAttr) || event.detail?.getAttribute?.(itemIdAttr);
+      event.target.getAttribute(itemIdAttr) ||
+      event.detail?.getAttribute?.(itemIdAttr) ||
+      event.detail?.tabs?.[0]?.getAttribute?.(itemIdAttr);
 
-    if (itemId) {
-      if (event.type === "TabUngrouped") {
-        const target = event.detail;
-        target.removeAttribute("zen-live-folder-item-id");
+    if (!itemId) {
+      return;
+    }
 
-        const showSublabel = target.hasAttribute("zen-show-sublabel");
+    switch (event.type) {
+      case "TabUngrouped": {
+        const target = event.target;
+        const detail = event.detail;
+        if (detail?.splitView || target?.hasAttribute("split-view-group")) {
+          return;
+        }
+
+        detail.removeAttribute("zen-live-folder-item-id");
+
+        const showSublabel = detail.hasAttribute("zen-show-sublabel");
         if (showSublabel) {
-          target.removeAttribute("zen-show-sublabel");
+          detail.removeAttribute("zen-show-sublabel");
 
-          const label = target.querySelector(".zen-tab-sublabel");
+          const label = detail.querySelector(".zen-tab-sublabel");
           this.window.document.l10n.setArgs(label, {
             tabSubtitle: "zen-default-pinned",
           });
         }
+        break;
       }
+      case "FolderUngrouped": {
+        const splitView = event.detail;
+        splitView?.tabs?.forEach((tab) => {
+          tab.removeAttribute("zen-live-folder-item-id");
+          const showSublabel = tab.hasAttribute("zen-show-sublabel");
+          if (showSublabel) {
+            tab.removeAttribute("zen-show-sublabel");
 
-      this.dismissedItems.add(itemId);
-      this.saveState();
+            const label = tab.querySelector(".zen-tab-sublabel");
+            this.window.document.l10n.setArgs(label, {
+              tabSubtitle: "zen-default-pinned",
+            });
+          }
+        });
+        break;
+      }
     }
+
+    this.dismissedItems.add(itemId);
+    this.saveState();
   }
 
   #onActionButtonClick(event) {

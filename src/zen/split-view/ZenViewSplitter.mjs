@@ -290,6 +290,25 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     return closestEdge ? closestEdge.side : null;
   }
 
+  _canSplitLiveFolderTab(draggedTab, dropTab) {
+    const id1 = draggedTab.getAttribute("zen-live-folder-item-id");
+    const id2 = dropTab.getAttribute("zen-live-folder-item-id");
+
+    if (!id1 && !id2) {
+      return true;
+    }
+
+    if (!id1 || !id2) {
+      return false;
+    }
+
+    // Format: "11111111111111-11:some-unique-part"
+    const folderId1 = id1.split(":", 2)[0];
+    const folderId2 = id2.split(":", 2)[0];
+
+    return folderId1 === folderId2;
+  }
+
   // eslint-disable-next-line complexity
   onBrowserDragOverToSplit(event) {
     gBrowser.tabContainer.tabDragAndDrop.clearSpaceSwitchTimer();
@@ -313,12 +332,21 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     } else {
       return;
     }
+    // If draggedTab is in liveFolder, but the last opened tab is not in liveFolder
+    // we don't want to create an empty split view
+    if (
+      draggedTab.hasAttribute("zen-live-folder-item-id") &&
+      !this._lastOpenedTab.hasAttribute("zen-live-folder-item-id")
+    ) {
+      return;
+    }
     if (
       !this._lastOpenedTab ||
       (this._lastOpenedTab.getAttribute("zen-workspace-id") !==
         draggedTab.getAttribute("zen-workspace-id") &&
         !this._lastOpenedTab.hasAttribute("zen-essential") &&
-        !draggedTab.hasAttribute("zen-essential"))
+        !draggedTab.hasAttribute("zen-essential")) ||
+      !this._canSplitLiveFolderTab(draggedTab, this._lastOpenedTab)
     ) {
       this._lastOpenedTab = gBrowser.selectedTab;
     }
@@ -1247,6 +1275,15 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
       tabs = tabs.filter((t) => !t.hidden && !t.hasAttribute("zen-empty-tab"));
       if (tabs.length < 2 || tabs.length > this.MAX_TABS) {
         return;
+      }
+
+      // Prevent mixing tabs from different live folders
+      const thereIsOneLiveFolderTab = tabs.some((tab) => tab.hasAttribute("zen-live-folder-item-id"));
+      if (thereIsOneLiveFolderTab) {
+        const isSameLiveFolder = new Set(tabs.map(tab => tab.getAttribute("zen-live-folder-item-id").split(":", 2)[0])).size === 1
+        if (!isSameLiveFolder) {
+          return;
+        }
       }
 
       const existingSplitTab = tabs.find((tab) => tab.splitView);

@@ -707,7 +707,8 @@
       if (
         movingTabsSet.has(dropElement) ||
         !isTab(draggedTab) ||
-        draggedTab?.group?.hasAttribute("split-view-group")
+        draggedTab?.group?.hasAttribute("split-view-group") ||
+        !gZenViewSplitter._canSplitLiveFolderTab(draggedTab, dropElement)
       ) {
         this._clearDragOverSplit();
         return;
@@ -1117,7 +1118,9 @@
         return true;
       }
       if (folder.isLiveFolder) {
-        const liveFolderItemId = draggedTab.getAttribute("zen-live-folder-item-id");
+        const liveFolderItemId =
+          draggedTab.getAttribute("zen-live-folder-item-id") ||
+          draggedTab?.group?.tabs?.[0]?.getAttribute("zen-live-folder-item-id");
         if (!liveFolderItemId || !liveFolderItemId.startsWith(`${folder.id}:`)) {
           return false;
         }
