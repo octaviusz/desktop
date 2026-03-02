@@ -1701,10 +1701,8 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
           continue;
         }
 
-        if (!itemVisible) {
-          if (!itemsToHide.includes(item)) {
-            itemsToHide.push(item);
-          }
+        if (!itemVisible && !itemsToHide.includes(item)) {
+          itemsToHide.push(item);
         }
       }
     }
@@ -1749,7 +1747,6 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
     }
 
     // Cleanup
-    this.styleCleanup(itemsToHide);
     this.styleCleanup(selectedTabs);
   }
 

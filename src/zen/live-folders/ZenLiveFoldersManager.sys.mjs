@@ -98,10 +98,6 @@ class nsZenLiveFoldersManager {
             this.createFolder("github:pull-requests");
             break;
           }
-          case "zen-live-folder-github-issues": {
-            this.createFolder("github:issues");
-            break;
-          }
           case "zen-live-folder-type-rss": {
             this.createFolder("rss");
             break;
@@ -382,6 +378,14 @@ class nsZenLiveFoldersManager {
       }
     }
 
+    let userContextId = 0;
+    let space = folder.ownerGlobal.gZenWorkspaces.getWorkspaceFromId(
+      folder.getAttribute("zen-workspace-id")
+    );
+    if (space) {
+      userContextId = space.containerTabId || 0;
+    }
+
     // Only add the items that are not already in the folder and was not dismissed by the user
     const newItems = items
       .filter((item) => {
@@ -395,6 +399,7 @@ class nsZenLiveFoldersManager {
           skipAnimation: true,
           noInitialLabel: true,
           lazyTabTitle: item.title,
+          userContextId,
         });
         // createLazyBrowser can't be pinned by default
         this.window.gBrowser.pinTab(tab);
