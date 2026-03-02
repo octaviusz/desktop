@@ -219,6 +219,10 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
   }
 
   set activeTabs(tabs) {
+    if (this.isBeingDragged) {
+      return;
+    }
+
     if (tabs.length) {
       this._activeTabs = tabs;
       for (let tab of tabs) {
