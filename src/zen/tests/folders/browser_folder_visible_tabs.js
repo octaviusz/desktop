@@ -33,7 +33,7 @@ add_task(async function test_Visible_Selected() {
   gBrowser.selectedTab = tab;
   folder.collapsed = true;
   ok(tab.visible, "Tab is visible in the folder when collapsed");
-  ok(tab.hasAttribute("folder-active"), "Tab is marked as active in the folder when selected");
+  ok(folder.activeTabs.includes(tab), "Tab is marked as active in the folder when selected");
   ok(
     tab.group.hasActiveTab,
     "Tab group is marked as active when the tab is selected"
@@ -63,7 +63,7 @@ add_task(async function test_Visible_Not_Selected() {
   folder.collapsed = true;
   gBrowser.selectedTab = originalTab;
   ok(tab.visible, "Tab is visible in the folder when collapsed");
-  ok(tab.hasAttribute("folder-active"), "Tab is marked as active in the folder when selected");
+  ok(folder.activeTabs.includes(tab), "Tab is marked as active in the folder when selected");
   ok(
     tab.group.hasActiveTab,
     "Tab group is marked as active when the tab is selected"

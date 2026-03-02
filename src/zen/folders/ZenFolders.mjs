@@ -443,7 +443,6 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
               gBrowser.tabContainer._invalidateCachedTabs();
               if (selectedTab) {
                 selectedTab.setAttribute("zen-workspace-id", newWorkspace.uuid);
-                selectedTab.removeAttribute("folder-active");
                 gZenWorkspaces.lastSelectedWorkspaceTabs[newWorkspace.uuid] = selectedTab;
               }
               resolve();
@@ -1212,7 +1211,7 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
     // because it would mean that all tabs in a collapsed group that
     // are active means they should be active for contextGroup as well,
     // even if they are active because of another group they belong to.
-    return tab.hasAttribute("folder-active") && contextGroup === tab.group;
+    return contextGroup.activeTabs.includes(tab);
   }
 
   #collectGroupItems(group, opts = {}) {
@@ -1299,7 +1298,7 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
 
     if (selectedTabs.length) {
       for (let i = 0; i < groupItems.length; i++) {
-        const { item, splitViewId, activeFolderId } = groupItems[i];
+        const { item, splitViewId } = groupItems[i];
 
         // Skip selected items
         if (selectedTabs.includes(item)) {
@@ -1309,15 +1308,6 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
         // Skip items from selected split-view groups
         if (splitViewId && splitViewIds.has(splitViewId)) {
           continue;
-        }
-
-        // Skip items from selected active groups
-        if (activeFolderId && activeFoldersIds.has(activeFolderId)) {
-          // If item is tab-group-label-container we should hide it.
-          // Other items between tab-group-labe-container and folder-active tab should be visible cuz they are hidden by margin-top
-          if (item.parentElement.id !== activeFolderId && !item.hasAttribute("folder-active")) {
-            continue;
-          }
         }
 
         if (!itemsToHide.includes(item)) {
@@ -1390,7 +1380,7 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
 
       if (selectedTabs.length) {
         for (let i = 0; i < activeFolderItems.length; i++) {
-          const { item, splitViewId, activeFolderId } = activeFolderItems[i];
+          const { item, splitViewId } = activeFolderItems[i];
 
           // Skip selected items
           if (selectedTabs.includes(item)) {
@@ -1400,17 +1390,6 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
           // Skip items from selected split-view groups
           if (splitViewId && splitViewIds.has(splitViewId)) {
             continue;
-          }
-
-          if (activeFolderId && activeFoldersIds.has(activeFolderId)) {
-            const parentFolder = item.parentElement;
-            if (
-              gBrowser.isTabGroup(parentFolder) &&
-              parentFolder.id !== activeFolderId &&
-              item.hasAttribute("folder-active")
-            ) {
-              continue;
-            }
           }
 
           if (!itemsToHide.includes(item)) {
@@ -1436,16 +1415,12 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
           let activeGroup = folders.get(tabGroup?.id);
           if (activeGroup) {
             this.setFolderIndentation([tab], activeGroup, /* for collapse = */ true);
-          } else {
-            // Since the folder is now expanded, we should remove active attribute
-            // to the tab that was previously visible
-            tab.removeAttribute("folder-active");
-            if (tab.group?.hasAttribute("split-view-group")) {
+          } else if (tab.group?.hasAttribute("split-view-group")) {
               tab.group.style.removeProperty("--zen-folder-indent");
             } else {
               tab.style.removeProperty("--zen-folder-indent");
             }
-          }
+          
         }
         folders.clear();
       }
@@ -1530,7 +1505,7 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
 
   async animateUnload(group, tabToUnload, ungroup = false) {
     const isSplitView = tabToUnload.group?.hasAttribute("split-view-group");
-    if ((!group?.isZenFolder || !isSplitView) && !tabToUnload.hasAttribute("folder-active")) {
+    if ((!group?.isZenFolder || !isSplitView) && !group?.activeTabs?.includes(tabToUnload)) {
       return;
     }
     const animations = [];
@@ -1578,7 +1553,6 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
       }
     }
 
-    tabToUnload.removeAttribute("folder-active");
     if (isSplitView) {
       tabToUnload = tabToUnload.group;
     }

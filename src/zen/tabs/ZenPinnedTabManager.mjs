@@ -276,7 +276,7 @@ class nsZenPinnedTabManager extends nsZenDOMOperatedFeature {
               }
               const isSpltView = tab.group?.hasAttribute("split-view-group");
               const group = isSpltView ? tab.group.group : tab.group;
-              if (!folderToUnload && tab.hasAttribute("folder-active")) {
+              if (!folderToUnload) {
                 await gZenFolders.animateUnload(group, tab);
               }
             }

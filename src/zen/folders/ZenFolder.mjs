@@ -225,9 +225,6 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
 
     if (tabs.length) {
       this._activeTabs = tabs;
-      for (let tab of tabs) {
-        tab.setAttribute("folder-active", "true");
-      }
       this.hasActiveTab = true;
     } else {
       const folders = new Map();
@@ -238,7 +235,6 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
         }
         let activeGroup = folders.get(group?.id);
         if (!activeGroup) {
-          tab.removeAttribute("folder-active");
           tab.style.removeProperty("--zen-folder-indent");
         }
       }
@@ -287,9 +283,6 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
   addTabs(tabs) {
     super.addTabs(tabs);
     if (this.collapsed && !gZenFolders._sessionRestoring && this.isLiveFolder && tabs.length) {
-      tabs.forEach((tab) => {
-        tab.setAttribute("folder-active", "true");
-      });
       gZenFolders.animateCollapse(this);
     }
   }
