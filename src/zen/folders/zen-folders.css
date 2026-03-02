@@ -28,7 +28,7 @@ zen-folder {
     background-color: var(--zen-toolbar-element-bg-hover);
   }
 
-  &[collapsed][has-active] {
+  &[collapsed][hasactivetab] {
     @media (prefers-reduced-motion: no-preference) {
       #tabbrowser-tabs[movingtab] &:not(:active) {
         transition: var(--tab-dragover-transition);
@@ -206,7 +206,7 @@ zen-folder {
     }
   }
 
-  :root[zen-sidebar-expanded] &[has-active] > .tab-group-label-container {
+  :root[zen-sidebar-expanded] &[hasactivetab] > .tab-group-label-container {
     & .tab-reset-button {
       display: flex;
       opacity: 0;

@@ -35,7 +35,7 @@ add_task(async function test_Visible_Selected() {
   ok(tab.visible, "Tab is visible in the folder when collapsed");
   ok(tab.hasAttribute("folder-active"), "Tab is marked as active in the folder when selected");
   ok(
-    tab.group.hasAttribute("has-active"),
+    tab.group.hasActiveTab,
     "Tab group is marked as active when the tab is selected"
   );
   Assert.deepEqual(
@@ -65,7 +65,7 @@ add_task(async function test_Visible_Not_Selected() {
   ok(tab.visible, "Tab is visible in the folder when collapsed");
   ok(tab.hasAttribute("folder-active"), "Tab is marked as active in the folder when selected");
   ok(
-    tab.group.hasAttribute("has-active"),
+    tab.group.hasActiveTab,
     "Tab group is marked as active when the tab is selected"
   );
   Assert.deepEqual(

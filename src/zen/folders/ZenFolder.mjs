@@ -113,12 +113,12 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
   get activeGroups() {
     let activeGroups = [];
     let currentGroup = this;
-    if (currentGroup?.hasAttribute("has-active")) {
+    if (currentGroup?.hasActiveTab) {
       activeGroups.push(currentGroup);
     }
     while (currentGroup?.group) {
       currentGroup = currentGroup?.group;
-      if (currentGroup?.hasAttribute("has-active")) {
+      if (currentGroup?.hasActiveTab) {
         activeGroups.push(currentGroup);
       }
     }
@@ -127,9 +127,9 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
 
   get childActiveGroups() {
     if (this.tagName === "zen-workspace-collapsible-pins") {
-      return Array.from(this.parentElement.querySelectorAll("zen-folder[has-active]"));
+      return Array.from(this.parentElement.querySelectorAll("zen-folder[hasactivetab]"));
     }
-    return Array.from(this.querySelectorAll("zen-folder[has-active]"));
+    return Array.from(this.querySelectorAll("zen-folder[hasactivetab]"));
   }
 
   rename() {
@@ -212,7 +212,7 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
    * This no-op setter ensures compatibility with interfaces expecting a pinned property,
    * while preserving the invariant that ZenFolders cannot have their pinned state changed externally.
    */
-  set pinned(value) {}
+  set pinned(value) { }
 
   get iconURL() {
     return this.icon.querySelector("image")?.getAttribute("href") || "";
@@ -224,6 +224,7 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
       for (let tab of tabs) {
         tab.setAttribute("folder-active", "true");
       }
+      this.hasActiveTab = true;
     } else {
       const folders = new Map();
       for (let tab of this._activeTabs) {
@@ -238,6 +239,7 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
         }
       }
       this._activeTabs = [];
+      this.hasActiveTab = false;
       folders.clear();
     }
   }
@@ -313,6 +315,21 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
     }
 
     return true;
+  }
+
+  /**
+   * @returns {boolean}
+   */
+  get hasActiveTab() {
+    return this.hasAttribute("hasactivetab");
+  }
+
+  /**
+   * @param {boolean} val
+   */
+  set hasActiveTab(val) {
+    val = !!this.activeTabs.length;
+    this.toggleAttribute("hasactivetab", val);
   }
 
   /**

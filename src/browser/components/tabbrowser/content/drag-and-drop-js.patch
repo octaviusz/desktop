@@ -188,7 +188,7 @@ index 730190d845f5312736f437cdc654c1693241ce56..d0404c46955fa16103a6f83e410f4f8a
          draggedTab._dragData?.expandGroupOnDrop
        ) {
 -        draggedTab.group.collapsed = false;
-+        draggedTab.group.collapsed = draggedTab.group.hasAttribute("has-active");
++        draggedTab.group.collapsed = draggedTab.group.hasActiveTab;
 +        gZenFolders.animateGroupMove(draggedTab.group, true);
        }
      }
@@ -214,7 +214,7 @@ index 730190d845f5312736f437cdc654c1693241ce56..d0404c46955fa16103a6f83e410f4f8a
        let isMovingInTabStrip = !fromTabList && dropEffect == "move";
        let collapseTabGroupDuringDrag =
 -        isMovingInTabStrip && isTabGroupLabel(tab) && !tab.group.collapsed;
-+        isMovingInTabStrip && isTabGroupLabel(tab) && (!tab.group.collapsed || tab.group.hasAttribute("has-active"));
++        isMovingInTabStrip && isTabGroupLabel(tab) && (!tab.group.collapsed || tab.group.hasActiveTab);
  
        tab._dragData = {
          offsetX: this._tabbrowserTabs.verticalMode

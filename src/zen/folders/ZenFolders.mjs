@@ -242,7 +242,7 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
     }
 
     if (group.collapsed && !this._sessionRestoring && !group.isLiveFolder) {
-      group.collapsed = group.hasAttribute("has-active");
+      group.collapsed = group.hasActiveTab;
     }
   }
 
@@ -291,7 +291,6 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
       return;
     }
 
-    collapsedRoot.setAttribute("has-active", "true");
     await this.animateSelect(collapsedRoot);
     gBrowser.tabContainer._invalidateCachedTabs();
   }
@@ -838,7 +837,7 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
       stateValue = isCollapsed ? "close" : "open";
     }
     svg.setAttribute("state", stateValue);
-    const hasActive = group.hasAttribute("has-active");
+    const hasActive = group.hasActiveTab;
     const activeValue = hasActive && isCollapsed ? "true" : "false";
     svg.setAttribute("active", activeValue);
 
@@ -1325,8 +1324,6 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
           itemsToHide.push(item);
         }
       }
-
-      group.setAttribute("has-active", "true");
       group.activeTabs = selectedTabs;
 
       selectedTabs.forEach((tab) => {
@@ -1425,10 +1422,10 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
 
     const afterMarginTop = () => {
       tabsContainer.style.overflow = "";
-      if (group.hasAttribute("has-active")) {
+      if (group.hasActiveTab) {
         const activeTabs = group.activeTabs;
         const folders = new Map();
-        group.removeAttribute("has-active");
+        group.activeTabs = [];
         for (let tab of activeTabs) {
           const tabGroup = tab?.group?.hasAttribute("split-view-group")
             ? tab?.group?.group
@@ -1452,8 +1449,6 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
         }
         folders.clear();
       }
-      // Folder has been expanded and has no active tabs
-      group.activeTabs = [];
     };
 
     let duration = this.#folderAnimationDuration;
@@ -1494,7 +1489,6 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
 
     const activeGroups = [group, ...group.childActiveGroups];
     for (const folder of activeGroups) {
-      folder.removeAttribute("has-active");
       folder.activeTabs = [];
       const groupItems = this.#normalizeGroupItems(folder.allItems);
       const tabsContainer = folder.groupContainer;
@@ -1549,7 +1543,6 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
       if (folder.activeTabs.length === 0) {
         lastTab = true;
         animations.push(async () => {
-          folder.removeAttribute("has-active");
           const groupItems = this.#normalizeGroupItems(folder.allItems);
           const tabsContainer = folder.groupContainer;
 
@@ -1642,13 +1635,12 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
         const activeTabs = selectedTabs.filter((t) => currentGroup.tabs.includes(t));
         if (activeTabs.length) {
           if (currentGroup.collapsed) {
-            if (currentGroup.hasAttribute("has-active")) {
+            if (currentGroup.hasActiveTab) {
               // It is important to keep the sequence of elements as in the DOM
               currentGroup.activeTabs = [
                 ...new Set([...currentGroup.activeTabs, ...activeTabs]),
               ].sort((a, b) => a._tPos > b._tPos);
             } else {
-              currentGroup.setAttribute("has-active", "true");
               currentGroup.activeTabs = activeTabs;
             }
 
