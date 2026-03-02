@@ -289,6 +289,33 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
   }
 
   /**
+   * @param {MozTabbrowserTab} tab
+   * @returns {boolean}
+   */
+  isTabVisibleInGroup(tab) {
+    // Selected tabs are always visible
+    if (tab.selected || tab.multiselected) {
+      return true;
+    }
+
+    // Recursively check all parent groups
+    let currentGroup = this;
+    while (currentGroup) {
+      if (currentGroup.isBeingDragged) {
+        return false;
+      }
+
+      if (currentGroup.collapsed && !currentGroup.activeTabs.includes(tab)) {
+        return false;
+      }
+
+      currentGroup = currentGroup.group;
+    }
+
+    return true;
+  }
+
+  /**
    * Get the root most collapsed folder in the tree.
    *
    * @returns {ZenFolder|null} The root most collapsed folder, or null if none are collapsed.
