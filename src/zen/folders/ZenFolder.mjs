@@ -219,28 +219,37 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
   }
 
   set activeTabs(tabs) {
-    if (this.isBeingDragged) {
-      return;
-    }
+    if (this.isBeingDragged) { return };
 
     if (tabs.length) {
       this._activeTabs = tabs;
       this.hasActiveTab = true;
-    } else {
-      const folders = new Map();
-      for (let tab of this._activeTabs) {
-        const group = tab?.group?.hasAttribute("split-view-group") ? tab?.group?.group : tab?.group;
-        if (!folders.has(group?.id)) {
-          folders.set(group?.id, group?.activeGroups?.at(-1));
-        }
-        let activeGroup = folders.get(group?.id);
-        if (!activeGroup) {
-          tab.style.removeProperty("--zen-folder-indent");
+      return;
+    }
+
+    const activeTabs = this._activeTabs;
+
+    this._activeTabs = [];
+    this.hasActiveTab = false;
+
+    const cache = new Map();
+
+    for (const tab of activeTabs) {
+      const group = tab?.group;
+      const isSplitView = group?.hasAttribute("split-view-group");
+      const folder = isSplitView ? group?.group : group;
+      const folderId = folder?.id;
+
+      if (!cache.has(folderId)) {
+        cache.set(folderId, folder?.activeGroups?.at(-1));
+      }
+
+      if (!cache.get(folderId)) {
+        tab.style.removeProperty("--zen-folder-indent");
+        if (isSplitView) {
+          group.style.removeProperty("--zen-folder-indent");
         }
       }
-      this._activeTabs = [];
-      this.hasActiveTab = false;
-      folders.clear();
     }
   }
 
