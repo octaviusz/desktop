@@ -1416,11 +1416,10 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
           if (activeGroup) {
             this.setFolderIndentation([tab], activeGroup, /* for collapse = */ true);
           } else if (tab.group?.hasAttribute("split-view-group")) {
-              tab.group.style.removeProperty("--zen-folder-indent");
-            } else {
-              tab.style.removeProperty("--zen-folder-indent");
-            }
-          
+            tab.group.style.removeProperty("--zen-folder-indent");
+          } else {
+            tab.style.removeProperty("--zen-folder-indent");
+          }
         }
         folders.clear();
       }

@@ -212,7 +212,7 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
    * This no-op setter ensures compatibility with interfaces expecting a pinned property,
    * while preserving the invariant that ZenFolders cannot have their pinned state changed externally.
    */
-  set pinned(value) { }
+  set pinned(value) {}
 
   get iconURL() {
     return this.icon.querySelector("image")?.getAttribute("href") || "";
