@@ -624,7 +624,7 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
   }
 
   handleTabUnpin(tab) {
-    tab.style.removeProperty("--zen-folder-indent");
+    this.removeFolderIndentation(tab);
     const group = tab.group;
     if (!group) {
       return false;
@@ -901,6 +901,13 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
       for (const tabItem of tabs) {
         tabItem.style.removeProperty("transition");
       }
+    }
+  }
+
+  removeFolderIndentation(tabs) {
+    tabs = Array.isArray(tabs) ? tabs : [tabs];
+    for (const tab of tabs) {
+      tab.style.removeProperty("--zen-folder-indent");
     }
   }
 
@@ -1406,7 +1413,8 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
         const folders = new Map();
         group.activeTabs = [];
         for (let tab of activeTabs) {
-          const tabGroup = tab?.group?.hasAttribute("split-view-group")
+          const isSplitView = tab?.group?.hasAttribute("split-view-group");
+          const tabGroup = isSplitView
             ? tab?.group?.group
             : tab?.group;
           if (!folders.has(tabGroup?.id)) {
@@ -1415,13 +1423,10 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
           let activeGroup = folders.get(tabGroup?.id);
           if (activeGroup) {
             this.setFolderIndentation([tab], activeGroup, /* for collapse = */ true);
-          } else if (tab.group?.hasAttribute("split-view-group")) {
-            tab.group.style.removeProperty("--zen-folder-indent");
           } else {
-            tab.style.removeProperty("--zen-folder-indent");
+            this.removeFolderIndentation(isSplitView ? tab.group : tab);
           }
         }
-        folders.clear();
       }
     };
 
@@ -1556,7 +1561,7 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
       tabToUnload = tabToUnload.group;
     }
 
-    tabToUnload.style.removeProperty("--zen-folder-indent");
+    this.removeFolderIndentation(tabToUnload);
 
     let tabUnloadAnimations = [];
     if (!ungroup && !lastTab) {

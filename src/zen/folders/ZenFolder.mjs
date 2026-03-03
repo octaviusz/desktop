@@ -245,10 +245,7 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
       }
 
       if (!cache.get(folderId)) {
-        tab.style.removeProperty("--zen-folder-indent");
-        if (isSplitView) {
-          group.style.removeProperty("--zen-folder-indent");
-        }
+        gZenFolders.removeFolderIndentation(isSplitView ? group : tab);
       }
     }
   }
