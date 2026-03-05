@@ -311,7 +311,7 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
         return false;
       }
 
-      if (currentGroup.collapsed && !currentGroup.activeTabs.includes(tab)) {
+      if (currentGroup.collapsed && !currentGroup.activeTabs?.includes(tab)) {
         return false;
       }
 
