@@ -60,6 +60,13 @@ jobs:
             npm run surfer -- ci --brand release 
           fi
 
+      - name: Restore Surfer engine cache
+        id: surfer-engine-cache
+        uses: actions/cache@v5
+        with:
+          path: .surfer/engine/
+          key: surfer-engine-${{ hashFiles('surfer.json') }}
+
       - name: Download Firefox and dependencies
         if: steps.check-upstream-branch.outputs.branch_exists == 'false'
         run: npm run download
@@ -73,8 +80,13 @@ jobs:
             npm run sync
           fi
 
-      - name: Install autopep8
-        run: sudo apt install python3-autopep8
+      - name: Run Import
+        if: steps.check-upstream-branch.outputs.branch_exists == 'false'
+        run: npm run import
+
+      - name: Run Bootstrap
+        if: steps.check-upstream-branch.outputs.branch_exists == 'false'
+        run: npm run bootstrap
 
       - name: Install requirements
         run: pip3 install -r requirements.txt
@@ -82,7 +94,7 @@ jobs:
       - name: Check if any files changed
         id: git-check
         run: |
-          npm run pretty
+          npm run lint:fix
           if [ -n "$(git status --porcelain)" ]; then
             echo "files_changed=true" >> $GITHUB_OUTPUT
           else
@@ -119,7 +131,7 @@ jobs:
       - name: Run formatter
         if: steps.check-upstream-branch.outputs.branch_exists == 'false'
         run: |
-          npm run pretty
+          npm run lint:fix
 
       - name: Create pull request
         uses: peter-evans/create-pull-request@v7
