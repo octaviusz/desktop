@@ -17,8 +17,10 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
         <label class="tab-group-label" role="button"/>
         <image class="tab-reset-button reset-icon" role="button" keyNav="false" data-l10n-id="zen-folders-unload-all-tooltip"/>
       </hbox>
-      <html:div class="tab-group-container">
-        <html:div class="zen-tab-group-start" />
+      <html:div class="tab-group-container-wrapper">
+        <html:div class="tab-group-container">
+          <html:div class="zen-tab-group-start" />
+        </html:div>
       </html:div>
       <vbox class="tab-group-overflow-count-container" pack="center">
         <label class="tab-group-overflow-count" role="button" />
@@ -101,12 +103,19 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
    * @returns {MozTabbrowserTabGroup|null} The group this folder belongs to, or null if it is not part of a group.
    */
   get group() {
-    if (gBrowser.isTabGroup(this.parentElement?.parentElement)) {
-      return this.parentElement.parentElement;
+    if (gBrowser.isTabGroup(this.parentElement?.parentElement?.parentElement)) {
+      return this.parentElement.parentElement.parentElement;
     }
     return null;
   }
 
+  get groupContainerWrapper() {
+    return this.querySelector(".tab-group-container-wrapper");
+  }
+
+  get groupContainer() {
+    return this.groupContainerWrapper.querySelector(".tab-group-container");
+  }
   get isZenFolder() {
     return true;
   }
@@ -232,27 +241,8 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
       return;
     }
 
-    const activeTabs = this._activeTabs;
-
     this._activeTabs = [];
     this.hasActiveTab = false;
-
-    const cache = new Map();
-
-    for (const tab of activeTabs) {
-      const group = tab?.group;
-      const isSplitView = group?.hasAttribute("split-view-group");
-      const folder = isSplitView ? group?.group : group;
-      const folderId = folder?.id;
-
-      if (!cache.has(folderId)) {
-        cache.set(folderId, folder?.activeGroups?.at(-1));
-      }
-
-      if (!cache.get(folderId)) {
-        gZenFolders.removeFolderIndentation(isSplitView ? group : tab);
-      }
-    }
   }
 
   get activeTabs() {
