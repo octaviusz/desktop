@@ -1355,6 +1355,7 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
               ...options,
             });
             animation.onfinish = () => {
+              // Set the final value of the animation to the element style
               for (const [key, value] of Object.entries(keyframes)) {
                 const finalValue = Array.isArray(value)
                   ? value[value.length - 1]
@@ -1383,6 +1384,7 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
     const between = [];
     const after = [];
 
+    // TODO: Perhaps you need to somehow exclude items up to the selected tab of the active group
     let foundFirstSelected = false;
     let foundLastSelected = false;
     let lastSelectedIdx = -1;
@@ -1447,11 +1449,13 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
       activeFoldersIds,
     });
 
+    // Calculate the height of the tabs container for animation 
     const collapsedHeight = this.#calculateHeightShift(
       tabsContainer,
       selectedTabs
     );
 
+    // Store the elements that should be animated between and after the selected tabs 
     const { between, after } = this.#categorizeElements(
       groupItems,
       selectedTabs,
@@ -1468,8 +1472,11 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
     }
 
     const height = tabsContainer.getBoundingClientRect().height;
+    // Setup initial height for the tabs container animation
     tabsContainerWrapper.style.maxHeight = `${height}px`;
+    tabsContainer.style.height = `${height}px`;
 
+    // Calculate the height of the selected tabs
     const containerHeight = () => {
       const selectedHeight = selectedTabs.reduce((sum, tab) => {
         if (tab.splitView) {
@@ -1480,26 +1487,25 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
       return [`${height}px`, `${selectedHeight}px`];
     };
 
-    await Promise.all([
+    animations.push(
+      // Hide tabs that are after and between the selected tabs
       this.createAnimation(
         after,
         { opacity: [1, 0], height: ["40px", 0] },
-        { duration: 50, ease: "ease-in-out" }
+        { duration: 120, ease: "ease-in-out" }
       ),
       this.createAnimation(
         between,
         { opacity: [1, 0], height: ["40px", 0] },
-        { duration: 50, ease: "ease-in-out" }
+        { duration: 120, ease: "ease-in-out" }
       ),
-    ]);
-
-    animations.push(
       ...this.updateFolderIcon(group),
       this.createAnimation(
         tabsContainer,
         { transform: [`translateY(${collapsedHeight}px)`] },
         { duration: 150, easing: "ease-in-out" }
       ),
+      // Animate max-height instead of height to avoid the tabs container to be jumpy when expanding
       this.createAnimation(
         tabsContainerWrapper,
         { "max-height": containerHeight() },
@@ -1508,7 +1514,9 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
     );
 
     gBrowser.tabContainer._invalidateCachedVisibleTabs();
-    await Promise.all(animations);
+    await Promise.all(animations).then(() => {
+      tabsContainer.style.removeProperty("height");
+    });
   }
 
   async animateExpand(group) {
@@ -1519,6 +1527,9 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
     const tabsContainer = group.groupContainer;
     const tabsContainerWrapper = group.groupContainerWrapper;
 
+    // Get all the items that should be showed after the animation
+    // TODO: Figure out whether we should always show all items and then hide them,
+    // or show items point by point
     const itemsToShow = group.allItems
       .flatMap(item => {
         if (gBrowser.isTab(item)) {
@@ -1530,6 +1541,7 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
       })
       .filter(tab => tab.style.height);
 
+    // Reset active group state and/or indentation after the animation
     const afterTransform = () => {
       if (group.hasActiveTab) {
         const activeTabs = group.activeTabs;
@@ -1555,6 +1567,10 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
       }
     };
 
+    // tabsContainer is taken as the height for tabContainerWrapper
+    // because it is not subject to animation,
+    // the only problem is that hiding tabs changes its size.
+    // FIXME: Multiple clicks on a group result in incorrect calculation of its height
     const containerHeight = () => {
       const height = tabsContainer.getBoundingClientRect().height;
       return [`0px`, `${height}px`];
@@ -1573,10 +1589,11 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
       });
     };
 
+    // Show tabs before animating the container height
     await this.createAnimation(
       itemsToShow,
       { opacity: [0, 1], height: [0, "40px"] },
-      { duration: 50, ease: "ease-in-out" },
+      { duration: 150, ease: "ease-in-out" },
       clearTabsStyle
     );
 
