@@ -45,15 +45,13 @@ zen-folder {
     }
   }
 
-  &[collapsed] .tab-group-container-wrapper {
-    transition: max-height 250ms ease-in-out;
-  }
   & .tab-group-container-wrapper {
+    display: grid;
     overflow-y: clip;
-    transition: max-height 150ms ease-in-out;
   }
 
   & .tab-group-container-wrapper > .tab-group-container {
+    min-height: 0;
     :root[zen-sidebar-expanded] & > * {
       --zen-folder-indent: 14px; /* Can get overriden by the JS */
       margin-inline-start: var(--zen-folder-indent) !important;

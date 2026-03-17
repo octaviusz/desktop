@@ -235,14 +235,55 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
       return;
     }
 
-    if (tabs.length) {
-      this._activeTabs = tabs;
-      this.hasActiveTab = true;
-      return;
+    const isAdding = !!tabs.length;
+    if (isAdding) {
+      if (this.hasActiveTab) {
+        const union = (a, b) => {
+          const set = new Set(a);
+          for (const item of b) {
+            set.add(item);
+          }
+          return [...set].sort((a, b) => a._tPos - b._tPos);
+        };
+        this._activeTabs = union(this._activeTabs, tabs);
+      } else {
+        this._activeTabs = tabs;
+        this.hasActiveTab = true;
+      }
     }
 
-    this._activeTabs = [];
-    this.hasActiveTab = false;
+    const activeTabs = this._activeTabs;
+    const cache = new Map();
+
+    if (!isAdding) {
+      this._activeTabs = [];
+      this.hasActiveTab = false;
+    }
+
+    for (const tab of activeTabs) {
+      const group = tab?.group;
+      const isSplitView = group?.hasAttribute("split-view-group");
+      const folder = isSplitView ? group?.group : group;
+      const folderId = folder?.id;
+
+      if (!cache.has(folderId)) {
+        cache.set(folderId, folder?.activeGroups?.at(-1));
+      }
+
+      if (!cache.get(folderId)) {
+        gZenFolders.removeFolderIndentation(tab);
+        continue;
+      }
+
+      let activeGroup = cache.get(folderId);
+      if (activeGroup) {
+        gZenFolders.setFolderIndentation(
+          [tab],
+          activeGroup,
+          /* for collapse = */ true,
+        );
+      }
+    }
   }
 
   get activeTabs() {
