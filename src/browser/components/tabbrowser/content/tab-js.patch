@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/tab.js b/browser/components/tabbrowser/content/tab.js
-index 836bee14d2b63604688ebe477a5d915a5e99b305..25d68b5f58faa7358597871b2914e67343fe3332 100644
+index 836bee14d2b63604688ebe477a5d915a5e99b305..4a4b3cbcbc3518453119bf07c532d336b4beedb9 100644
 --- a/browser/components/tabbrowser/content/tab.js
 +++ b/browser/components/tabbrowser/content/tab.js
 @@ -21,6 +21,7 @@
@@ -86,13 +86,14 @@ index 836bee14d2b63604688ebe477a5d915a5e99b305..25d68b5f58faa7358597871b2914e673
      }
  
      get lastAccessed() {
-@@ -383,8 +394,25 @@
+@@ -383,8 +394,26 @@
        return this.querySelector(".tab-close-button");
      }
  
 +    
      get group() {
 -      return this.closest("tab-group");
++      if (this._originalGroup) return this._originalGroup;
 +      if (typeof gBrowser === "undefined") {
 +        return null;
 +      }
@@ -113,7 +114,7 @@ index 836bee14d2b63604688ebe477a5d915a5e99b305..25d68b5f58faa7358597871b2914e673
      }
  
      get splitview() {
-@@ -444,6 +472,10 @@
+@@ -444,6 +473,10 @@
          : this;
        gBrowser.warmupTab(tabToWarm);
  
@@ -124,7 +125,7 @@ index 836bee14d2b63604688ebe477a5d915a5e99b305..25d68b5f58faa7358597871b2914e673
        // If the previous target wasn't part of this tab then this is a mouseenter event.
        if (!this.contains(event.relatedTarget)) {
          this._mouseenter();
-@@ -455,6 +487,7 @@
+@@ -455,6 +488,7 @@
        if (!this.contains(event.relatedTarget)) {
          this._mouseleave();
        }
@@ -132,7 +133,7 @@ index 836bee14d2b63604688ebe477a5d915a5e99b305..25d68b5f58faa7358597871b2914e673
      }
  
      on_dragstart(event) {
-@@ -489,6 +522,8 @@
+@@ -489,6 +523,8 @@
          this.style.MozUserFocus = "ignore";
        } else if (
          event.target.classList.contains("tab-close-button") ||
@@ -141,7 +142,7 @@ index 836bee14d2b63604688ebe477a5d915a5e99b305..25d68b5f58faa7358597871b2914e673
          event.target.classList.contains("tab-icon-overlay") ||
          event.target.classList.contains("tab-audio-button")
        ) {
-@@ -543,16 +578,21 @@
+@@ -543,16 +579,21 @@
        this.style.MozUserFocus = "";
      }
  
@@ -164,7 +165,7 @@ index 836bee14d2b63604688ebe477a5d915a5e99b305..25d68b5f58faa7358597871b2914e673
          gBrowser.multiSelectedTabsCount > 0 &&
          !event.target.classList.contains("tab-close-button") &&
          !event.target.classList.contains("tab-icon-overlay") &&
-@@ -564,8 +604,9 @@
+@@ -564,8 +605,9 @@
        }
  
        if (
@@ -176,7 +177,7 @@ index 836bee14d2b63604688ebe477a5d915a5e99b305..25d68b5f58faa7358597871b2914e673
        ) {
          if (this.activeMediaBlocked) {
            if (this.multiselected) {
-@@ -583,7 +624,7 @@
+@@ -583,7 +625,7 @@
          return;
        }
  
@@ -185,7 +186,7 @@ index 836bee14d2b63604688ebe477a5d915a5e99b305..25d68b5f58faa7358597871b2914e673
          if (this.multiselected) {
            gBrowser.removeMultiSelectedTabs(
              lazy.TabMetrics.userTriggeredContext(
-@@ -603,6 +644,14 @@
+@@ -603,6 +645,14 @@
          // (see tabbrowser-tabs 'click' handler).
          gBrowser.tabContainer._blockDblClick = true;
        }
@@ -200,7 +201,7 @@ index 836bee14d2b63604688ebe477a5d915a5e99b305..25d68b5f58faa7358597871b2914e673
      }
  
      on_dblclick(event) {
-@@ -626,6 +675,8 @@
+@@ -626,6 +676,8 @@
            animate: true,
            triggeringEvent: event,
          });

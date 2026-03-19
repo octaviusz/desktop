@@ -3123,10 +3123,10 @@ class nsZenWorkspaces {
     const containers = [...pinnedContainers, ...normalContainers];
     const tabGroups = [];
     for (const container of containers) {
-      for (const tabGroup of container.querySelectorAll("tab-group")) {
+      for (const tabGroup of container.querySelectorAll("zen-folder")) {
         tabGroups.push(tabGroup);
       }
-      for (const tabGroup of container.querySelectorAll("zen-folder")) {
+      for (const tabGroup of container.querySelectorAll("tab-group")) {
         tabGroups.push(tabGroup);
       }
     }

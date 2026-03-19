@@ -50,7 +50,7 @@ zen-folder {
     overflow-y: clip;
   }
 
-  & .tab-group-container-wrapper > .tab-group-container {
+  & .tab-group-active-tabs-container, .tab-group-container-wrapper > .tab-group-container {
     min-height: 0;
     :root[zen-sidebar-expanded] & > * {
       --zen-folder-indent: 14px; /* Can get overriden by the JS */
