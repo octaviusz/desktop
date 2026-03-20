@@ -542,9 +542,7 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
         : gZenWorkspaces.pinnedTabsContainer;
     const insertBefore =
       options.insertBefore ||
-      pinnedContainer.parentElement.querySelector(
-        ".pinned-tabs-container-separator"
-      );
+      pinnedContainer.lastChild;
     const emptyTab = gBrowser.addTab("about:blank", {
       skipAnimation: true,
       pinned: true,
