@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/tabgroup.js b/browser/components/tabbrowser/content/tabgroup.js
-index ebcc072abca51ba9936d0e6d97bbd329427c0231..d759721f6ec87c31b0b78958509dcfc5feb8e9c0 100644
+index 3ca119e8dc72fac652c98505211864483d98add2..c15abcdaab2a36fd025a17a1bc67949c05ff9f4d 100644
 --- a/browser/components/tabbrowser/content/tabgroup.js
 +++ b/browser/components/tabbrowser/content/tabgroup.js
 @@ -14,11 +14,11 @@
@@ -17,7 +17,7 @@ index ebcc072abca51ba9936d0e6d97bbd329427c0231..d759721f6ec87c31b0b78958509dcfc5
        <vbox class="tab-group-overflow-count-container" pack="center">
          <label class="tab-group-overflow-count" role="button" />
        </vbox>
-@@ -69,20 +69,36 @@
+@@ -71,21 +71,37 @@
      }
  
      connectedCallback() {
@@ -50,6 +50,7 @@ index ebcc072abca51ba9936d0e6d97bbd329427c0231..d759721f6ec87c31b0b78958509dcfc5
        // Similar to above, always set up TabSelect listener, as this gets
        // removed in disconnectedCallback
        this.ownerGlobal.addEventListener("TabSelect", this);
+       this.addEventListener("SplitViewTabChange", this);
  
 -      if (this._initialized) {
 -        return;
@@ -58,7 +59,7 @@ index ebcc072abca51ba9936d0e6d97bbd329427c0231..d759721f6ec87c31b0b78958509dcfc5
  
        this._initialized = true;
        this.saveOnWindowClose = true;
-@@ -114,11 +130,14 @@
+@@ -112,11 +128,14 @@
  
        this.#labelContainerElement.addEventListener("mouseover", this);
        this.#labelContainerElement.addEventListener("mouseout", this);
@@ -78,7 +79,7 @@ index ebcc072abca51ba9936d0e6d97bbd329427c0231..d759721f6ec87c31b0b78958509dcfc5
  
        this.#updateLabelAriaAttributes();
  
-@@ -132,17 +151,21 @@
+@@ -130,17 +149,21 @@
        let tabGroupCreateDetail = this.#wasCreatedByAdoption
          ? { isAdoptingGroup: true }
          : {};
@@ -100,7 +101,7 @@ index ebcc072abca51ba9936d0e6d97bbd329427c0231..d759721f6ec87c31b0b78958509dcfc5
  
      resetDefaultGroupName = () => {
        this.#defaultGroupName = "";
-@@ -166,7 +189,9 @@
+@@ -178,7 +201,9 @@
              this.dispatchEvent(
                new CustomEvent("TabGroupRemoved", { bubbles: true })
              );
@@ -110,7 +111,7 @@ index ebcc072abca51ba9936d0e6d97bbd329427c0231..d759721f6ec87c31b0b78958509dcfc5
              Services.obs.notifyObservers(
                this,
                "browser-tabgroup-removed-from-dom"
-@@ -211,7 +236,10 @@
+@@ -223,7 +248,10 @@
            }
          });
        }
@@ -122,7 +123,7 @@ index ebcc072abca51ba9936d0e6d97bbd329427c0231..d759721f6ec87c31b0b78958509dcfc5
      }
  
      get color() {
-@@ -305,6 +333,9 @@
+@@ -317,6 +345,9 @@
      }
  
      set collapsed(val) {
@@ -132,7 +133,7 @@ index ebcc072abca51ba9936d0e6d97bbd329427c0231..d759721f6ec87c31b0b78958509dcfc5
        if (!!val == this.collapsed) {
          return;
        }
-@@ -391,7 +422,6 @@
+@@ -403,7 +434,6 @@
            tabGroupName,
          })
          .then(result => {
@@ -140,7 +141,7 @@ index ebcc072abca51ba9936d0e6d97bbd329427c0231..d759721f6ec87c31b0b78958509dcfc5
          });
      }
  
-@@ -466,13 +496,67 @@
+@@ -478,13 +508,67 @@
       * @returns {MozTabbrowserTab[]}
       */
      get tabs() {
@@ -213,7 +214,7 @@ index ebcc072abca51ba9936d0e6d97bbd329427c0231..d759721f6ec87c31b0b78958509dcfc5
      }
  
      /**
-@@ -569,7 +653,6 @@
+@@ -592,7 +676,6 @@
            );
          } else {
            if (tabOrSplitView.pinned) {
@@ -221,7 +222,7 @@ index ebcc072abca51ba9936d0e6d97bbd329427c0231..d759721f6ec87c31b0b78958509dcfc5
            }
            let tabToMove =
              this.ownerGlobal === tabOrSplitView.ownerGlobal
-@@ -634,7 +717,7 @@
+@@ -661,7 +744,7 @@
       */
      on_click(event) {
        let isToggleElement =
@@ -230,7 +231,7 @@ index ebcc072abca51ba9936d0e6d97bbd329427c0231..d759721f6ec87c31b0b78958509dcfc5
          event.target === this.#overflowCountLabel;
        if (isToggleElement && event.button === 0) {
          event.preventDefault();
-@@ -705,5 +788,6 @@
+@@ -740,5 +823,6 @@
      }
    }
  

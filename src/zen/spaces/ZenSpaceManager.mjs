@@ -642,7 +642,7 @@ class nsZenWorkspaces {
 
         this.#lastScrollTime = currentTime;
       },
-      { passive: true }
+      { passive: true, capture: true }
     );
   }
 
@@ -2647,7 +2647,8 @@ class nsZenWorkspaces {
     if (shouldHideSeparator) {
       pinnedContainerWrapper.setAttribute("hide-separator", "true");
     } else {
-      const workspaceID = pinnedContainerWrapper.firstChild.getAttribute("zen-workspace-id");
+      const workspaceID =
+        pinnedContainerWrapper.firstChild.getAttribute("zen-workspace-id");
       const tabs = this.#unpinnedTabsInWorkspace(workspaceID);
       const closableTabs = this.#getClosableTabs(tabs);
       const button = pinnedContainerWrapper.querySelector(
@@ -2706,7 +2707,8 @@ class nsZenWorkspaces {
           continue;
         }
         const arrowScrollbox = workspaceElement.tabsContainer;
-        const pinnedContainerWrapper = workspaceElement.pinnedTabsContainerWrapper;
+        const pinnedContainerWrapper =
+          workspaceElement.pinnedTabsContainerWrapper;
         const essentialContainer = this.getEssentialsSection(
           workspaceObject.containerTabId
         );

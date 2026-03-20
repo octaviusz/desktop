@@ -131,7 +131,7 @@ export class nsZenWorkspace extends MozXULElement {
     );
     this.pinnedTabsContainerWrapper = this.querySelector(
       ".zen-workspace-pinned-tabs-section-wrapper"
-    )
+    );
     this.pinnedTabsContainerWrapper.separatorElement =
       this.pinnedTabsContainer.querySelector(
         ".pinned-tabs-container-separator"
