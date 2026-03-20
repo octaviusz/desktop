@@ -597,7 +597,7 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
       id = `${Date.now()}-${Math.round(Math.random() * 100)}`;
     }
     folder.id = id;
-    folder.label = options.name || "New Folder";
+    folder.label = options.name || options.label || "New Folder";
     requestAnimationFrame(() => {
       folder.collapsed = options.collapsed;
     });
@@ -921,6 +921,11 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
       group.isLiveFolder = stateData.isLiveFolder;
     }
 
+    // For Old Restore compatibility
+    if (stateData?.collapsed) {
+      group.collapsed = stateData.collapsed;
+    }
+
     const labelContainer = group.querySelector(".tab-group-label-container");
     // Setup mouseenter/mouseleave events for the folder
     labelContainer.addEventListener("mouseenter", event => {
@@ -978,6 +983,11 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
     const tabFolderWorkingData = new Map();
 
     for (const folderData of data) {
+      // For Old Restore compatibility
+      if (folderData.pinned) {
+        this.#oldFoldersRestoreFromSS(data);
+        return;
+      }
       const workingData = {
         stateData: folderData,
         node: document.getElementById(folderData.id),
@@ -992,6 +1002,110 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
         this.#folderInit(node, stateData);
       }
     }
+  }
+
+  #oldFoldersRestoreFromSS(data) {
+    const tabFolderWorkingData = new Map();
+
+    for (const folderData of data) {
+      try {
+        const workingData = {
+          stateData: folderData,
+          node: null,
+          containingTabsFragment: document.createDocumentFragment(),
+        };
+        tabFolderWorkingData.set(folderData.id, workingData);
+
+        const oldGroup = document.getElementById(folderData.id);
+        folderData.emptyTabIds.forEach(id => {
+          oldGroup
+            ?.querySelector(`tab[id="${id}"]`)
+            ?.setAttribute("zen-empty-tab", true);
+        });
+        if (gBrowser.isTabGroup(oldGroup)) {
+          if (!folderData.splitViewGroup) {
+            const folder = this._createFolderNode({
+              id: folderData.id,
+              label: folderData.name,
+              collapsed: folderData.collapsed,
+              pinned: folderData.pinned,
+              saveOnWindowClose: folderData.saveOnWindowClose,
+              workspaceId: folderData.workspaceId,
+              isLiveFolder: folderData.isLiveFolder,
+            });
+            folder.setAttribute("id", folderData.id);
+            workingData.node = folder;
+            oldGroup.before(folder);
+          } else {
+            workingData.node = oldGroup;
+          }
+          while (oldGroup.tabs.length) {
+            const tab = oldGroup.tabs[0];
+            if (folderData.workspaceId) {
+              tab.setAttribute("zen-workspace-id", folderData.workspaceId);
+            }
+            workingData.containingTabsFragment.appendChild(tab);
+          }
+          if (!folderData.splitViewGroup) {
+            oldGroup.remove();
+          }
+        }
+      } catch (e) {
+        console.error("Error restoring Zen Folders session data:", e);
+      }
+    }
+
+    for (const {
+      node,
+      containingTabsFragment,
+    } of tabFolderWorkingData.values()) {
+      if (node) {
+        node.appendChild(containingTabsFragment);
+      }
+    }
+
+    // Nesting folders into each other according to parentId.
+    for (const { stateData, node } of tabFolderWorkingData.values()) {
+      if (node && stateData.parentId) {
+        const parentWorkingData = tabFolderWorkingData.get(stateData.parentId);
+        if (parentWorkingData && parentWorkingData.node) {
+          switch (stateData?.prevSiblingInfo?.type) {
+            case "tab":
+            case "group": {
+              const item = document.getElementById(
+                stateData.prevSiblingInfo.id
+              );
+              if (item) {
+                item.after(node);
+                break;
+              }
+              // If we didn't find the group, we should debug it and continue to default case.
+              console.error(
+                `Zen Folders: Could not find previous sibling with id ${stateData.prevSiblingInfo.id} while restoring session.`
+              );
+              // @eslint-disable-next-line no-fallthrough
+            }
+            default: {
+              // Should insert after zen-empty-tab
+              const start =
+                parentWorkingData.node.groupStartElement.nextElementSibling;
+              start.after(node);
+            }
+          }
+        }
+      }
+    }
+
+    // Initialize UI state for all folders.
+    for (const { stateData, node } of tabFolderWorkingData.values()) {
+      if (node && !stateData.splitViewGroup) {
+        requestAnimationFrame(() => {
+          this.#folderInit(node, stateData);
+        });
+      }
+    }
+
+    gBrowser.tabContainer._invalidateCachedTabs();
   }
 
   createGroup(groupId, tabGroupWorkingData, tabsFragment) {
