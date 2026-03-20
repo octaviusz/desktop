@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/tab.js b/browser/components/tabbrowser/content/tab.js
-index 836bee14d2b63604688ebe477a5d915a5e99b305..4a4b3cbcbc3518453119bf07c532d336b4beedb9 100644
+index 836bee14d2b63604688ebe477a5d915a5e99b305..274ae88c0798ba4639d84cc8763aad5d584749de 100644
 --- a/browser/components/tabbrowser/content/tab.js
 +++ b/browser/components/tabbrowser/content/tab.js
 @@ -21,6 +21,7 @@
@@ -86,17 +86,21 @@ index 836bee14d2b63604688ebe477a5d915a5e99b305..4a4b3cbcbc3518453119bf07c532d336
      }
  
      get lastAccessed() {
-@@ -383,8 +394,26 @@
+@@ -383,8 +394,30 @@
        return this.querySelector(".tab-close-button");
      }
  
 +    
      get group() {
 -      return this.closest("tab-group");
-+      if (this._originalGroup) return this._originalGroup;
++      if (this._originalGroup && !this.splitView) return this._originalGroup;
 +      if (typeof gBrowser === "undefined") {
 +        return null;
 +      }
++      // if (this.splitView && this.parentElement?.parentElement?._originalGroup) {
++      //   console.log(this.splitView, this.parentElement?.parentElement?._originalGroup);
++      //   return this.parentElement.parentElement._originalGroup;
++      // }
 +      let group = this.parentElement?.parentElement; // FF groups and Split View
 +      if (group && gBrowser.isTabGroup(group)) {
 +        return this.parentElement.parentElement
@@ -114,7 +118,7 @@ index 836bee14d2b63604688ebe477a5d915a5e99b305..4a4b3cbcbc3518453119bf07c532d336
      }
  
      get splitview() {
-@@ -444,6 +473,10 @@
+@@ -444,6 +477,10 @@
          : this;
        gBrowser.warmupTab(tabToWarm);
  
@@ -125,7 +129,7 @@ index 836bee14d2b63604688ebe477a5d915a5e99b305..4a4b3cbcbc3518453119bf07c532d336
        // If the previous target wasn't part of this tab then this is a mouseenter event.
        if (!this.contains(event.relatedTarget)) {
          this._mouseenter();
-@@ -455,6 +488,7 @@
+@@ -455,6 +492,7 @@
        if (!this.contains(event.relatedTarget)) {
          this._mouseleave();
        }
@@ -133,7 +137,7 @@ index 836bee14d2b63604688ebe477a5d915a5e99b305..4a4b3cbcbc3518453119bf07c532d336
      }
  
      on_dragstart(event) {
-@@ -489,6 +523,8 @@
+@@ -489,6 +527,8 @@
          this.style.MozUserFocus = "ignore";
        } else if (
          event.target.classList.contains("tab-close-button") ||
@@ -142,7 +146,7 @@ index 836bee14d2b63604688ebe477a5d915a5e99b305..4a4b3cbcbc3518453119bf07c532d336
          event.target.classList.contains("tab-icon-overlay") ||
          event.target.classList.contains("tab-audio-button")
        ) {
-@@ -543,16 +579,21 @@
+@@ -543,16 +583,21 @@
        this.style.MozUserFocus = "";
      }
  
@@ -165,7 +169,7 @@ index 836bee14d2b63604688ebe477a5d915a5e99b305..4a4b3cbcbc3518453119bf07c532d336
          gBrowser.multiSelectedTabsCount > 0 &&
          !event.target.classList.contains("tab-close-button") &&
          !event.target.classList.contains("tab-icon-overlay") &&
-@@ -564,8 +605,9 @@
+@@ -564,8 +609,9 @@
        }
  
        if (
@@ -177,7 +181,7 @@ index 836bee14d2b63604688ebe477a5d915a5e99b305..4a4b3cbcbc3518453119bf07c532d336
        ) {
          if (this.activeMediaBlocked) {
            if (this.multiselected) {
-@@ -583,7 +625,7 @@
+@@ -583,7 +629,7 @@
          return;
        }
  
@@ -186,7 +190,7 @@ index 836bee14d2b63604688ebe477a5d915a5e99b305..4a4b3cbcbc3518453119bf07c532d336
          if (this.multiselected) {
            gBrowser.removeMultiSelectedTabs(
              lazy.TabMetrics.userTriggeredContext(
-@@ -603,6 +645,14 @@
+@@ -603,6 +649,14 @@
          // (see tabbrowser-tabs 'click' handler).
          gBrowser.tabContainer._blockDblClick = true;
        }
@@ -201,7 +205,7 @@ index 836bee14d2b63604688ebe477a5d915a5e99b305..4a4b3cbcbc3518453119bf07c532d336
      }
  
      on_dblclick(event) {
-@@ -626,6 +676,8 @@
+@@ -626,6 +680,8 @@
            animate: true,
            triggeringEvent: event,
          });

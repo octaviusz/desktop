@@ -63,7 +63,7 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
           <ellipse cx="18" cy="16" rx="1.25" ry="1.25"/>
         </g>
       </svg>`,
-    "image/svg+xml"
+    "image/svg+xml",
   ).documentElement;
 
   constructor() {
@@ -82,7 +82,7 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
 
     this.labelElement.parentElement.setAttribute("context", "zenFolderActions");
 
-    this.labelElement.onRenameFinished = newLabel => {
+    this.labelElement.onRenameFinished = (newLabel) => {
       this.name = newLabel.trim() || "Folder";
       const event = new CustomEvent("ZenFolderRenamed", {
         bubbles: true,
@@ -145,7 +145,7 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
   get childActiveGroups() {
     if (this.tagName === "zen-workspace-collapsible-pins") {
       return Array.from(
-        this.parentElement.querySelectorAll("zen-folder[hasactivetab]")
+        this.parentElement.querySelectorAll("zen-folder[hasactivetab]"),
       );
     }
     return Array.from(this.querySelectorAll("zen-folder[hasactivetab]"));
@@ -211,12 +211,15 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
   }
 
   get allItems() {
-    return [...this.groupContainer.children, ...this.groupActiveTabsContainer.children].filter(
-      child =>
+    return [
+      ...this.groupContainer.children,
+      ...this.groupActiveTabsContainer.children,
+    ].filter(
+      (child) =>
         !(
           child.classList.contains("zen-tab-group-start") ||
           child.classList.contains("pinned-tabs-container-separator")
-        )
+        ),
     );
   }
 
@@ -238,29 +241,89 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
   }
 
   #moveToActiveTabsContainer(activeTabs, isAdding) {
-    if (!isAdding) {
-      this.tabs.forEach((tab, index) => {
-        let prevTab = this.tabs[index - 1];
-        if (tab._originalGroup === this) {
-          // FIXME: FIX POSITION RESTORE
-          prevTab = prevTab.group === this ? prevTab : prevTab.group;
-          gBrowser.moveTabAfter(tab, prevTab);
-          delete tab._originalGroup;
-        } else {
-          const activeFolder = this.childActiveGroups?.find(folder => folder.activeTabs.includes(tab));
-          activeFolder?.groupActiveTabsContainer?.appendChild(tab);
-        } 
-      });
-    } else {
+    if (isAdding) {
+      // === COLLAPSE ===
       while (this.groupActiveTabsContainer.firstChild) {
         this.groupActiveTabsContainer.firstChild.remove();
       }
+
+      const splitGroupIds = new Set();
+
       for (const tab of activeTabs) {
-        if (!tab._originalGroup) {
-          tab._originalGroup = tab.group;
+        if (tab.splitView) {
+          const splitGroup = tab.group;
+          if (splitGroupIds.has(splitGroup.id)) continue;
+          splitGroupIds.add(splitGroup.id);
+
+          if (!splitGroup._originalGroup) {
+            splitGroup._originalGroup = splitGroup.group;
+          }
+          this.groupActiveTabsContainer.appendChild(splitGroup);
+        } else {
+          if (!tab._originalGroup) {
+            tab._originalGroup = tab.group;
+          }
+          this.groupActiveTabsContainer.appendChild(tab);
         }
-        this.groupActiveTabsContainer.appendChild(tab);
       }
+    } else {
+      // === EXPAND ===
+      const splitGroupIds = new Set();
+
+      for (const tab of activeTabs) {
+        if (tab.splitView) {
+          const splitGroup = tab.group;
+          if (splitGroupIds.has(splitGroup.id)) continue;
+          splitGroupIds.add(splitGroup.id);
+
+          const originalGroup = splitGroup._originalGroup;
+
+          if (originalGroup === this) {
+            let prevTab = this.tabs.find((t) => t._tPos === tab._tPos - 1);
+            prevTab = prevTab?.group === this ? prevTab : prevTab?.group;
+            prevTab.after(splitGroup);
+            delete splitGroup._originalGroup;
+          } else {
+            this.#restoreElemPos(originalGroup, tab, splitGroup);
+          }
+        } else {
+          const originalGroup = tab._originalGroup;
+
+          if (originalGroup === this) {
+            let prevTab = this.tabs.find((t) => t._tPos === tab._tPos - 1);
+            prevTab = prevTab?.group === this ? prevTab : prevTab?.group;
+            prevTab.after(tab);
+            delete tab._originalGroup;
+          } else {
+            this.#restoreElemPos(originalGroup, tab, tab);
+          }
+        }
+      }
+    }
+  }
+
+  #restoreElemPos(originalGroup, tab, element) {
+    const activeFolder = this.childActiveGroups?.find((folder) =>
+      folder.activeTabs.includes(tab),
+    );
+
+    if (activeFolder) {
+      activeFolder.groupActiveTabsContainer.appendChild(element);
+      return;
+    }
+
+    if (!originalGroup) return;
+
+    let prevTab = originalGroup.tabs?.find((t) => t._tPos === tab._tPos - 1);
+    if (prevTab) {
+      prevTab = prevTab.group === originalGroup ? prevTab : prevTab.group;
+      prevTab.after(element);
+    } 
+
+    if (element === tab) {
+      delete tab._originalGroup;
+    } else {
+      delete element._originalGroup;
     }
   }
 
@@ -277,7 +340,7 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
           for (const item of b) {
             set.add(item);
           }
-          return [...set].sort((a, b) => a._tPos - b._tPos);
+          return [...set].sort((a, b) => a._tPos > b._tPos);
         };
         this._activeTabs = union(this._activeTabs, tabs);
       } else {
@@ -354,8 +417,10 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
   get tabs() {
     // add other group tabs if they are under this group
     const groupContainer = Array.from(this.groupContainer?.children);
-    const groupActiveTabsContainer = Array.from(this.groupActiveTabsContainer?.children);
-    let childs = [...groupContainer, ...groupActiveTabsContainer].sort((a, b) => a._tPos - b._tPos);
+    const groupActiveTabsContainer = Array.from(
+      this.groupActiveTabsContainer?.children,
+    );
+    let childs = [...groupActiveTabsContainer, ...groupContainer];
     const tabsCollect = [];
     for (let item of childs) {
       tabsCollect.push(item);
@@ -363,13 +428,15 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
         tabsCollect.push(...item.tabs);
       }
     }
-    return tabsCollect.filter(node => node.matches("tab"));
+    return tabsCollect.filter((node) => node.matches("tab"));
   }
 
   get childGroupsAndTabs() {
     const result = [];
     const groupContainer = Array.from(this.groupContainer?.children);
-    const groupActiveTabsContainer = Array.from(this.groupActiveTabsContainer?.children);
+    const groupActiveTabsContainer = Array.from(
+      this.groupActiveTabsContainer?.children,
+    );
     let childs = [...groupContainer, ...groupActiveTabsContainer];
 
     for (const item of childs) {
