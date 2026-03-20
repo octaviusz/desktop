@@ -347,6 +347,10 @@ class nsZenWorkspaces {
     return this.activeWorkspaceElement?.pinnedTabsContainer;
   }
 
+  get pinnedTabsContainerWrapper() {
+    return this.pinnedTabsContainer.parentElement;
+  }
+
   get activeWorkspaceIndicator() {
     return this.activeWorkspaceElement?.indicator;
   }
@@ -2615,7 +2619,7 @@ class nsZenWorkspaces {
 
   updateShouldHideSeparator(
     arrowScrollbox,
-    pinnedContainer,
+    pinnedContainerWrapper,
     fromTabSelection = false
   ) {
     const visibleTabsFound = () => {
@@ -2638,15 +2642,15 @@ class nsZenWorkspaces {
 
     // <= 2 because we have the empty tab and the new tab button
     const shouldHideSeparator = fromTabSelection
-      ? pinnedContainer.hasAttribute("hide-separator")
+      ? pinnedContainerWrapper.hasAttribute("hide-separator")
       : !visibleTabsFound();
     if (shouldHideSeparator) {
-      pinnedContainer.setAttribute("hide-separator", "true");
+      pinnedContainerWrapper.setAttribute("hide-separator", "true");
     } else {
-      const workspaceID = pinnedContainer.getAttribute("zen-workspace-id");
+      const workspaceID = pinnedContainerWrapper.firstChild.getAttribute("zen-workspace-id");
       const tabs = this.#unpinnedTabsInWorkspace(workspaceID);
       const closableTabs = this.#getClosableTabs(tabs);
-      const button = pinnedContainer.querySelector(
+      const button = pinnedContainerWrapper.querySelector(
         ".zen-workspace-close-unpinned-tabs-button"
       );
       if (tabs.length === closableTabs.length) {
@@ -2654,7 +2658,7 @@ class nsZenWorkspaces {
       } else {
         button.removeAttribute("can-close");
       }
-      pinnedContainer.removeAttribute("hide-separator");
+      pinnedContainerWrapper.removeAttribute("hide-separator");
     }
   }
 
@@ -2702,7 +2706,7 @@ class nsZenWorkspaces {
           continue;
         }
         const arrowScrollbox = workspaceElement.tabsContainer;
-        const pinnedContainer = workspaceElement.pinnedTabsContainer;
+        const pinnedContainerWrapper = workspaceElement.pinnedTabsContainerWrapper;
         const essentialContainer = this.getEssentialsSection(
           workspaceObject.containerTabId
         );
@@ -2725,7 +2729,7 @@ class nsZenWorkspaces {
           essentialContainer,
           forAnimation
         );
-        this.updateShouldHideSeparator(arrowScrollbox, pinnedContainer);
+        this.updateShouldHideSeparator(arrowScrollbox, pinnedContainerWrapper);
       }
     }
   }

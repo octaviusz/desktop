@@ -223,9 +223,11 @@ zen-folder {
   }
 }
 
-zen-workspace[collapsedpinnedtabs] .zen-workspace-pinned-tabs-section,
-zen-folder[collapsed] > .tab-group-container {
-  overflow-y: clip;
+zen-workspace .zen-workspace-pinned-tabs-section-wrapper {
+  display: grid;
+  & .zen-workspace-pinned-tabs-section {
+    min-height: 0;
+  }
 }
 
 /* Tabs popup */

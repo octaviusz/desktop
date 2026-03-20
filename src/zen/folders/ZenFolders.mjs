@@ -542,7 +542,7 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
         : gZenWorkspaces.pinnedTabsContainer;
     const insertBefore =
       options.insertBefore ||
-      pinnedContainer.querySelector(".pinned-tabs-container-separator");
+      pinnedContainer.parentElement.querySelector(".pinned-tabs-container-separator");
     const emptyTab = gBrowser.addTab("about:blank", {
       skipAnimation: true,
       pinned: true,
@@ -636,7 +636,6 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
   }
 
   handleTabUnpin(tab) {
-    this.removeFolderIndentation(tab);
     const group = tab.group;
     if (!group) {
       return false;

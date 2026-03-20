@@ -871,7 +871,7 @@ index d7765e0adb37216d35f2125abf96025cbb150bab..630e15a6b9a6250c4b45639d2ebffa07
 +        targetElement = this.tabsWithoutGlance[this.pinnedTabCount - 1];
          moveBefore = false;
 +        if (!this.visibleTabs.includes(targetElement)) {
-+          targetElement = gZenWorkspaces.pinnedTabsContainer.querySelector('.pinned-tabs-container-separator')
++          targetElement = gZenWorkspaces.pinnedTabsContainerWrapper.querySelector('.pinned-tabs-container-separator')
 +          moveBefore = true;
 +        }
        } else if (!element.pinned && targetElement && targetElement.pinned) {
