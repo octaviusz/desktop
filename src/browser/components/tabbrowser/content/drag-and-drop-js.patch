@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/drag-and-drop.js b/browser/components/tabbrowser/content/drag-and-drop.js
-index ced2bfd88de2d16e2c028ca3f4d9d27516363575..40feee366e8369973b49e71f4b8873185b54b6fd 100644
+index ced2bfd88de2d16e2c028ca3f4d9d27516363575..aaf6e82782357c819ca875f05020723600e41e6b 100644
 --- a/browser/components/tabbrowser/content/drag-and-drop.js
 +++ b/browser/components/tabbrowser/content/drag-and-drop.js
 @@ -35,6 +35,9 @@
@@ -26,7 +26,7 @@ index ced2bfd88de2d16e2c028ca3f4d9d27516363575..40feee366e8369973b49e71f4b887318
            !draggedTab.group.collapsed
          ) {
            draggedTab.group.collapsed = true;
-+          gZenFolders.animateGroupMove(tab.group);
++          gZenFolders.animateGroupMove(draggedTab.group);
          }
  
          if (dropEffect == "move") {
@@ -190,7 +190,7 @@ index ced2bfd88de2d16e2c028ca3f4d9d27516363575..40feee366e8369973b49e71f4b887318
          draggedTab._dragData?.expandGroupOnDrop
        ) {
 -        draggedTab.group.collapsed = false;
-+        draggedTab.group.collapsed = draggedTab.group.hasActiveTab;
++        draggedTab.group.collapsed = draggedTab.group.hasAttribute("has-active");
 +        gZenFolders.animateGroupMove(draggedTab.group, true);
        }
      }
@@ -216,7 +216,7 @@ index ced2bfd88de2d16e2c028ca3f4d9d27516363575..40feee366e8369973b49e71f4b887318
        let isMovingInTabStrip = !fromTabList && dropEffect == "move";
        let collapseTabGroupDuringDrag =
 -        isMovingInTabStrip && isTabGroupLabel(tab) && !tab.group.collapsed;
-+        isMovingInTabStrip && isTabGroupLabel(tab) && (!tab.group.collapsed || tab.group.hasActiveTab);
++        isMovingInTabStrip && isTabGroupLabel(tab) && (!tab.group.collapsed || tab.group.hasAttribute("has-active"));
  
        tab._dragData = {
          offsetX: this._tabbrowserTabs.verticalMode
