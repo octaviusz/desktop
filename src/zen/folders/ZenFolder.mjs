@@ -17,8 +17,7 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
         <label class="tab-group-label" role="button"/>
         <image class="tab-reset-button reset-icon" role="button" keyNav="false" data-l10n-id="zen-folders-unload-all-tooltip"/>
       </hbox>
-      <html:div class="tab-group-active-tabs-container">
-      </html:div>
+      <html:div class="tab-group-active-tabs-container" />
       <html:div class="tab-group-container-wrapper">
         <html:div class="tab-group-container">
           <html:div class="zen-tab-group-start" />
@@ -240,99 +239,6 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
     return this.icon.querySelector("image")?.getAttribute("href") || "";
   }
 
-  #moveToActiveTabsContainer(activeTabs, isAdding) {
-    if (isAdding) {
-      // === COLLAPSE ===
-      while (this.groupActiveTabsContainer.firstChild) {
-        this.groupActiveTabsContainer.firstChild.remove();
-      }
-
-      const splitGroupIds = new Set();
-
-      for (const tab of activeTabs) {
-        if (tab.splitView) {
-          const splitGroup = tab.group;
-          if (splitGroupIds.has(splitGroup.id)) {
-            continue;
-          }
-          splitGroupIds.add(splitGroup.id);
-
-          if (!splitGroup._originalGroup) {
-            splitGroup._originalGroup = splitGroup.group;
-          }
-          this.groupActiveTabsContainer.appendChild(splitGroup);
-        } else {
-          if (!tab._originalGroup) {
-            tab._originalGroup = tab.group;
-          }
-          this.groupActiveTabsContainer.appendChild(tab);
-        }
-      }
-    } else {
-      // === EXPAND ===
-      const splitGroupIds = new Set();
-
-      for (const tab of activeTabs) {
-        if (tab.splitView) {
-          const splitGroup = tab.group;
-          if (splitGroupIds.has(splitGroup.id)) {
-            continue;
-          }
-          splitGroupIds.add(splitGroup.id);
-
-          const originalGroup = splitGroup._originalGroup;
-
-          if (originalGroup === this) {
-            let prevTab = this.tabs.find(t => t._tPos === tab._tPos - 1);
-            prevTab = prevTab?.group === this ? prevTab : prevTab?.group;
-            prevTab.after(splitGroup);
-            delete splitGroup._originalGroup;
-          } else {
-            this.#restoreElemPos(originalGroup, tab, splitGroup);
-          }
-        } else {
-          const originalGroup = tab._originalGroup;
-
-          if (originalGroup === this) {
-            let prevTab = this.tabs.find(t => t._tPos === tab._tPos - 1);
-            prevTab = prevTab?.group === this ? prevTab : prevTab?.group;
-            prevTab.after(tab);
-            delete tab._originalGroup;
-          } else {
-            this.#restoreElemPos(originalGroup, tab, tab);
-          }
-        }
-      }
-    }
-  }
-
-  #restoreElemPos(originalGroup, tab, element) {
-    const activeFolder = this.childActiveGroups?.find(folder =>
-      folder.activeTabs.includes(tab)
-    );
-
-    if (activeFolder) {
-      activeFolder.groupActiveTabsContainer.appendChild(element);
-      return;
-    }
-
-    if (!originalGroup) {
-      return;
-    }
-
-    let prevTab = originalGroup.tabs?.find(t => t._tPos === tab._tPos - 1);
-    if (prevTab) {
-      prevTab = prevTab.group === originalGroup ? prevTab : prevTab.group;
-      prevTab.after(element);
-    }
-
-    if (element === tab) {
-      delete tab._originalGroup;
-    } else {
-      delete element._originalGroup;
-    }
-  }
-
   set activeTabs(tabs) {
     if (this.isBeingDragged) {
       return;
@@ -346,7 +252,7 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
           for (const item of b) {
             set.add(item);
           }
-          return [...set].sort((a, b) => a._tPos > b._tPos);
+          return [...set].sort((aTab, bTab) => aTab._tPos > bTab._tPos);
         };
         this._activeTabs = union(this._activeTabs, tabs);
       } else {
@@ -355,18 +261,21 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
       }
     }
 
-    const activeTabs = this._activeTabs;
-
     if (!isAdding) {
       this._activeTabs = [];
       this.hasActiveTab = false;
     }
-
-    this.#moveToActiveTabsContainer(activeTabs, isAdding);
   }
 
   get activeTabs() {
     return this._activeTabs;
+  }
+
+  removeActiveTab(tab) {
+    this._activeTabs = this._activeTabs.filter(t => t !== tab);
+    if (!this._activeTabs.length) {
+      this.hasActiveTab = false;
+    }
   }
 
   get resetButton() {

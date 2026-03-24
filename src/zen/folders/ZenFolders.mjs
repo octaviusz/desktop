@@ -46,6 +46,16 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
   #mouseTimer = null;
   #lastHighlightedGroup = null;
 
+  _ANIMATION_DURATION = {
+    COLLAPSE_TRANSFORM: 150,
+    COLLAPSE_HEIGHT: 150,
+    COLLAPSE_ACTIVE_HEIGHT: 150,
+    COLLAPSE_APPEND: 150,
+    EXPAND_TRANSFORM: 150,
+    EXPAND_HEIGHT: 150,
+    EXPAND_AFTER: 150,
+  };
+
   #lastFolderContextMenu = null;
 
   #foldersEnabled = false;
@@ -540,9 +550,7 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
       options.workspaceId && workspacePinned
         ? workspacePinned
         : gZenWorkspaces.pinnedTabsContainer;
-    const insertBefore =
-      options.insertBefore ||
-      pinnedContainer.lastChild;
+    const insertBefore = options.insertBefore || pinnedContainer.lastChild;
     const emptyTab = gBrowser.addTab("about:blank", {
       skipAnimation: true,
       pinned: true,
@@ -1187,15 +1195,16 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
   }
 
   #calculateHeightShift(container, selectedTabs) {
-    if (selectedTabs.length) {
-      const containerTop = this.getBoundsWithoutFlushing(container).top;
-      const firstTab = selectedTabs[0];
-      const isSplitView = firstTab.group.hasAttribute("split-view-group");
-      const firstTabTop = this.getBoundsWithoutFlushing(firstTab).top;
-      const shiftSize = firstTabTop - containerTop;
-      // Split View size 36px, Tab 40px
-      return -1 * shiftSize + (isSplitView ? 4 : 0);
-    }
+    // TODO: Decide if we want to animate to the selected element
+    // if (selectedTabs.length) {
+    //   const containerTop = this.getBoundsWithoutFlushing(container).top;
+    //   const firstTab = selectedTabs[0];
+    //   const isSplitView = firstTab.group.hasAttribute("split-view-group");
+    //   const firstTabTop = this.getBoundsWithoutFlushing(firstTab).top;
+    //   const shiftSize = firstTabTop - containerTop;
+    //   // Split View size 36px, Tab 40px
+    //   return -1 * shiftSize + (isSplitView ? 4 : 0);
+    // }
     return -1 * this.getBoundsWithoutFlushing(container).height;
   }
 
@@ -1218,17 +1227,11 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
         el =>
           new Promise(resolve => {
             const animation = el.animate(keyframes, {
-              fill: "forwards",
               ...options,
             });
             animation.onfinish = () => {
               // Set the final value of the animation to the element style
-              for (const [key, value] of Object.entries(keyframes)) {
-                const finalValue = Array.isArray(value)
-                  ? value[value.length - 1]
-                  : value;
-                el.style[key] = finalValue;
-              }
+              animation.commitStyles();
               animation.cancel();
               resolve();
             };
@@ -1241,6 +1244,121 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
     }
   }
 
+  _animateActiveTabsAppend(elem, folder) {
+    const tabsActiveContainer = folder.groupActiveTabsContainer;
+    const firstRect = elem.getBoundingClientRect();
+    tabsActiveContainer.appendChild(elem);
+    const lastRect = elem.getBoundingClientRect();
+    const invertY = firstRect.top - lastRect.top;
+    return gZenFolders.createAnimation(
+      elem,
+      { transform: [`translateY(${invertY}px)`, "translateY(0px)"] },
+      {
+        duration: this._ANIMATION_DURATION.COLLAPSE_APPEND,
+        easing: "ease-in-out",
+      },
+      () => {
+        elem.style.removeProperty("transform");
+      }
+    );
+  }
+
+  _animateActiveTabsAddAfter(elem, prevTab, folder) {
+    const firstRect = elem.getBoundingClientRect();
+    const tabsContainer = folder.groupContainer;
+    const oldTransform = tabsContainer.style.transform;
+    tabsContainer.style.removeProperty("transform");
+    prevTab.after(elem);
+    const lastRect = elem.getBoundingClientRect();
+    tabsContainer.style.transform = oldTransform;
+    const invertY = firstRect.top - lastRect.top;
+    return gZenFolders.createAnimation(
+      elem,
+      { transform: [`translateY(${invertY}px)`, "translateY(0px)"] },
+      {
+        duration: this._ANIMATION_DURATION.EXPAND_AFTER,
+        easing: "ease-in-out",
+      },
+      () => {
+        elem.style.removeProperty("transform");
+        delete elem._originalGroup;
+      }
+    );
+  }
+
+  #moveToActiveTabsContainer(group, activeTabs, isAdding) {
+    if (isAdding) {
+      while (group.groupActiveTabsContainer.firstChild) {
+        group.groupActiveTabsContainer.firstChild.remove();
+      }
+    }
+
+    const splitGroupIds = new Set();
+    const animations = [];
+
+    for (const tab of activeTabs) {
+      // Determine the element to animate, deduplicating split views
+      let element;
+      if (tab.splitView) {
+        const splitGroup = tab.group;
+        if (splitGroupIds.has(splitGroup.id)) {
+          continue;
+        }
+        splitGroupIds.add(splitGroup.id);
+        element = splitGroup;
+      } else {
+        element = tab;
+      }
+
+      if (isAdding) {
+        // === COLLAPSE ===
+        if (!element._originalGroup) {
+          if (tab.splitView) {
+            group.groupActiveTabsContainer.style.removeProperty("height");
+          }
+          element._originalGroup = element.group;
+        }
+        animations.push(this._animateActiveTabsAppend(element, group));
+      } else {
+        // === EXPAND ===
+        const originalGroup = element._originalGroup;
+
+        if (originalGroup === group) {
+          let prevTab = group.tabs.find(t => t._tPos === tab._tPos - 1);
+          prevTab = prevTab?.group === group ? prevTab : prevTab?.group;
+
+          animations.push(
+            this._animateActiveTabsAddAfter(element, prevTab, group)
+          );
+        } else {
+          animations.push(
+            this.#restoreElemPos(group, originalGroup, tab, element)
+          );
+        }
+      }
+    }
+    return animations;
+  }
+
+  #restoreElemPos(group, originalGroup, tab, element) {
+    const activeFolder = group.childActiveGroups?.find(folder =>
+      folder.activeTabs.includes(tab)
+    );
+    if (activeFolder) {
+      return this._animateActiveTabsAppend(element, activeFolder);
+    }
+
+    if (!originalGroup) {
+      return;
+    }
+
+    let prevTab = originalGroup.tabs?.find(t => t._tPos === tab._tPos - 1);
+    if (prevTab) {
+      prevTab = prevTab.group === originalGroup ? prevTab : prevTab.group;
+      return this._animateActiveTabsAddAfter(element, prevTab, group);
+    }
+  }
+
   async animateCollapse(group) {
     this.cancelPopupTimer();
 
@@ -1249,6 +1367,7 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
 
     const tabsContainer = group.groupContainer;
     const tabsContainerWrapper = group.groupContainerWrapper;
+    const tabsContainerActive = group.groupActiveTabsContainer;
 
     // Calculate the height of the tabs container for animation
     const collapsedHeight = this.#calculateHeightShift(
@@ -1258,6 +1377,9 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
 
     if (selectedTabs.length) {
       group.activeTabs = selectedTabs;
+      animations.push(
+        ...this.#moveToActiveTabsContainer(group, selectedTabs, true)
+      );
     }
 
     animations.push(
@@ -1265,14 +1387,37 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
       this.createAnimation(
         tabsContainer,
         { transform: [`translateY(${collapsedHeight}px)`] },
-        { duration: gReduceMotion ? 0 : 150, easing: "ease-in-out" }
+        {
+          duration: gReduceMotion
+            ? 0
+            : this._ANIMATION_DURATION.COLLAPSE_TRANSFORM,
+          easing: "ease-in-out",
+        }
       ),
       this.createAnimation(
         tabsContainerWrapper,
         {
           gridTemplateRows: ["1fr", "0fr"],
         },
-        { duration: gReduceMotion ? 0 : 250, easing: "ease-in-out" }
+        {
+          duration: gReduceMotion
+            ? 0
+            : this._ANIMATION_DURATION.COLLAPSE_HEIGHT,
+          easing: "ease-in-out",
+        }
+      ),
+      this.createAnimation(
+        tabsContainerActive,
+        { height: ["0px", `${selectedTabs.length * 40}px`] },
+        {
+          duration: gReduceMotion
+            ? 0
+            : this._ANIMATION_DURATION.COLLAPSE_ACTIVE_HEIGHT,
+          easing: "ease-in-out",
+        },
+        () => {
+          tabsContainerActive.style.removeProperty("height");
+        }
       )
     );
 
@@ -1289,7 +1434,11 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
     const tabsContainerWrapper = group.groupContainerWrapper;
 
     if (group.activeTabs.length) {
+      const activeTabs = group.activeTabs;
       group.activeTabs = [];
+      animations.push(
+        ...this.#moveToActiveTabsContainer(group, activeTabs, false)
+      );
     }
 
     const clearContainerStyle = () => {
@@ -1304,14 +1453,20 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
       this.createAnimation(
         tabsContainer,
         { transform: ["translateY(0px)"] },
-        { duration: 150, easing: "ease-in-out" }
+        {
+          duration: this._ANIMATION_DURATION.EXPAND_TRANSFORM,
+          easing: "ease-in-out",
+        }
       ),
       this.createAnimation(
         tabsContainerWrapper,
         {
           gridTemplateRows: ["0fr", "1fr"],
         },
-        { duration: 100, easing: "ease-in-out" }
+        {
+          duration: this._ANIMATION_DURATION.EXPAND_HEIGHT,
+          easing: "ease-in-out",
+        }
       )
     );
 
@@ -1319,34 +1474,124 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
   }
 
   async animateUnloadAll(group) {
-    console.warn("NOT IMPLEMENTED", group);
+    const animations = [];
     const activeFolders = [group, ...group.childActiveGroups];
+    const tabsToMove = group.activeTabs;
+    const alreadyAnimated = new Set();
     for (const folder of activeFolders) {
+      const activeTabs = folder.activeTabs;
       folder.activeTabs = [];
-      this.updateFolderIcon(folder, "close", false);
+      const activeContainer = folder.groupActiveTabsContainer;
+      activeContainer.style.overflowY = "clip";
+      const containerHeight =
+        this.getBoundsWithoutFlushing(activeContainer).height;
+      animations.push(
+        ...this.updateFolderIcon(folder, "close", false),
+        this.createAnimation(
+          activeContainer,
+          { height: [`${containerHeight}px`, "0px"] },
+          {
+            duration: this._ANIMATION_DURATION.COLLAPSE_ACTIVE_HEIGHT,
+            easing: "ease-in-out",
+          },
+          () => {
+            activeContainer.style.removeProperty("height");
+            activeContainer.style.overflowY = "";
+          }
+        )
+      );
+      for (let i = 0; i < activeTabs.length; i++) {
+        const tab = activeTabs[i];
+        if (alreadyAnimated.has(tab)) {
+          continue;
+        }
+        alreadyAnimated.add(tab);
+        animations.push(
+          this.createAnimation(
+            tab,
+            {
+              transform: [
+                "translateY(0px)",
+                `translateY(-${containerHeight}px)`,
+              ],
+            },
+            {
+              duration: this._ANIMATION_DURATION.COLLAPSE_TRANSFORM,
+              easing: "ease-in-out",
+            },
+            () => {
+              tab.style.removeProperty("transform");
+            }
+          )
+        );
+      }
     }
+
+    await Promise.all(animations);
+    await Promise.all(
+      this.#moveToActiveTabsContainer(group, tabsToMove, false)
+    );
   }
 
   async animateUnload(group, tabToUnload, ungroup = false) {
-    console.warn("NOT IMPLEMENTED", group, tabToUnload, ungroup);
-    const isSplitView = tabToUnload.splitView;
-    if (!group.isZenFolder || !isSplitView) {
-      return;
-    }
+    const animations = [];
+    const isSplitView = tabToUnload.splitView ?? false;
     const activeFolders = group.activeGroups;
-    let lastTab = false;
     for (const folder of activeFolders) {
-      folder.activeTabs = folder.activeTabs.filter(tab => tab !== tabToUnload);
-      if (folder.activeTabs.length === 0) {
-        lastTab = true;
-        this.updateFolderIcon(folder, "close", false);
+      folder.removeActiveTab(tabToUnload);
+      if (!folder.activeTabs.length) {
+        const activeContainer = folder.groupActiveTabsContainer;
+        activeContainer.style.overflowY = "clip";
+        const containerHeight =
+          this.getBoundsWithoutFlushing(activeContainer).height;
+        animations.push(
+          ...this.updateFolderIcon(folder, "close", false),
+          this.createAnimation(
+            activeContainer,
+            { height: [`${containerHeight}px`, "0px"] },
+            {
+              duration: this._ANIMATION_DURATION.COLLAPSE_ACTIVE_HEIGHT,
+              easing: "ease-in-out",
+            },
+            () => {
+              activeContainer.style.removeProperty("height");
+              activeContainer.style.overflowY = "";
+            }
+          )
+        );
       }
     }
 
     if (isSplitView) {
       tabToUnload = tabToUnload.group;
     }
-    group.activeTabs = group.activeTabs.filter(tab => tab !== tabToUnload);
+
+    const activeContainer = group.groupActiveTabsContainer;
+    activeContainer.style.overflowY = "clip";
+    const tabHeight = this.getBoundsWithoutFlushing(tabToUnload).height;
+    animations.push(
+      this.createAnimation(
+        tabToUnload,
+        {
+          transform: ["translateY(0px)", `translateY(-${tabHeight}px)`],
+          height: [`${tabHeight}px`, "0px"],
+        },
+        {
+          duration: this._ANIMATION_DURATION.COLLAPSE_TRANSFORM,
+          easing: "ease-in-out",
+        },
+        () => {
+          tabToUnload.style.removeProperty("transform");
+          tabToUnload.style.removeProperty("height");
+          activeContainer.style.overflowY = "";
+        }
+      )
+    );
+    group.removeActiveTab(tabToUnload);
+    await Promise.all(animations);
+    await Promise.all(
+      this.#moveToActiveTabsContainer(group, [tabToUnload], false)
+    );
   }
 
   async animateSelect(group) {
@@ -1360,63 +1605,118 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
 
     for (const tab of selectedTabs) {
       let curGroup = tab.splitView ? tab.group.group : tab.group;
-      while (curGroup) {
+      while (curGroup && curGroup.collapsed) {
         const activeTabs = selectedTabs.filter(t => curGroup.tabs.includes(t));
         if (activeTabs.length) {
-          if (curGroup.collapsed) {
-            curGroup.activeTabs = activeTabs;
-            this.updateFolderIcon(curGroup, "close", false);
-          }
+          curGroup.activeTabs = activeTabs;
+          this.updateFolderIcon(curGroup, "close", false);
         }
         curGroup = curGroup.group;
       }
     }
+    await Promise.all(
+      this.#moveToActiveTabsContainer(group, group.activeTabs, true)
+    );
   }
 
   async animateGroupMove(group, expand = false) {
     console.warn("NOT IMPLEMENTED", group, expand);
-    // if (!group?.isZenFolder) {
-    //   return;
-    // }
-    // const tabsContainer = group.groupContainer;
-    // const tabsContainerWrapper = group.groupContainerWrapper;
-    // const activeTabs = group.activeTabs;
-    //
-    // // Calculate the height of the tabs container for animation
-    // let heightContainer = this.#calculateHeightShift(
-    //   tabsContainer,
-    //   activeTabs,
-    // );
-    //
-    // const clearContainerStyle = () => {
-    //   if (!group.hasActiveTab) {
-    //     tabsContainerWrapper.style.removeProperty("grid-template-rows");
-    //     tabsContainer.style.removeProperty("transform");
+    let heightContainer;
+    const animations = [];
+    const isActive = group.hasActiveTab;
+    const activeTabs = group.activeTabs;
+    const tabsContainer = group.groupContainer;
+    const tabsContainerWrapper = group.groupContainerWrapper;
+    const tabsContainerActive = group.groupActiveTabsContainer;
+
+    // if (expand) {
+    //   if (isActive) {
+    //     const shiftSize = activeTabs.length * 40;
+    //     activeTabs.forEach(tab => {
+    //       animations.push(
+    //         this.createAnimation(
+    //           tab,
+    //           {
+    //             transform: [`translateY(-${shiftSize}px)`, "translateY(0px)"],
+    //           },
+    //           {
+    //             duration: this._ANIMATION_DURATION.COLLAPSE_TRANSFORM,
+    //             easing: "ease-in-out",
+    //           },
+    //           () => {
+    //             tab.style.removeProperty("transform");
+    //           }
+    //         )
+    //       );
+    //     });
+    //     animations.push(
+    //       this.createAnimation(
+    //         tabsContainerActive,
+    //         { height: ["0px", `${shiftSize}px`] },
+    //         {
+    //           duration: this._ANIMATION_DURATION.EXPAND_HEIGHT,
+    //           easing: "ease-in-out",
+    //         },
+    //         () => {
+    //           tabsContainerActive.style.removeProperty("height");
+    //         }
+    //       )
+    //     );
+    //   } else {
+    //     animations.push(
+    //       this.createAnimation(
+    //         tabsContainerWrapper,
+    //         {
+    //           gridTemplateRows: ["0fr", "1fr"],
+    //         },
+    //         {
+    //           duration: this._ANIMATION_DURATION.COLLAPSE_HEIGHT,
+    //           easing: "ease-in-out",
+    //         }
+    //       )
+    //     );
     //   }
-    // };
-    //
-    // await Promise.all([
-    //   this.createAnimation(
-    //     tabsContainer,
-    //     {
-    //       transform:
-    //         expand && !group.hasActiveTab
-    //           ? [heightContainer, "translateY(0px)" ]
-    //           : ``,
-    //     },
-    //     { duration: expand ? 350 : 150, ease: "ease-in-out" },
-    //   ),
-    //   this.createAnimation(
-    //     tabsContainerWrapper,
-    //     {
-    //       gridTemplateRows:
-    //         expand
-    //           ? ["0px", `${endHeight}px`]
-    //           : [`${endHeight}px`, "0px"],
-    //     },
-    //     { duration: expand ? 350 : 150, easing: "ease-in-out" },
-    //   ),
-    // ]).then(clearContainerStyle);
+    // } else if (isActive) {
+    //   heightContainer =
+    //     this.getBoundsWithoutFlushing(tabsContainerActive).height;
+    //   activeTabs.forEach(tab => {
+    //     animations.push(
+    //       this.createAnimation(
+    //         tab,
+    //         {
+    //           transform: [
+    //             "translateY(0px)",
+    //             `translateY(-${heightContainer}px)`,
+    //           ],
+    //         },
+    //         {
+    //           duration: this._ANIMATION_DURATION.COLLAPSE_TRANSFORM,
+    //           easing: "ease-in-out",
+    //         }
+    //       )
+    //     );
+    //   });
+    //   animations.push(
+    //     this.createAnimation(
+    //       tabsContainerActive,
+    //       { height: [`${heightContainer}px`, "0px"] },
+    //       {
+    //         duration: this._ANIMATION_DURATION.COLLAPSE_ACTIVE_HEIGHT,
+    //         easing: "ease-in-out",
+    //       }
+    //     )
+    //   );
+    // } else {
+    //   heightContainer = this.getBoundsWithoutFlushing(tabsContainer).height;
+    //   animations.push(
+    //     this.createAnimation( 
+    //       tabsContainer,
+    //     { transform: [`translateY(${heightContainer}px)`] },
+    //     { duration: this._ANIMATION_DURATION.COLLAPSE_TRANSFORM, easing: "ease-in-out" },
+    //   ));
+    // }
+
+    await Promise.all(animations);
   }
 }
 

@@ -346,11 +346,11 @@ class nsZenPinnedTabManager extends nsZenDOMOperatedFeature {
               const isSpltView = tab.group?.hasAttribute("split-view-group");
               const group = isSpltView ? tab.group.group : tab.group;
               if (!folderToUnload) {
-                await gZenFolders.animateUnload(group, tab);
+                gZenFolders.animateUnload(group, tab);
               }
             }
             if (folderToUnload) {
-              await gZenFolders.animateUnloadAll(folderToUnload);
+              gZenFolders.animateUnloadAll(folderToUnload);
             }
             const allAreUnloaded = pinnedTabs.every(
               tab =>
