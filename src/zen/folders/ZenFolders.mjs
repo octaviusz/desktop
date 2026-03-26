@@ -212,7 +212,6 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
     window.addEventListener("FolderUngrouped", this);
     window.addEventListener("TabSelect", this);
     window.addEventListener("TabOpen", this);
-    window.addEventListener("TabMove", this);
     const onNewFolder = this.#onNewFolder.bind(this);
     document
       .getElementById("zen-context-menu-new-folder")
@@ -273,7 +272,6 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
   on_FolderGrouped(event) {
     const folder = event.detail;
     const parentFolder = event.target;
-    parentFolder.initTabWeight(folder);
     if (groupIsCollapsiblePins(parentFolder)) {
       return;
     }
@@ -288,10 +286,10 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
   on_FolderUngrouped(event) {
     const parentFolder = event.target;
     const folder = event.detail;
-    delete folder._folderWeight;
+    delete folder._zenWeight;
     for (const tab of folder.tabs) {
       this.animateUnload(parentFolder, tab, true);
-      delete tab._folderWeight;
+      delete tab._zenWeight;
       delete tab._originalGroup;
     }
   }
@@ -330,19 +328,10 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
     }
   }
 
-  on_TabMove(event) {
-    const tab = event.target;
-    const isSplitView = tab.splitView;
-    const folder = isSplitView ? tab.group.group : tab.group;
-    if (folder?.isZenFolder) {
-      folder.initTabWeight(tab.group);
-    }
-  }
-
   async on_TabUngrouped(event) {
     const tab = event.detail;
     const group = event.target;
-    delete tab._folderWeight;
+    delete tab._zenWeight;
     delete tab._originalGroup;
     tab._prevGroup = group;
     if (
@@ -1265,7 +1254,7 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
   }
 
   #insertInOrder(container, element, isAdding = false) {
-    const weight = element._folderWeight;
+    const weight = element._zenWeight;
     if (weight === undefined) {
       container.appendChild(element);
       return;
@@ -1279,7 +1268,7 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
       const activeCondition = isAdding
         ? child._originalGroup === element._originalGroup
         : true;
-      const childWeight = child._folderWeight;
+      const childWeight = child._zenWeight;
       if (
         childWeight !== undefined &&
         childWeight > weight &&
@@ -1297,13 +1286,17 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
     }
   }
 
-  #animateActiveTabsAdd(elem, folder) {
+  #animateActiveTabsAdd(elem, group, folder) {
     const tabsActiveContainer = folder.groupActiveTabsContainer;
     const firstRect = elem.getBoundingClientRect();
+    const activeFolderContainer = group.groupContainer;
+    const oldTransform = activeFolderContainer.style.transform;
+    activeFolderContainer.style.removeProperty("transform");
     this.#insertInOrder(tabsActiveContainer, elem, true);
     const lastRect = elem.getBoundingClientRect();
+    activeFolderContainer.style.transform = oldTransform;
     const invertY = firstRect.top - lastRect.top;
-    return gZenFolders.createAnimation(
+    return this.createAnimation(
       elem,
       { transform: [`translateY(${invertY}px)`, "translateY(0px)"] },
       {
@@ -1316,14 +1309,15 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
     );
   }
 
-  #animateActiveTabsRemove(elem, folder) {
+  #animateActiveTabsRemove(elem, group, folder) {
     const firstRect = elem.getBoundingClientRect();
     const tabsContainer = folder.groupContainer;
-    const oldTransform = tabsContainer.style.transform;
-    tabsContainer.style.removeProperty("transform");
+    const activeFolderContainer = group.groupContainer;
+    const oldTransform = activeFolderContainer.style.transform;
+    activeFolderContainer.style.removeProperty("transform");
     this.#insertInOrder(tabsContainer, elem);
     const lastRect = elem.getBoundingClientRect();
-    tabsContainer.style.transform = oldTransform;
+    activeFolderContainer.style.transform = oldTransform;
     const invertY = firstRect.top - lastRect.top;
     return this.createAnimation(
       elem,
@@ -1365,13 +1359,13 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
           element._originalGroup = element.group;
         }
 
-        animations.push(this.#animateActiveTabsAdd(element, group));
+        animations.push(this.#animateActiveTabsAdd(element, group, group));
       } else {
         // === EXPAND ===
         const originalGroup = element._originalGroup;
 
         if (originalGroup === group) {
-          animations.push(this.#animateActiveTabsRemove(element, group));
+          animations.push(this.#animateActiveTabsRemove(element, originalGroup, group));
         } else {
           const activeFolder = group.childActiveGroups?.find(folder =>
             folder.activeTabs.includes(tab)
@@ -1379,14 +1373,14 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
 
           if (activeFolder) {
             animations.push(
-              this.#animateActiveTabsAdd(element, activeFolder)
+              this.#animateActiveTabsAdd(element, group, activeFolder)
             );
           } else {
             if (!originalGroup) {
               return;
             }
             animations.push(
-              this.#animateActiveTabsRemove(element, originalGroup)
+              this.#animateActiveTabsRemove(element, group, originalGroup)
             );
           }
         }
@@ -1573,6 +1567,9 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
     const animations = [];
     const isSplitView = tabToUnload.splitView ?? false;
     const activeFolders = group.activeGroups;
+    if (!activeFolders.length) {
+      return;
+    }
     for (const folder of activeFolders) {
       folder.removeActiveTab(tabToUnload);
       if (!folder.activeTabs.length) {

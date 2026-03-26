@@ -274,16 +274,16 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
   initWeight() {
     let curWeight = 1000;
     for (const item of this.allItems) {
-      if (!item._folderWeight) {
-        item._folderWeight = curWeight;
+      if (!item._zenWeight) {
+        item._zenWeight = curWeight;
       }
-      curWeight = item._folderWeight + 1000;
+      curWeight = item._zenWeight + 1000;
     }
   }
 
   initTabWeight(tab) {
     const elems = this.allItems.filter(el => el !== tab);
-    if (!elems.every(el => el._folderWeight)) {
+    if (!elems.every(el => el._zenWeight)) {
       this.initWeight();
       return;
     }
@@ -291,14 +291,14 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
     let prevTab = tab.previousElementSibling;
     let nextTab = tab.nextElementSibling;
 
-    let prevWeight = prevTab?._folderWeight || 0;
-    let nextWeight = nextTab?._folderWeight || Infinity;
-    let tabWeight = tab._folderWeight || -1;
+    let prevWeight = prevTab?._zenWeight || 0;
+    let nextWeight = nextTab?._zenWeight || Infinity;
+    let tabWeight = tab._zenWeight || -1;
 
     if (tabWeight <= prevWeight || tabWeight >= nextWeight) {
       let newTabWeight =
         nextWeight === Infinity ? prevWeight + 2000 : nextWeight;
-      tab._folderWeight = (prevWeight + newTabWeight) / 2;
+      tab._zenWeight = (prevWeight + newTabWeight) / 2;
     }
   }
 
