@@ -24,7 +24,9 @@ class nsZenCollapsiblePins extends nsZenFolder {
   }
 
   get groupActiveTabsContainer() {
-    return this.#spaceElement.querySelector(".zen-workspace-pinned-active-tabs-section");
+    return this.#spaceElement.querySelector(
+      ".zen-workspace-pinned-active-tabs-section"
+    );
   }
 
   get groupStartElement() {
@@ -71,7 +73,7 @@ export class nsZenWorkspace extends MozXULElement {
         <arrowscrollbox orient="vertical" class="workspace-arrowscrollbox">
           <vbox class="zen-workspace-pinned-active-tabs-section" />
           <vbox class="zen-workspace-pinned-tabs-section-wrapper" hide-separator="true">
-            <vbox class="zen-workspace-tabs-section zen-workspace-pinned-tabs-section" hide-separator="true">
+            <vbox class="zen-workspace-tabs-section zen-workspace-pinned-tabs-section">
               <html:div class="zen-tab-group-start space-fake-collapsible-start" style="order: -9999;" />
             </vbox>
             <hbox class="pinned-tabs-container-separator">

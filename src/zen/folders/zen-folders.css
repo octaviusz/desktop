@@ -230,11 +230,16 @@ zen-folder {
   }
 }
 
+/* Zen Workspaces */ 
 zen-workspace .zen-workspace-pinned-tabs-section-wrapper {
   display: grid;
   & .zen-workspace-pinned-tabs-section {
     min-height: 0;
   }
+}
+
+.zen-workspace-pinned-active-tabs-section {
+  padding: 0 var(--zen-toolbox-padding);
 }
 
 /* Tabs popup */

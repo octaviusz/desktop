@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/tab.js b/browser/components/tabbrowser/content/tab.js
-index e4266a159a0d5c42cc294602d00b8f66131f35d5..22f932e598e38db37f1250572b416ffbef83ed12 100644
+index e4266a159a0d5c42cc294602d00b8f66131f35d5..b6c96aa0c2b8889ce9d3fe25f10f759eff24b7ff 100644
 --- a/browser/components/tabbrowser/content/tab.js
 +++ b/browser/components/tabbrowser/content/tab.js
 @@ -21,6 +21,7 @@
@@ -94,7 +94,7 @@ index e4266a159a0d5c42cc294602d00b8f66131f35d5..22f932e598e38db37f1250572b416ffb
 +      if (typeof gBrowser === "undefined") {
 +        return null;
 +      }
-+      if (this._originalGroup && !this.splitView && this.parentElement.className.includes("zen-workspace-pinned-active-tabs-section","tab-group-active-tabs-container")) return this._originalGroup;
++      if (this._originalGroup && !this.splitView && (this.parentElement.classList.contains("tab-group-active-tabs-container") || this.parentElement.classList.contains("zen-workspace-pinned-active-tabs-section"))) return this._originalGroup;
 +      let group = this.parentElement?.parentElement; // FF groups and Split View
 +      if (group && gBrowser.isTabGroup(group)) {
 +        return this.parentElement.parentElement
