@@ -271,6 +271,37 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
     return this._activeTabs;
   }
 
+  initWeight() {
+    let curWeight = 1000;
+    for (const item of this.allItems) {
+      if (!item._folderWeight) {
+        item._folderWeight = curWeight;
+      }
+      curWeight = item._folderWeight + 1000;
+    }
+  }
+
+  initTabWeight(tab) {
+    const elems = this.allItems.filter(el => el !== tab);
+    if (!elems.every(el => el._folderWeight)) {
+      this.initWeight();
+      return;
+    }
+
+    let prevTab = tab.previousElementSibling;
+    let nextTab = tab.nextElementSibling;
+
+    let prevWeight = prevTab?._folderWeight || 0;
+    let nextWeight = nextTab?._folderWeight || Infinity;
+    let tabWeight = tab._folderWeight || -1;
+
+    if (tabWeight <= prevWeight || tabWeight >= nextWeight) {
+      let newTabWeight =
+        nextWeight === Infinity ? prevWeight + 2000 : nextWeight;
+      tab._folderWeight = (prevWeight + newTabWeight) / 2;
+    }
+  }
+
   removeActiveTab(tab) {
     this._activeTabs = this._activeTabs.filter(t => t !== tab);
     if (!this._activeTabs.length) {

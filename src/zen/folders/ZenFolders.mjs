@@ -212,6 +212,7 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
     window.addEventListener("FolderUngrouped", this);
     window.addEventListener("TabSelect", this);
     window.addEventListener("TabOpen", this);
+    window.addEventListener("TabMove", this);
     const onNewFolder = this.#onNewFolder.bind(this);
     document
       .getElementById("zen-context-menu-new-folder")
@@ -239,6 +240,9 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
   on_TabGrouped(event) {
     const tab = event.detail;
     const group = tab.group;
+    if (group.isZenFolder) {
+      group.initTabWeight(tab);
+    }
     if (groupIsCollapsiblePins(group)) {
       return;
     }
@@ -269,6 +273,7 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
   on_FolderGrouped(event) {
     const folder = event.detail;
     const parentFolder = event.target;
+    parentFolder.initTabWeight(folder);
     if (groupIsCollapsiblePins(parentFolder)) {
       return;
     }
@@ -283,8 +288,11 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
   on_FolderUngrouped(event) {
     const parentFolder = event.target;
     const folder = event.detail;
+    delete folder._folderWeight;
     for (const tab of folder.tabs) {
       this.animateUnload(parentFolder, tab, true);
+      delete tab._folderWeight;
+      delete tab._originalGroup;
     }
   }
 
@@ -322,9 +330,21 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
     }
   }
 
+  on_TabMove(event) {
+    const tab = event.target;
+    const isSplitView = tab.splitView;
+    const folder = isSplitView ? tab.group.group : tab.group;
+    if (folder?.isZenFolder) {
+      folder.initTabWeight(tab.group);
+    }
+  }
+
   async on_TabUngrouped(event) {
     const tab = event.detail;
     const group = event.target;
+    delete tab._folderWeight;
+    delete tab._originalGroup;
+    tab._prevGroup = group;
     if (
       group.hasAttribute("split-view-group") &&
       tab.hasAttribute("had-zen-pinned-changed")
@@ -1244,10 +1264,43 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
     }
   }
 
-  _animateActiveTabsAppend(elem, folder) {
+  #insertInOrder(container, element, isAdding = false) {
+    const weight = element._folderWeight;
+    if (weight === undefined) {
+      container.appendChild(element);
+      return;
+    }
+
+    let insertBefore = null;
+    for (const child of container.children) {
+      if (child === element) {
+        continue;
+      }
+      const activeCondition = isAdding
+        ? child._originalGroup === element._originalGroup
+        : true;
+      const childWeight = child._folderWeight;
+      if (
+        childWeight !== undefined &&
+        childWeight > weight &&
+        activeCondition
+      ) {
+        insertBefore = child;
+        break;
+      }
+    }
+
+    if (insertBefore) {
+      container.insertBefore(element, insertBefore);
+    } else {
+      container.appendChild(element);
+    }
+  }
+
+  #animateActiveTabsAdd(elem, folder) {
     const tabsActiveContainer = folder.groupActiveTabsContainer;
     const firstRect = elem.getBoundingClientRect();
-    tabsActiveContainer.appendChild(elem);
+    this.#insertInOrder(tabsActiveContainer, elem, true);
     const lastRect = elem.getBoundingClientRect();
     const invertY = firstRect.top - lastRect.top;
     return gZenFolders.createAnimation(
@@ -1263,16 +1316,16 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
     );
   }
 
-  _animateActiveTabsAddAfter(elem, prevTab, folder) {
+  #animateActiveTabsRemove(elem, folder) {
     const firstRect = elem.getBoundingClientRect();
     const tabsContainer = folder.groupContainer;
     const oldTransform = tabsContainer.style.transform;
     tabsContainer.style.removeProperty("transform");
-    prevTab.after(elem);
+    this.#insertInOrder(tabsContainer, elem);
     const lastRect = elem.getBoundingClientRect();
     tabsContainer.style.transform = oldTransform;
     const invertY = firstRect.top - lastRect.top;
-    return gZenFolders.createAnimation(
+    return this.createAnimation(
       elem,
       { transform: [`translateY(${invertY}px)`, "translateY(0px)"] },
       {
@@ -1287,17 +1340,10 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
   }
 
   #moveToActiveTabsContainer(group, activeTabs, isAdding) {
-    if (isAdding) {
-      while (group.groupActiveTabsContainer.firstChild) {
-        group.groupActiveTabsContainer.firstChild.remove();
-      }
-    }
-
     const splitGroupIds = new Set();
     const animations = [];
 
     for (const tab of activeTabs) {
-      // Determine the element to animate, deduplicating split views
       let element;
       if (tab.splitView) {
         const splitGroup = tab.group;
@@ -1318,45 +1364,35 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
           }
           element._originalGroup = element.group;
         }
-        animations.push(this._animateActiveTabsAppend(element, group));
+
+        animations.push(this.#animateActiveTabsAdd(element, group));
       } else {
         // === EXPAND ===
         const originalGroup = element._originalGroup;
 
         if (originalGroup === group) {
-          let prevTab = group.tabs.find(t => t._tPos === tab._tPos - 1);
-          prevTab = prevTab?.group === group ? prevTab : prevTab?.group;
-
-          animations.push(
-            this._animateActiveTabsAddAfter(element, prevTab, group)
-          );
+          animations.push(this.#animateActiveTabsRemove(element, group));
         } else {
-          animations.push(
-            this.#restoreElemPos(group, originalGroup, tab, element)
+          const activeFolder = group.childActiveGroups?.find(folder =>
+            folder.activeTabs.includes(tab)
           );
+
+          if (activeFolder) {
+            animations.push(
+              this.#animateActiveTabsAdd(element, activeFolder)
+            );
+          } else {
+            if (!originalGroup) {
+              return;
+            }
+            animations.push(
+              this.#animateActiveTabsRemove(element, originalGroup)
+            );
+          }
         }
       }
     }
     return animations;
-  }
-
-  #restoreElemPos(group, originalGroup, tab, element) {
-    const activeFolder = group.childActiveGroups?.find(folder =>
-      folder.activeTabs.includes(tab)
-    );
-    if (activeFolder) {
-      return this._animateActiveTabsAppend(element, activeFolder);
-    }
-
-    if (!originalGroup) {
-      return;
-    }
-
-    let prevTab = originalGroup.tabs?.find(t => t._tPos === tab._tPos - 1);
-    if (prevTab) {
-      prevTab = prevTab.group === originalGroup ? prevTab : prevTab.group;
-      return this._animateActiveTabsAddAfter(element, prevTab, group);
-    }
   }
 
   async animateCollapse(group) {
@@ -1378,7 +1414,7 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
     if (selectedTabs.length) {
       group.activeTabs = selectedTabs;
       animations.push(
-        ...this.#moveToActiveTabsContainer(group, selectedTabs, true)
+        this.#moveToActiveTabsContainer(group, selectedTabs, true)
       );
     }
 
@@ -1437,7 +1473,7 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
       const activeTabs = group.activeTabs;
       group.activeTabs = [];
       animations.push(
-        ...this.#moveToActiveTabsContainer(group, activeTabs, false)
+        this.#moveToActiveTabsContainer(group, activeTabs, false)
       );
     }
 
@@ -1588,6 +1624,10 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
       )
     );
     group.removeActiveTab(tabToUnload);
+    // TODO: Check that no styles are left on elements
+    if (ungroup) {
+      return;
+    }
     await Promise.all(animations);
     await Promise.all(
       this.#moveToActiveTabsContainer(group, [tabToUnload], false)
@@ -1602,6 +1642,10 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
     this.cancelPopupTimer();
 
     const selectedTabs = this.#getSelectedTabs(group);
+    const tabsActiveContainer = group.groupActiveTabsContainer;
+    if (selectedTabs.every(t => tabsActiveContainer.contains(t))) {
+      return;
+    }
 
     for (const tab of selectedTabs) {
       let curGroup = tab.splitView ? tab.group.group : tab.group;
@@ -1614,9 +1658,13 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
         curGroup = curGroup.group;
       }
     }
+
+    tabsActiveContainer.style.overflowY = "clip";
     await Promise.all(
       this.#moveToActiveTabsContainer(group, group.activeTabs, true)
-    );
+    ).then(() => {
+      tabsActiveContainer.style.overflowY = "";
+    });
   }
 
   async animateGroupMove(group, expand = false) {
@@ -1709,7 +1757,7 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
     // } else {
     //   heightContainer = this.getBoundsWithoutFlushing(tabsContainer).height;
     //   animations.push(
-    //     this.createAnimation( 
+    //     this.createAnimation(
     //       tabsContainer,
     //     { transform: [`translateY(${heightContainer}px)`] },
     //     { duration: this._ANIMATION_DURATION.COLLAPSE_TRANSFORM, easing: "ease-in-out" },
