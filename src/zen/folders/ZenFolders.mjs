@@ -331,9 +331,11 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
   async on_TabUngrouped(event) {
     const tab = event.detail;
     const group = event.target;
+    if (!group.isZenFolder) {
+      return;
+    }
     delete tab._zenWeight;
     delete tab._originalGroup;
-    tab._prevGroup = group;
     if (
       group.hasAttribute("split-view-group") &&
       tab.hasAttribute("had-zen-pinned-changed")
@@ -1469,6 +1471,7 @@ class nsZenFolders extends nsZenDOMOperatedFeature {
       const activeTabs = group.activeTabs;
       if (group.activeTabs.length) {
         group.activeTabs = [];
+        tabsContainer.style.transform = "translateY(0px)";
         animations.push(
           this.#moveToActiveTabsContainer(group, activeTabs, false)
         );
