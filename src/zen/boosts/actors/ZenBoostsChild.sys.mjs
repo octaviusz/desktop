@@ -367,7 +367,14 @@ export class ZenBoostsChild extends JSWindowActorChild {
         this.#loadStyleSheet(boost.styleSheet);
       }
 
-      browsingContext.fullZoom = boostData.sizeOverride;
+      if (
+        boostData.sizeOverride &&
+        isFinite(boostData.sizeOverride) &&
+        boostData.sizeOverride !== 1
+      ) {
+        browsingContext.fullZoom = boostData.sizeOverride;
+      }
+
       browsingContext.isZenBoostsInverted = boostData.smartInvert;
       if (boostData.enableColorBoost) {
         let primaryColor;
@@ -390,17 +397,17 @@ export class ZenBoostsChild extends JSWindowActorChild {
           // using the same modifiers as the color above
           primaryColor = this.#buildBoostColor(
             primaryGradientColor[0],
-            primaryGradientColor[1] * (1 - boostData.saturation),
-            0.1 + primaryGradientColor[2] * 0.9 * boostData.brightness,
+            1 - boostData.saturation,
+            0.1 + 0.9 * boostData.brightness,
             boostData
           );
         } else {
           primaryColor = this.#buildBoostColor(
             boostData.dotAngleDeg,
             /* already is [0, 1] */
-            boostData.dotDistance * (1 - boostData.saturation),
+            1 - boostData.saturation,
             /* lightness range from [0.1, 0.9] */
-            0.1 + boostData.dotDistance * 0.8 * boostData.brightness,
+            0.1 + 0.9 * boostData.brightness,
             boostData
           );
         }
