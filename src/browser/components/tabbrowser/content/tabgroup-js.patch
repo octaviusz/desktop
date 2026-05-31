@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/tabgroup.js b/browser/components/tabbrowser/content/tabgroup.js
-index 3ca119e8dc72fac652c98505211864483d98add2..ddb0df1db0c822c2222ae44c28045f8831f0c7d4 100644
+index d1be14df27d76a191eaff05502c030fd68c46738..8efbcb24142acf35f63dbaebf6ca7ecb955c6817 100644
 --- a/browser/components/tabbrowser/content/tabgroup.js
 +++ b/browser/components/tabbrowser/content/tabgroup.js
 @@ -14,11 +14,11 @@
@@ -101,7 +101,13 @@ index 3ca119e8dc72fac652c98505211864483d98add2..ddb0df1db0c822c2222ae44c28045f88
  
      resetDefaultGroupName = () => {
        this.#defaultGroupName = "";
-@@ -178,7 +201,9 @@
+@@ -175,10 +198,15 @@
+       if (!this.#tabChangeObserver) {
+         this.#tabChangeObserver = new window.MutationObserver(mutations => {
+           if (!this.tabs.length) {
++            if (this.tagName === "zen-workspace-collapsible-pins") {
++              return;
++            }
              this.dispatchEvent(
                new CustomEvent("TabGroupRemoved", { bubbles: true })
              );
@@ -111,7 +117,7 @@ index 3ca119e8dc72fac652c98505211864483d98add2..ddb0df1db0c822c2222ae44c28045f88
              Services.obs.notifyObservers(
                this,
                "browser-tabgroup-removed-from-dom"
-@@ -203,6 +228,9 @@
+@@ -203,6 +231,9 @@
            }
            for (const mutation of mutations) {
              for (const addedNode of mutation.addedNodes) {
@@ -121,7 +127,7 @@ index 3ca119e8dc72fac652c98505211864483d98add2..ddb0df1db0c822c2222ae44c28045f88
                if (gBrowser.isTab(addedNode)) {
                  this.#updateTabAriaHidden(addedNode);
                } else if (gBrowser.isSplitViewWrapper(addedNode)) {
-@@ -223,7 +251,10 @@
+@@ -223,7 +254,10 @@
            }
          });
        }
@@ -133,7 +139,7 @@ index 3ca119e8dc72fac652c98505211864483d98add2..ddb0df1db0c822c2222ae44c28045f88
      }
  
      get color() {
-@@ -317,6 +348,9 @@
+@@ -317,6 +351,9 @@
      }
  
      set collapsed(val) {
@@ -143,7 +149,7 @@ index 3ca119e8dc72fac652c98505211864483d98add2..ddb0df1db0c822c2222ae44c28045f88
        if (!!val == this.collapsed) {
          return;
        }
-@@ -403,7 +437,6 @@
+@@ -403,7 +440,6 @@
            tabGroupName,
          })
          .then(result => {
@@ -151,7 +157,7 @@ index 3ca119e8dc72fac652c98505211864483d98add2..ddb0df1db0c822c2222ae44c28045f88
          });
      }
  
-@@ -478,13 +511,67 @@
+@@ -478,13 +514,70 @@
       * @returns {MozTabbrowserTab[]}
       */
      get tabs() {
@@ -166,9 +172,8 @@ index 3ca119e8dc72fac652c98505211864483d98add2..ddb0df1db0c822c2222ae44c28045f88
 +        tabsCollect.push(item);
 +        if (gBrowser.isTabGroup(item)) {
 +          tabsCollect.push(...item.tabs);
-         }
-       }
--      return childrenArray.filter(node => node.matches("tab"));
++        }
++      }
 +      return tabsCollect.filter(node => node.matches("tab"));
 +    }
 +
@@ -194,8 +199,9 @@ index 3ca119e8dc72fac652c98505211864483d98add2..ddb0df1db0c822c2222ae44c28045f88
 +            result.push(labelContainer);
 +          }
 +          result.push(...item.childGroupsAndTabs);
-+        }
-+      }
+         }
+       }
+-      return childrenArray.filter(node => node.matches("tab"));
 +      return result;
 +    }
 +
@@ -216,6 +222,9 @@ index 3ca119e8dc72fac652c98505211864483d98add2..ddb0df1db0c822c2222ae44c28045f88
 +          return false;
 +        }
 +      }
++      if (this.pinned && gZenWorkspaces.activeWorkspaceElement?.hasCollapsedPinnedTabs) {
++        return false;
++      }
 +      return true;
 +    }
 +
@@ -224,7 +233,7 @@ index 3ca119e8dc72fac652c98505211864483d98add2..ddb0df1db0c822c2222ae44c28045f88
      }
  
      /**
-@@ -592,7 +679,6 @@
+@@ -592,7 +685,6 @@
            );
          } else {
            if (tabOrSplitView.pinned) {
@@ -232,7 +241,7 @@ index 3ca119e8dc72fac652c98505211864483d98add2..ddb0df1db0c822c2222ae44c28045f88
            }
            let tabToMove =
              this.ownerGlobal === tabOrSplitView.ownerGlobal
-@@ -661,7 +747,7 @@
+@@ -661,7 +753,7 @@
       */
      on_click(event) {
        let isToggleElement =
@@ -241,7 +250,7 @@ index 3ca119e8dc72fac652c98505211864483d98add2..ddb0df1db0c822c2222ae44c28045f88
          event.target === this.#overflowCountLabel;
        if (isToggleElement && event.button === 0) {
          event.preventDefault();
-@@ -740,5 +826,6 @@
+@@ -740,5 +832,6 @@
      }
    }
  
