@@ -953,7 +953,7 @@
         TAB_DROP_TYPE,
         0
       )?.documentGlobal;
-      if (ownerGlobal?.gZenCompactModeManager) {
+      if (ownerGlobal?.gZenCompactModeManager && ownerGlobal !== window) {
         // Sometimes, dragend doesn't always get called when dragging
         // to different windows, see gh-8643.
         delete ownerGlobal.gZenCompactModeManager._isTabBeingDragged;
