@@ -953,11 +953,13 @@
         TAB_DROP_TYPE,
         0
       )?.documentGlobal;
-      if (ownerGlobal?.gZenCompactModeManager && ownerGlobal !== window) {
+      if (ownerGlobal?.gZenCompactModeManager) {
         // Sometimes, dragend doesn't always get called when dragging
         // to different windows, see gh-8643.
-        delete ownerGlobal.gZenCompactModeManager._isTabBeingDragged;
-        ownerGlobal.gZenCompactModeManager._clearAllHoverStates();
+        requestAnimationFrame(() => {
+          delete ownerGlobal.gZenCompactModeManager._isTabBeingDragged;
+          ownerGlobal.gZenCompactModeManager._clearAllHoverStates();
+        });
       }
       this.clearSpaceSwitchTimer();
       gZenFolders.highlightGroupOnDragOver(null);
