@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/drag-and-drop.js b/browser/components/tabbrowser/content/drag-and-drop.js
-index 8bb1219962a1368f50b53c61041f135c68e35f31..8e72441d26883cbef7a352b00c0fe2b15a030046 100644
+index 8bb1219962a1368f50b53c61041f135c68e35f31..f661dbe155a60027afa9cb31bbc25d7c9fb8e597 100644
 --- a/browser/components/tabbrowser/content/drag-and-drop.js
 +++ b/browser/components/tabbrowser/content/drag-and-drop.js
 @@ -35,6 +35,9 @@
@@ -159,6 +159,17 @@ index 8bb1219962a1368f50b53c61041f135c68e35f31..8e72441d26883cbef7a352b00c0fe2b1
        if (
          dt.mozUserCancelled ||
          dt.dropEffect != "none" ||
+@@ -734,8 +754,8 @@
+         let crossAxisStart, crossAxisEnd;
+         if (this._tabbrowserTabs.verticalMode) {
+           if (
+-            (RTL_UI && this._tabbrowserTabs._sidebarPositionStart) ||
+-            (!RTL_UI && !this._tabbrowserTabs._sidebarPositionStart)
++            (RTL_UI && !gZenVerticalTabsManager._prefsRightSide) ||
++            (!RTL_UI && gZenVerticalTabsManager._prefsRightSide)
+           ) {
+             crossAxisStart =
+               window.mozInnerScreenX + rect.right - 1.5 * rect.width;
 @@ -927,11 +947,10 @@
          return this.#getHorizontalScrollboxDragTarget(event, ignoreSides);
        }

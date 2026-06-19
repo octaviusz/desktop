@@ -722,8 +722,8 @@
       }
       const { isNearLeftEdge, isNearRightEdge } =
         this.#shouldSwitchSpace(event);
-      if ((isNearLeftEdge || isNearRightEdge) && !this.#isOutOfWindow) {
-        if (!this.#changeSpaceTimer) {
+      if (isNearLeftEdge || isNearRightEdge) {
+        if (!this.#changeSpaceTimer && !this.#isOutOfWindow) {
           this.#changeSpaceTimer = setTimeout(() => {
             this.clearDragOverVisuals();
             gZenWorkspaces
