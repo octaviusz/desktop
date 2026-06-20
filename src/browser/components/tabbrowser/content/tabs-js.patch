@@ -1,7 +1,16 @@
 diff --git a/browser/components/tabbrowser/content/tabs.js b/browser/components/tabbrowser/content/tabs.js
-index 568f3a7cc7051ff8cb569f6bcb8018a5212f7072..3036768b8911b4fbc28df7528f7189d9ea21b6f6 100644
+index 568f3a7cc7051ff8cb569f6bcb8018a5212f7072..dfa33b94387a8c7813b593ec2a544d0709bc2d9e 100644
 --- a/browser/components/tabbrowser/content/tabs.js
 +++ b/browser/components/tabbrowser/content/tabs.js
+@@ -197,7 +197,7 @@
+       XPCOMUtils.defineLazyPreferenceGetter(
+         this,
+         "_sidebarPositionStart",
+-        "sidebar.position_start",
++        "zen.tabs.vertical.right-side",
+         true
+       );
+ 
 @@ -220,7 +220,7 @@
  
        this.tooltip = "tabbrowser-tab-tooltip";
