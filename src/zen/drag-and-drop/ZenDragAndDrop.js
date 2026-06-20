@@ -725,6 +725,9 @@
       if (isNearLeftEdge || isNearRightEdge) {
         if (!this.#changeSpaceTimer && !this.#isOutOfWindow) {
           this.#changeSpaceTimer = setTimeout(() => {
+            if (this.#isOutOfWindow) {
+              return;
+            }
             this.clearDragOverVisuals();
             gZenWorkspaces
               .changeWorkspaceShortcut(
