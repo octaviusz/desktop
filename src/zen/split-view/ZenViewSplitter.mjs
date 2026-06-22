@@ -1243,7 +1243,6 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     let currentTab = gZenGlanceManager.getTabOrGlanceParent(
       TabContextMenu.contextTab || gBrowser.selectedTab
     );
-    console.log(currentTab, currentTab.hasAttribute("zen-glance-tab"));
     if (currentTab.multiselected) {
       tabs = gBrowser.selectedTabs;
     } else if (!currentTab.selected && !currentTab.splitView) {
