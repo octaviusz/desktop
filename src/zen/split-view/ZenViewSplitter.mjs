@@ -1248,7 +1248,9 @@ class nsZenViewSplitter extends nsZenDOMOperatedFeature {
     } else if (!currentTab.selected && !currentTab.splitView) {
       tabs = [
         currentTab,
-        ...gBrowser.selectedTabs.filter(t => t !== currentTab && !t.hasAttribute("zen-glance-tab")),
+        ...gBrowser.selectedTabs.filter(
+          t => t !== currentTab && !t.hasAttribute("zen-glance-tab")
+        ),
       ];
     } else {
       tabs = [currentTab];
