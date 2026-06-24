@@ -78,6 +78,9 @@ document.addEventListener(
           case "cmd_zenReplacePinnedUrlWithCurrent":
             gZenPinnedTabManager.replacePinnedUrlWithCurrent();
             break;
+          case "cmd_zenEditPinnedUrl":
+            gZenPinnedTabManager.editPinnedUrl();
+            break;
           case "cmd_contextZenAddToEssentials":
             gZenPinnedTabManager.addToEssentials();
             break;
@@ -131,6 +134,10 @@ document.addEventListener(
           }
           case "cmd_zenUnloadAllOtherWorkspace": {
             gZenWorkspaces.unloadAllOtherWorkspaces();
+            break;
+          }
+          case "cmd_zenOpenSpaceRoutingSettings": {
+            gZenSpaceRoutingManager.openSpaceRoutingDialog(window);
             break;
           }
           case "cmd_zenNewNavigatorUnsynced":

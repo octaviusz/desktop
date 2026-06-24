@@ -1,5 +1,5 @@
 diff --git a/browser/components/tabbrowser/content/tab.js b/browser/components/tabbrowser/content/tab.js
-index b9381999a77ecacdb95c69494ac8972e9f13d14d..7976a3ca5bc45953126e354243d91a2c6d5dccd9 100644
+index 8f2ebf3a0bd4e2af01cf41024b16bd491e8ed961..44db4d1303d80787ce6ed0a4038748e997dc12fa 100644
 --- a/browser/components/tabbrowser/content/tab.js
 +++ b/browser/components/tabbrowser/content/tab.js
 @@ -21,6 +21,7 @@
@@ -10,10 +10,10 @@ index b9381999a77ecacdb95c69494ac8972e9f13d14d..7976a3ca5bc45953126e354243d91a2c
            <stack class="tab-icon-stack">
              <hbox class="tab-throbber"/>
              <hbox class="tab-icon-pending"/>
-@@ -38,9 +39,11 @@
-             <hbox class="tab-secondary-label">
-               <label class="tab-icon-sound-label tab-icon-sound-pip-label" data-l10n-id="browser-tab-audio-pip" role="presentation"/>
-             </hbox>
+@@ -35,9 +36,11 @@
+                 pack="center"
+                 flex="1">
+             <label class="tab-text tab-label" role="presentation"/>
 +            <label class="zen-tab-sublabel" data-l10n-id="zen-tab-sublabel" data-l10n-args='{"tabSubtitle": "zen-default-pinned"}' role="presentation"/>
            </vbox>
            <image class="tab-note-icon" role="presentation"/>
@@ -22,7 +22,7 @@ index b9381999a77ecacdb95c69494ac8972e9f13d14d..7976a3ca5bc45953126e354243d91a2c
          </hbox>
        </stack>
        `;
-@@ -87,7 +90,7 @@
+@@ -84,7 +87,7 @@
          ".tab-content":
            "pinned,selected=visuallyselected,multiselected,titlechanged,attention",
          ".tab-icon-stack":
@@ -31,7 +31,7 @@ index b9381999a77ecacdb95c69494ac8972e9f13d14d..7976a3ca5bc45953126e354243d91a2c
          ".tab-throbber":
            "fadein,pinned,busy,progress,selected=visuallyselected",
          ".tab-icon-pending":
-@@ -96,9 +99,9 @@
+@@ -93,9 +96,9 @@
            "src=image,requestcontextid,fadein,pinned,selected=visuallyselected,busy,crashed,sharing,pictureinpicture,pending,discarded",
          ".tab-sharing-icon-overlay": "sharing,selected=visuallyselected,pinned",
          ".tab-icon-overlay":
@@ -43,7 +43,7 @@ index b9381999a77ecacdb95c69494ac8972e9f13d14d..7976a3ca5bc45953126e354243d91a2c
          ".tab-label-container":
            "pinned,selected=visuallyselected,labeldirection",
          ".tab-label":
-@@ -189,7 +192,7 @@
+@@ -184,7 +187,7 @@
      }
  
      set _visuallySelected(val) {
@@ -52,7 +52,7 @@ index b9381999a77ecacdb95c69494ac8972e9f13d14d..7976a3ca5bc45953126e354243d91a2c
          return;
        }
  
-@@ -225,11 +228,23 @@
+@@ -220,11 +223,21 @@
      }
  
      get visible() {
@@ -64,8 +64,6 @@ index b9381999a77ecacdb95c69494ac8972e9f13d14d..7976a3ca5bc45953126e354243d91a2c
 +      if (!this.isOpen || this.hidden || this.hasAttribute("zen-empty-tab")) {
 +        return false;
 +      }
-+      // Selected tabs are always visible
-+      if (this.selected || this.multiselected) return true;
 +      if (this.group) {
 +        if (this.group.hasAttribute("split-view-group") && this.group?.group?.isZenFolder) {
 +          return this.group.group.isTabVisibleInGroup(this);
@@ -81,7 +79,7 @@ index b9381999a77ecacdb95c69494ac8972e9f13d14d..7976a3ca5bc45953126e354243d91a2c
      }
  
      get hidden() {
-@@ -308,7 +323,7 @@
+@@ -303,7 +316,7 @@
          return false;
        }
  
@@ -90,7 +88,7 @@ index b9381999a77ecacdb95c69494ac8972e9f13d14d..7976a3ca5bc45953126e354243d91a2c
      }
  
      get lastAccessed() {
-@@ -393,7 +408,24 @@
+@@ -388,7 +401,24 @@
      }
  
      get group() {
@@ -116,7 +114,7 @@ index b9381999a77ecacdb95c69494ac8972e9f13d14d..7976a3ca5bc45953126e354243d91a2c
      }
  
      get splitview() {
-@@ -475,6 +507,10 @@
+@@ -470,6 +500,10 @@
          }
        }
  
@@ -127,7 +125,7 @@ index b9381999a77ecacdb95c69494ac8972e9f13d14d..7976a3ca5bc45953126e354243d91a2c
        // If the previous target wasn't part of this tab then this is a mouseenter event.
        if (!this.contains(event.relatedTarget)) {
          this._mouseenter();
-@@ -504,6 +540,7 @@
+@@ -499,6 +533,7 @@
        if (!this.contains(event.relatedTarget)) {
          this._mouseleave();
        }
@@ -135,7 +133,7 @@ index b9381999a77ecacdb95c69494ac8972e9f13d14d..7976a3ca5bc45953126e354243d91a2c
      }
  
      on_dragstart(event) {
-@@ -538,6 +575,8 @@
+@@ -533,6 +568,8 @@
          this.style.MozUserFocus = "ignore";
        } else if (
          event.target.classList.contains("tab-close-button") ||
@@ -144,7 +142,7 @@ index b9381999a77ecacdb95c69494ac8972e9f13d14d..7976a3ca5bc45953126e354243d91a2c
          event.target.classList.contains("tab-icon-overlay") ||
          event.target.classList.contains("tab-audio-button")
        ) {
-@@ -572,7 +611,7 @@
+@@ -567,7 +604,7 @@
            }
          } else if (
            event.altKey &&
@@ -153,7 +151,7 @@ index b9381999a77ecacdb95c69494ac8972e9f13d14d..7976a3ca5bc45953126e354243d91a2c
          ) {
            eventMaySelectTab = false;
          } else if (!this.selected && this.multiselected) {
-@@ -597,6 +636,10 @@
+@@ -592,6 +629,10 @@
        this.style.MozUserFocus = "";
      }
  
@@ -164,7 +162,7 @@ index b9381999a77ecacdb95c69494ac8972e9f13d14d..7976a3ca5bc45953126e354243d91a2c
      on_click(event) {
        if (event.button != 0) {
          return;
-@@ -620,14 +663,31 @@
+@@ -615,14 +656,31 @@
              trigger: "alt_click",
            });
          }
@@ -197,7 +195,7 @@ index b9381999a77ecacdb95c69494ac8972e9f13d14d..7976a3ca5bc45953126e354243d91a2c
          gBrowser.multiSelectedTabsCount > 0 &&
          !event.target.classList.contains("tab-close-button") &&
          !event.target.classList.contains("tab-icon-overlay") &&
-@@ -639,8 +699,9 @@
+@@ -634,8 +692,9 @@
        }
  
        if (
@@ -209,7 +207,7 @@ index b9381999a77ecacdb95c69494ac8972e9f13d14d..7976a3ca5bc45953126e354243d91a2c
        ) {
          if (this.activeMediaBlocked) {
            if (this.multiselected) {
-@@ -658,7 +719,7 @@
+@@ -653,7 +712,7 @@
          return;
        }
  
@@ -218,7 +216,7 @@ index b9381999a77ecacdb95c69494ac8972e9f13d14d..7976a3ca5bc45953126e354243d91a2c
          if (this.multiselected) {
            gBrowser.removeMultiSelectedTabs(
              lazy.TabMetrics.userTriggeredContext(
-@@ -678,6 +739,14 @@
+@@ -673,6 +732,14 @@
          // (see tabbrowser-tabs 'click' handler).
          gBrowser.tabContainer._blockDblClick = true;
        }
@@ -233,7 +231,7 @@ index b9381999a77ecacdb95c69494ac8972e9f13d14d..7976a3ca5bc45953126e354243d91a2c
      }
  
      on_dblclick(event) {
-@@ -701,6 +770,8 @@
+@@ -696,6 +763,8 @@
            animate: true,
            triggeringEvent: event,
          });
