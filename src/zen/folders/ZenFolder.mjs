@@ -77,6 +77,7 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
     }
     this.#initialized = true;
     this._activeTabs = [];
+    this.activeCollapsed = false;
     this.icon.appendChild(nsZenFolder.rawIcon.cloneNode(true));
 
     this.labelElement.parentElement.setAttribute("context", "zenFolderActions");
@@ -271,35 +272,10 @@ export class nsZenFolder extends MozTabbrowserTabGroup {
     return this._activeTabs;
   }
 
-  initWeight() {
-    let curWeight = 1000;
-    for (const item of this.allItems) {
-      if (!item._zenWeight) {
-        item._zenWeight = curWeight;
-      }
-      curWeight = item._zenWeight + 1000;
-    }
-  }
-
-  initTabWeight(tab) {
-    const elems = this.allItems.filter(el => el !== tab);
-    if (!elems.every(el => el._zenWeight)) {
-      this.initWeight();
-      return;
-    }
-
-    let prevTab = tab.previousElementSibling;
-    let nextTab = tab.nextElementSibling;
-
-    let prevWeight = prevTab?._zenWeight || 0;
-    let nextWeight = nextTab?._zenWeight || Infinity;
-    let tabWeight = tab._zenWeight || -1;
-
-    if (tabWeight <= prevWeight || tabWeight >= nextWeight) {
-      let newTabWeight =
-        nextWeight === Infinity ? prevWeight + 2000 : nextWeight;
-      tab._zenWeight = (prevWeight + newTabWeight) / 2;
-    }
+  updateTabOrder() {
+    this._tabOrder = this.allItems
+      .filter(item => !item.hasAttribute("zen-empty-tab"))
+      .map(item => item.id);
   }
 
   removeActiveTab(tab) {
